@@ -79,10 +79,10 @@ private:
     void createServerTCPSocket(uint64_t, const RTCNetwork::SocketAddress&, uint16_t minPort, uint16_t maxPort, int);
     void wrapNewTCPConnection(uint64_t identifier, uint64_t newConnectionSocketIdentifier);
 
+    void addSocket(uint64_t, std::unique_ptr<LibWebRTCSocketClient>&&);
+
     void createResolver(uint64_t, const String&);
     void stopResolver(uint64_t);
-
-    void addSocket(uint64_t, std::unique_ptr<LibWebRTCSocketClient>&&);
 
     void createSocket(uint64_t identifier, std::unique_ptr<rtc::AsyncPacketSocket>&&, LibWebRTCSocketClient::Type);
 

@@ -33,8 +33,6 @@
 #if USE(LIBWEBRTC)
 #include "LibWebRTCAudioModule.h"
 #include "Logging.h"
-#include "VideoToolBoxDecoderFactory.h"
-#include "VideoToolBoxEncoderFactory.h"
 #include <dlfcn.h>
 #include <webrtc/api/peerconnectionfactoryproxy.h>
 #include <webrtc/base/physicalsocketserver.h>
