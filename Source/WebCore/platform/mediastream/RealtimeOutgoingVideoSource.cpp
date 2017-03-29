@@ -37,11 +37,14 @@
 #include <wtf/CurrentTime.h>
 #include <wtf/MainThread.h>
 
-#include <pal/cf/CoreMediaSoftLink.h>
-#include "CoreVideoSoftLink.h"
-
 namespace WebCore {
-using namespace PAL;
+
+#if PLATFORM(GTK) || PLATFORM(WPE)
+Ref<RealtimeOutgoingVideoSource> RealtimeOutgoingVideoSource::create(Ref<MediaStreamTrackPrivate>&& videoSource)
+{
+    return adoptRef(*new RealtimeOutgoingVideoSource(WTFMove(videoSource)));
+}
+#endif
 
 RealtimeOutgoingVideoSource::RealtimeOutgoingVideoSource(Ref<MediaStreamTrackPrivate>&& videoSource)
     : m_videoSource(WTFMove(videoSource))
