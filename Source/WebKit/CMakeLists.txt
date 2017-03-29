@@ -176,6 +176,8 @@ set(WebKit_SOURCES
     Shared/NavigationActionData.cpp
     Shared/PlatformPopupMenuData.cpp
     Shared/PrintInfo.cpp
+    Shared/RTCNetwork.cpp
+    Shared/RTCPacketOptions.cpp
     Shared/SessionState.cpp
     Shared/SessionTracker.cpp
     Shared/ShareableBitmap.cpp
@@ -524,6 +526,14 @@ set(WebKit_SOURCES
     WebProcess/Network/WebResourceLoader.cpp
     WebProcess/Network/WebSocketProvider.cpp
     WebProcess/Network/WebSocketStream.cpp
+
+    WebProcess/Network/webrtc/LibWebRTCProvider.cpp
+    WebProcess/Network/webrtc/LibWebRTCResolver.cpp
+    WebProcess/Network/webrtc/LibWebRTCSocket.cpp
+    WebProcess/Network/webrtc/LibWebRTCSocketFactory.cpp
+    WebProcess/Network/webrtc/WebRTCMonitor.cpp
+    WebProcess/Network/webrtc/WebRTCResolver.cpp
+    WebProcess/Network/webrtc/WebRTCSocket.cpp
 
     WebProcess/Notifications/NotificationPermissionRequestManager.cpp
     WebProcess/Notifications/WebNotificationManager.cpp

@@ -1,3 +1,37 @@
+2018-03-02  Alejandro G. Castro  <alex@igalia.com>
+
+        [GTK] Make libwebrtc backend buildable for GTK  port
+        https://bugs.webkit.org/show_bug.cgi?id=178860
+
+        Reviewed by NOBODY (OOPS!).
+
+        This is the first step to add webrtc support to the GTK port using
+        the libwebrtc backend.
+
+        No new tests, no new feature added, it should be tested by current
+        tests.
+
+        * CMakeLists.txt: Add the new files to the compilation and set the
+        new includes in the libwebrtc library.
+        * Modules/mediastream/libwebrtc/LibWebRTCMediaEndpoint.cpp:
+        Reorder the includes alphabetically and add some that are missing.
+        * Modules/mediastream/libwebrtc/LibWebRTCPeerConnectionBackend.cpp:
+        Ditto.
+        * Sources.txt: Add new file to the compilation.
+        * platform/mediastream/RealtimeIncomingAudioSource.cpp:
+        (WebCore::RealtimeIncomingAudioSource::create): Added for the GTK
+        and WPE ports
+        * platform/mediastream/RealtimeIncomingVideoSource.cpp:
+        (WebCore::RealtimeIncomingVideoSource::create): Ditto.
+        * platform/mediastream/RealtimeOutgoingAudioSource.cpp:
+        (WebCore::RealtimeOutgoingAudioSource::create): Ditto.
+        * platform/mediastream/RealtimeOutgoingVideoSource.cpp:
+        (WebCore::RealtimeOutgoingVideoSource::create): Ditto.
+        * platform/mediastream/libwebrtc/LibWebRTCProviderGlib.cpp: Added includes
+        for the compilation.
+        * platform/mediastream/libwebrtc/LibWebRTCProviderGlib.h: Added, inherit from
+        the LibWebRTCProvider to adapt for glib.
+
 2018-03-21  Chris Dumez  <cdumez@apple.com>
 
         Regression(r229828): WebKit.NoHistoryItemScrollToFragment API test is failing on iOS

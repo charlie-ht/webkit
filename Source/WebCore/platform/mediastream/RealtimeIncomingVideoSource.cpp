@@ -37,6 +37,15 @@
 
 namespace WebCore {
 
+#if PLATFORM(GTK) || PLATFORM(WPE)
+Ref<RealtimeIncomingVideoSource> RealtimeIncomingVideoSource::create(rtc::scoped_refptr<webrtc::VideoTrackInterface>&& videoTrack, String&& trackId)
+{
+    auto source = RealtimeIncomingVideoSource::create(WTFMove(videoTrack), WTFMove(trackId));
+    source->start();
+    return WTFMove(source);
+}
+#endif
+
 RealtimeIncomingVideoSource::RealtimeIncomingVideoSource(rtc::scoped_refptr<webrtc::VideoTrackInterface>&& videoTrack, String&& videoTrackId)
     : RealtimeMediaSource(WTFMove(videoTrackId), RealtimeMediaSource::Type::Video, String())
     , m_videoTrack(WTFMove(videoTrack))

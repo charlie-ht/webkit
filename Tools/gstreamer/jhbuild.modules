@@ -19,8 +19,8 @@
       href="http://gstreamer.freedesktop.org/src/"/>
   <repository type="tarball" name="github-tarball"
       href="https://github.com/"/>
-  <repository type="tarball" name="downloads.webmproject.org"
-      href="http://downloads.webmproject.org/releases/webm/"/>
+  <repository type="tarball" name="chromium.googlesource.com"
+      href="https://chromium.googlesource.com/webm/libvpx/+archive/"/>
 
   <autotools id="orc" autogenargs="--disable-gtk-doc" autogen-sh="configure">
     <branch module="orc/orc-${version}.tar.xz" version="0.4.28"
@@ -37,10 +37,11 @@
 
   <autotools id="libvpx"
     autogen-template="%(srcdir)s/configure --prefix=%(prefix)s --enable-pic --as=yasm --disable-unit-tests --size-limit=16384x16384 --enable-postproc --enable-multi-res-encoding --enable-temporal-denoising --enable-vp9-temporal-denoising --enable-vp9-postproc --enable-shared">
-    <branch version="1.6.0"
-            module="libvpx-${version}.tar.bz2"
-            repo="downloads.webmproject.org"
-            hash="sha256:d0afbb5eb1ecae68f8d578abace160a97e2e8a230e3028cf4db115d59a695aad"/>
+    <branch version="1.7.0"
+            module="v${version}.tar.gz"
+            checkoutdir="libvpx-${version}"
+            repo="chromium.googlesource.com"
+            hash="sha256:5b3f97591aa30a83c710bf55857971125b0a1486fe423b3133846ce437e8147e"/>
   </autotools>
 
   <autotools id="gstreamer" autogen-sh="configure" autogenargs="--disable-gtk-doc --disable-introspection">

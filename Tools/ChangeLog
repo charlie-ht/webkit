@@ -1,3 +1,16 @@
+2018-03-02  Alejandro G. Castro  <alex@igalia.com>
+
+        [GTK] Make libwebrtc backend buildable for GTK  port
+        https://bugs.webkit.org/show_bug.cgi?id=178860
+
+        Reviewed by NOBODY (OOPS!).
+
+        * gstreamer/jhbuild.modules: Modified the libvpx module for the
+        libwebrtc compilation.
+        * gtk/install-dependencies: Add libevent as a system requirement.
+        * Scripts/webkitpy/style/checker.py: Added libwebrtc to the list of third
+        party libraries with reduced style checks.
+
 2018-03-21  Fujii Hironori  <Hironori.Fujii@sony.com>
 
         Unreviewed. Marked myself as a committer.
