@@ -1660,6 +1660,7 @@ platform/mediastream/RealtimeOutgoingVideoSource.cpp
 
 platform/mediastream/libwebrtc/LibWebRTCAudioModule.cpp
 platform/mediastream/libwebrtc/LibWebRTCProvider.cpp
+platform/mediastream/libwebrtc/LibWebRTCRealtimeMediaSourceCenter.cpp
 
 platform/mock/DeviceOrientationClientMock.cpp
 platform/mock/GeolocationClientMock.cpp
