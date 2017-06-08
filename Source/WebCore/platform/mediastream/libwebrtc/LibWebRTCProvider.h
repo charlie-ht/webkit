@@ -57,6 +57,7 @@ class WEBCORE_EXPORT LibWebRTCProvider {
 public:
     static UniqueRef<LibWebRTCProvider> create();
 
+    LibWebRTCProvider() = default;
     virtual ~LibWebRTCProvider() = default;
 
     static bool webRTCAvailable();
@@ -68,7 +69,7 @@ public:
 #if USE(LIBWEBRTC)
     virtual rtc::scoped_refptr<webrtc::PeerConnectionInterface> createPeerConnection(webrtc::PeerConnectionObserver&, webrtc::PeerConnectionInterface::RTCConfiguration&&);
 
-    webrtc::PeerConnectionFactoryInterface* factory();
+    virtual webrtc::PeerConnectionFactoryInterface* factory();
 
     // FIXME: Make these methods not static.
     static void callOnWebRTCNetworkThread(Function<void()>&&);
@@ -81,8 +82,6 @@ public:
     void enableEnumeratingAllNetworkInterfaces() { m_enableEnumeratingAllNetworkInterfaces = true; }
 
 protected:
-    LibWebRTCProvider() = default;
-
     rtc::scoped_refptr<webrtc::PeerConnectionInterface> createPeerConnection(webrtc::PeerConnectionObserver&, rtc::NetworkManager&, rtc::PacketSocketFactory&, webrtc::PeerConnectionInterface::RTCConfiguration&&);
 
     rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> createPeerConnectionFactory(rtc::Thread* networkThread, rtc::Thread* signalingThread, LibWebRTCAudioModule*);
@@ -91,7 +90,7 @@ protected:
 
     bool m_enableEnumeratingAllNetworkInterfaces { false };
     // FIXME: Remove m_useNetworkThreadWithSocketServer member variable and make it a global.
-    bool m_useNetworkThreadWithSocketServer { true };
+    bool m_useNetworkThreadWithSocketServer { false };
 
     rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> m_factory;
 #endif

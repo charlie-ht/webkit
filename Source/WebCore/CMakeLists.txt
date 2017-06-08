@@ -1546,7 +1546,8 @@ endif ()
 
 if (USE_LIBWEBRTC)
   list(APPEND WebCore_SYSTEM_INCLUDE_DIRECTORIES "${THIRDPARTY_DIR}/libwebrtc/Source/"
-      "${THIRDPARTY_DIR}/libwebrtc/Source/webrtc")
+      "${THIRDPARTY_DIR}/libwebrtc/Source/webrtc"
+      "${THIRDPARTY_DIR}/libwebrtc/Source/third_party/libyuv/include/")
   list(APPEND WebCore_LIBRARIES webrtc)
   list(APPEND WebCore_SOURCES
       Modules/mediastream/libwebrtc/LibWebRTCDataChannelHandler.cpp

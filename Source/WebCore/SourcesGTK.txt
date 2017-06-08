@@ -63,6 +63,9 @@ platform/graphics/glx/GLContextGLX.cpp
 
 platform/graphics/gstreamer/ImageGStreamerCairo.cpp
 
+platform/graphics/libwebrtc/MediaPlayerPrivateLibWebRTC.cpp
+platform/graphics/libwebrtc/MediaSampleLibWebRTC.cpp
+
 platform/graphics/opengl/Extensions3DOpenGLCommon.cpp
 platform/graphics/opengl/GraphicsContext3DOpenGLCommon.cpp
 platform/graphics/opengl/TemporaryOpenGLSetting.cpp
@@ -81,8 +84,15 @@ platform/gtk/PasteboardGtk.cpp
 platform/gtk/ScrollAnimatorGtk.cpp
 platform/gtk/SelectionData.cpp
 
+platform/mediastream/libwebrtc/LibWebRTCAudioCaptureSource.cpp
 platform/mediastream/libwebrtc/LibWebRTCAudioModule.cpp
 platform/mediastream/libwebrtc/LibWebRTCProviderGlib.cpp
+platform/mediastream/libwebrtc/LibWebRTCRealtimeMediaSourceCenter.cpp
+platform/mediastream/libwebrtc/LibWebRTCVideoCaptureDevice.cpp
+platform/mediastream/libwebrtc/LibWebRTCVideoCaptureDeviceManager.cpp
+platform/mediastream/libwebrtc/LibWebRTCVideoCaptureSource.cpp
+platform/mediastream/libwebrtc/RealtimeOutgoingAudioSourceLibWebRTC.cpp
+platform/mediastream/libwebrtc/RealtimeIncomingAudioSourceLibWebRTC.cpp
 
 platform/text/Hyphenation.cpp
 platform/text/LocaleICU.cpp

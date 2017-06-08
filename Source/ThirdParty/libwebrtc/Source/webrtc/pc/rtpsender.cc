@@ -18,6 +18,8 @@
 #include "rtc_base/helpers.h"
 #include "rtc_base/trace_event.h"
 
+#define WEBRTC_WEBKIT_BUILD
+
 namespace webrtc {
 
 namespace {

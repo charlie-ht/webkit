@@ -24,6 +24,8 @@
 
 #include "FloatSize.h"
 #include "GRefPtrGStreamer.h"
+#include <gst/gst.h>
+#include <gst/video/video.h>
 #include "MediaSample.h"
 #include <wtf/text/AtomicString.h>
 
@@ -54,6 +56,7 @@ public:
     SampleFlags flags() const override { return m_flags; }
     PlatformSample platformSample() override;
     void dump(PrintStream&) const override;
+    GstVideoInfo videoInfo();
 
 private:
     MediaSampleGStreamer(GRefPtr<GstSample>&&, const FloatSize& presentationSize, const AtomicString& trackId);
@@ -68,6 +71,7 @@ private:
     GRefPtr<GstSample> m_sample;
     FloatSize m_presentationSize;
     MediaSample::SampleFlags m_flags { MediaSample::IsSync };
+    GstVideoInfo m_info;
 };
 
 } // namespace WebCore.

@@ -34,6 +34,8 @@ namespace WebCore {
 class WEBCORE_EXPORT LibWebRTCProviderGlib : public LibWebRTCProvider {
 public:
     LibWebRTCProviderGlib() = default;
+
+    webrtc::PeerConnectionFactoryInterface* factory() final;
 };
 
 } // namespace WebCore

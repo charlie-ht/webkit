@@ -34,17 +34,9 @@
 #if USE(LIBWEBRTC)
 
 #include "Logging.h"
+#include "MediaSampleLibWebRTC.h"
 
 namespace WebCore {
-
-#if PLATFORM(GTK) || PLATFORM(WPE)
-Ref<RealtimeIncomingVideoSource> RealtimeIncomingVideoSource::create(rtc::scoped_refptr<webrtc::VideoTrackInterface>&& videoTrack, String&& trackId)
-{
-    auto source = RealtimeIncomingVideoSource::create(WTFMove(videoTrack), WTFMove(trackId));
-    source->start();
-    return WTFMove(source);
-}
-#endif
 
 RealtimeIncomingVideoSource::RealtimeIncomingVideoSource(rtc::scoped_refptr<webrtc::VideoTrackInterface>&& videoTrack, String&& videoTrackId)
     : RealtimeMediaSource(WTFMove(videoTrackId), RealtimeMediaSource::Type::Video, String())
@@ -53,6 +45,12 @@ RealtimeIncomingVideoSource::RealtimeIncomingVideoSource(rtc::scoped_refptr<webr
     m_currentSettings.setWidth(640);
     m_currentSettings.setHeight(480);
     notifyMutedChange(!m_videoTrack);
+}
+
+RealtimeIncomingVideoSource::~RealtimeIncomingVideoSource()
+{
+    if (isProducingData())
+        stopProducingData();
 }
 
 void RealtimeIncomingVideoSource::startProducingData()
@@ -86,6 +84,11 @@ const RealtimeMediaSourceCapabilities& RealtimeIncomingVideoSource::capabilities
 const RealtimeMediaSourceSettings& RealtimeIncomingVideoSource::settings() const
 {
     return m_currentSettings;
+}
+
+void RealtimeIncomingVideoSource::OnFrame(const webrtc::VideoFrame& frame)
+{
+    videoSampleAvailable(MediaSampleLibWebRTC::create(frame, String()));
 }
 
 } // namespace WebCore

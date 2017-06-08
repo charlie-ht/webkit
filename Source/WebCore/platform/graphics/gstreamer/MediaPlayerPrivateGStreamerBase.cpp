@@ -250,10 +250,9 @@ MediaPlayerPrivateGStreamerBase::~MediaPlayerPrivateGStreamerBase()
     if (m_videoSink) {
         g_signal_handlers_disconnect_matched(m_videoSink.get(), G_SIGNAL_MATCH_DATA, 0, 0, nullptr, nullptr, this);
 #if USE(GSTREAMER_GL)
-        if (GST_IS_BIN(m_videoSink.get())) {
-            GRefPtr<GstElement> appsink = adoptGRef(gst_bin_get_by_name(GST_BIN_CAST(m_videoSink.get()), "webkit-gl-video-sink"));
+        GRefPtr<GstElement> appsink = adoptGRef(gst_bin_get_by_name(GST_BIN_CAST(m_videoSink.get()), "webkit-gl-video-sink"));
+        if (appsink.get())
             g_signal_handlers_disconnect_by_data(appsink.get(), this);
-        }
 #endif
     }
 
@@ -436,6 +435,7 @@ GstContext* MediaPlayerPrivateGStreamerBase::requestGLContext(const char* contex
 
 bool MediaPlayerPrivateGStreamerBase::ensureGstGLContext()
 {
+    GST_INFO_OBJECT (m_pipeline.get(), "Ensuring GL Context");
     if (m_glContext)
         return true;
 
@@ -745,13 +745,18 @@ void MediaPlayerPrivateGStreamerBase::pushTextureToCompositor()
 
     LockHolder holder(m_platformLayerProxy->lock());
 
-    if (!m_platformLayerProxy->isActive())
+    if (!m_platformLayerProxy->isActive()) {
+        GST_ERROR_OBJECT (m_pipeline.get(), "Erg... not active. this is ugly I think.");
         return;
+    }
+
 
 #if USE(GSTREAMER_GL)
     std::unique_ptr<GstVideoFrameHolder> frameHolder = std::make_unique<GstVideoFrameHolder>(m_sample.get(), texMapFlagFromOrientation(m_videoSourceOrientation));
-    if (UNLIKELY(!frameHolder->isValid()))
+    if (UNLIKELY(!frameHolder->isValid())) {
+        GST_ERROR ("Frame is not valid!");
         return;
+    }
 
     std::unique_ptr<TextureMapperPlatformLayerBuffer> layerBuffer = std::make_unique<TextureMapperPlatformLayerBuffer>(frameHolder->textureID(), frameHolder->size(), frameHolder->flags(), GraphicsContext3D::RGBA);
     layerBuffer->setUnmanagedBufferDataHolder(WTFMove(frameHolder));
@@ -771,9 +776,11 @@ void MediaPlayerPrivateGStreamerBase::pushTextureToCompositor()
         texture->reset(size, GST_VIDEO_INFO_HAS_ALPHA(&videoInfo) ? BitmapTexture::SupportsAlpha : BitmapTexture::NoFlag);
         buffer = std::make_unique<TextureMapperPlatformLayerBuffer>(WTFMove(texture));
     }
+    GST_ERROR_OBJECT (m_pipeline.get(), "Still going");
     updateTexture(buffer->textureGL(), videoInfo);
     buffer->setExtraFlags(texMapFlagFromOrientation(m_videoSourceOrientation) | (GST_VIDEO_INFO_HAS_ALPHA(&videoInfo) ? TextureMapperGL::ShouldBlend : 0));
     m_platformLayerProxy->pushNextBuffer(WTFMove(buffer));
+    GST_ERROR_OBJECT (m_pipeline.get(), "All done!");
 #endif // USE(GSTREAMER_GL)
 }
 #endif // USE(TEXTURE_MAPPER_GL)
@@ -1114,8 +1121,18 @@ GstElement* MediaPlayerPrivateGStreamerBase::createVideoSink()
     if (!m_videoSink) {
         m_usingFallbackVideoSink = true;
         m_videoSink = webkitVideoSinkNew();
+        auto sinkbin = gst_bin_new (nullptr);
+        auto convert = gst_element_factory_make ("videoconvert", nullptr);
+
+        gst_bin_add_many (GST_BIN (sinkbin), convert, m_videoSink.get(), NULL);
+        gst_element_link (convert, m_videoSink.get());
+        gst_element_add_pad (GST_ELEMENT (sinkbin), gst_ghost_pad_new ("sink",
+            gst_element_get_static_pad (convert, "sink")));
+
         g_signal_connect_swapped(m_videoSink.get(), "repaint-requested", G_CALLBACK(repaintCallback), this);
         g_signal_connect_swapped(m_videoSink.get(), "repaint-cancelled", G_CALLBACK(repaintCancelledCallback), this);
+
+        m_videoSink = GST_ELEMENT (sinkbin);
     }
 
     GstElement* videoSink = nullptr;

@@ -147,6 +147,19 @@ void MediaSampleGStreamer::dump(PrintStream& out) const
     out.print("), trackId(", trackID().string(), "), presentationSize(", presentationSize().width(), "x", presentationSize().height(), ")}");
 }
 
+GstVideoInfo MediaSampleGStreamer::videoInfo()
+{
+    GRefPtr<GstCaps> caps = gst_sample_get_caps (m_sample.get());
+    g_assert (gst_caps_is_fixed (caps.get()));
+    g_assert (gst_structure_has_name (gst_caps_get_structure(caps.get(), 0), "video/x-raw"));
+
+    GstVideoInfo info;
+
+    gst_video_info_from_caps (&info, caps.get());
+
+    return info;
+}
+
 } // namespace WebCore.
 
 #endif // ENABLE(VIDEO) && USE(GSTREAMER)

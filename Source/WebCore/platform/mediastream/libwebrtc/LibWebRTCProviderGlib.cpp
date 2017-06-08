@@ -28,6 +28,10 @@
 
 #include <wtf/UniqueRef.h>
 
+#if USE(LIBWEBRTC)
+#include "LibWebRTCRealtimeMediaSourceCenter.h"
+#endif
+
 namespace WebCore {
 
 UniqueRef<LibWebRTCProvider> LibWebRTCProvider::create()
@@ -43,5 +47,16 @@ bool LibWebRTCProvider::webRTCAvailable()
 {
     return true;
 }
+
+#if USE(LIBWEBRTC)
+webrtc::PeerConnectionFactoryInterface* LibWebRTCProviderGlib::factory()
+{
+    if (m_factory)
+        return m_factory.get();
+
+    m_factory = LibWebRTCRealtimeMediaSourceCenter::singleton().factory();
+    return m_factory;
+}
+#endif // USE(LIBWEBRTC)
 
 } // namespace WebCore

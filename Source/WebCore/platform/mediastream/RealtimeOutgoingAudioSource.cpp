@@ -36,13 +36,6 @@
 
 namespace WebCore {
 
-#if PLATFORM(GTK) || PLATFORM(WPE)
-Ref<RealtimeOutgoingAudioSource> RealtimeOutgoingAudioSource::create(Ref<MediaStreamTrackPrivate>&& audioSource)
-{
-    return RealtimeOutgoingAudioSource::create(WTFMove(audioSource));
-}
-#endif
-
 RealtimeOutgoingAudioSource::RealtimeOutgoingAudioSource(Ref<MediaStreamTrackPrivate>&& audioSource)
     : m_audioSource(WTFMove(audioSource))
     , m_silenceAudioTimer(*this, &RealtimeOutgoingAudioSource::sendSilence)
