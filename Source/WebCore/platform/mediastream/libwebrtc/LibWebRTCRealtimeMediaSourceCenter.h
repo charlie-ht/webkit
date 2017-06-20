@@ -36,6 +36,7 @@
 #include "CaptureDeviceManager.h"
 #include "RealtimeMediaSource.h"
 #include "RealtimeMediaSourceCenter.h"
+
 #include <wtf/RefPtr.h>
 #include <wtf/text/WTFString.h>
 
@@ -75,7 +76,6 @@ private:
 
     LibWebRTCAudioCaptureFactory m_defaultAudioFactory;
     LibWebRTCVideoCaptureFactory m_defaultVideoFactory;
-    LibWebRTCCaptureDeviceManager m_defaultAudioCaptureDeviceManager;
     LibWebRTCCaptureDeviceManager m_defaultVideoCaptureDeviceManager;
 };
 
