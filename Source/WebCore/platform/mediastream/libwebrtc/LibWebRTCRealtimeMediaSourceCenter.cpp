@@ -35,6 +35,7 @@
 
 #include "LibWebRTCAudioCaptureDeviceManager.h"
 #include "LibWebRTCRealtimeMediaSourceCenter.h"
+#include "LibWebRTCVideoCaptureDeviceManager.h"
 #include <wtf/MainThread.h>
 
 namespace WebCore {
@@ -80,7 +81,7 @@ CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::defaultAudioCaptureDev
 
 CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::defaultVideoCaptureDeviceManager()
 {
-    return m_defaultVideoCaptureDeviceManager;
+    return LibWebRTCVideoCaptureDeviceManager::singleton();
 }
 
 CaptureSourceOrError LibWebRTCAudioCaptureFactory::createAudioCaptureSource(const String&, const MediaConstraints*)
