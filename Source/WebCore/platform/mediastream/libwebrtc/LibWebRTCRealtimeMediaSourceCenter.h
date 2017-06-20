@@ -52,13 +52,6 @@ private:
     CaptureSourceOrError createVideoCaptureSource(const String&, const MediaConstraints*) final;
 };
 
-class LibWebRTCCaptureDeviceManager : public CaptureDeviceManager {
-private:
-    Vector<CaptureDevice>& captureDevices() final { return m_devices; }
-
-    Vector<CaptureDevice> m_devices;
-};
-
 class LibWebRTCRealtimeMediaSourceCenter final : public RealtimeMediaSourceCenter {
 public:
     WEBCORE_EXPORT static LibWebRTCRealtimeMediaSourceCenter& singleton();
@@ -76,7 +69,6 @@ private:
 
     LibWebRTCAudioCaptureFactory m_defaultAudioFactory;
     LibWebRTCVideoCaptureFactory m_defaultVideoFactory;
-    LibWebRTCCaptureDeviceManager m_defaultVideoCaptureDeviceManager;
 };
 
 } // namespace WebCore
