@@ -42,11 +42,6 @@
 
 namespace WebCore {
 
-class LibWebRTCAudioCaptureFactory : public RealtimeMediaSource::AudioCaptureFactory {
-private:
-    CaptureSourceOrError createAudioCaptureSource(const String&, const MediaConstraints*) final;
-};
-
 class LibWebRTCVideoCaptureFactory : public RealtimeMediaSource::VideoCaptureFactory {
 private:
     CaptureSourceOrError createVideoCaptureSource(const String&, const MediaConstraints*) final;
@@ -67,7 +62,6 @@ private:
     CaptureDeviceManager& defaultAudioCaptureDeviceManager() final;
     CaptureDeviceManager& defaultVideoCaptureDeviceManager() final;
 
-    LibWebRTCAudioCaptureFactory m_defaultAudioFactory;
     LibWebRTCVideoCaptureFactory m_defaultVideoFactory;
 };
 

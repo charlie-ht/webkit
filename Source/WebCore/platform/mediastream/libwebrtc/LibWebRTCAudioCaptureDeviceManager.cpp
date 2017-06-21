@@ -66,7 +66,6 @@ void LibWebRTCAudioCaptureDeviceManager::getAudioCaptureDevices()
     // Length of the vectors supplied in the API
     const uint16_t idLenght = 128;
 
-    // FIXME: Do we need the playout devices here?
     for (int i = 0; i < m_audioDeviceModule->RecordingDevices(); ++i) {
         char id[idLenght] = {0};
         char guid[idLenght] = {0};
@@ -75,8 +74,10 @@ void LibWebRTCAudioCaptureDeviceManager::getAudioCaptureDevices()
             if (!device)
                 continue;
 
-            // FIXME: How do we detect which ones should be enabled or disabled.
-            device->setEnabled(true);
+            bool available;
+            m_audioDeviceModule->SetRecordingDevice(i);
+            m_audioDeviceModule->RecordingIsAvailable(&available);
+            device->setEnabled(available);
             m_devices.append(WTFMove(device.value()));
         }
     }

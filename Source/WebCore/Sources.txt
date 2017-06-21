@@ -1660,6 +1660,7 @@ platform/mediastream/RealtimeOutgoingVideoSource.cpp
 
 platform/mediastream/libwebrtc/LibWebRTCAudioCaptureDevice.cpp
 platform/mediastream/libwebrtc/LibWebRTCAudioCaptureDeviceManager.cpp
+platform/mediastream/libwebrtc/LibWebRTCAudioCaptureSource.cpp
 platform/mediastream/libwebrtc/LibWebRTCAudioModule.cpp
 platform/mediastream/libwebrtc/LibWebRTCProvider.cpp
 platform/mediastream/libwebrtc/LibWebRTCRealtimeMediaSourceCenter.cpp
