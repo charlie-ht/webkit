@@ -35,6 +35,7 @@
 
 #include "LibWebRTCAudioCaptureDeviceManager.h"
 #include "LibWebRTCAudioCaptureSource.h"
+#include "LibWebRTCVideoCaptureSource.h"
 #include "LibWebRTCRealtimeMediaSourceCenter.h"
 #include "LibWebRTCVideoCaptureDeviceManager.h"
 #include <wtf/MainThread.h>
@@ -72,7 +73,7 @@ RealtimeMediaSource::AudioCaptureFactory& LibWebRTCRealtimeMediaSourceCenter::de
 
 RealtimeMediaSource::VideoCaptureFactory& LibWebRTCRealtimeMediaSourceCenter::defaultVideoFactory()
 {
-    return m_defaultVideoFactory;
+    return LibWebRTCVideoCaptureSource::factory();
 }
 
 CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::defaultAudioCaptureDeviceManager()
@@ -83,11 +84,6 @@ CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::defaultAudioCaptureDev
 CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::defaultVideoCaptureDeviceManager()
 {
     return LibWebRTCVideoCaptureDeviceManager::singleton();
-}
-
-CaptureSourceOrError LibWebRTCVideoCaptureFactory::createVideoCaptureSource(const String&, const MediaConstraints*)
-{
-    return { };
 }
 
 } // namespace WebCore
