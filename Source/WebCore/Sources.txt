@@ -1677,6 +1677,7 @@ platform/mediastream/libwebrtc/LibWebRTCProvider.cpp
 platform/mediastream/libwebrtc/LibWebRTCRealtimeMediaSourceCenter.cpp
 platform/mediastream/libwebrtc/LibWebRTCVideoCaptureDevice.cpp
 platform/mediastream/libwebrtc/LibWebRTCVideoCaptureDeviceManager.cpp
+platform/mediastream/libwebrtc/LibWebRTCVideoCaptureSource.cpp
 
 platform/mock/DeviceOrientationClientMock.cpp
 platform/mock/GeolocationClientMock.cpp
