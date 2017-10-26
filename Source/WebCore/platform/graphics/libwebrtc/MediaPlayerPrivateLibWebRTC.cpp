@@ -92,7 +92,7 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
     m_mediaStreamPrivate = &stream;
     m_mediaStreamPrivate->addObserver(*this);
 
-    webrtc::PeerConnectionFactoryInterface* peerConnectionFactory = LibWebRTCProvider::factory();
+    webrtc::PeerConnectionFactoryInterface* peerConnectionFactory = LibWebRTCRealtimeMediaSourceCenter::singleton().factory();
     m_stream = peerConnectionFactory->CreateLocalMediaStream("stream");
 
     for (auto& track : m_mediaStreamPrivate->tracks()) {

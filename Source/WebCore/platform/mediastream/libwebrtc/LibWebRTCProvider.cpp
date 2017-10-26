@@ -30,6 +30,10 @@
 #include "LibWebRTCProviderCocoa.h"
 #endif
 
+#if PLATFORM(GTK) || PLATFORM(WPE)
+#include "LibWebRTCProviderGlib.h"
+#endif
+
 #if USE(LIBWEBRTC)
 #include "LibWebRTCAudioModule.h"
 #include "Logging.h"
@@ -49,6 +53,8 @@ UniqueRef<LibWebRTCProvider> LibWebRTCProvider::create()
 {
 #if USE(LIBWEBRTC) && PLATFORM(COCOA)
     return makeUniqueRef<LibWebRTCProviderCocoa>();
+#elif PLATFORM(GTK) || PLATFORM(WPE)
+    return makeUniqueRef<LibWebRTCProviderGlib>();
 #else
     return makeUniqueRef<LibWebRTCProvider>();
 #endif

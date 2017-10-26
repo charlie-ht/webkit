@@ -1663,6 +1663,7 @@ platform/mediastream/libwebrtc/LibWebRTCAudioCaptureDeviceManager.cpp
 platform/mediastream/libwebrtc/LibWebRTCAudioCaptureSource.cpp
 platform/mediastream/libwebrtc/LibWebRTCAudioModule.cpp
 platform/mediastream/libwebrtc/LibWebRTCProvider.cpp
+platform/mediastream/libwebrtc/LibWebRTCProviderGlib.cpp
 platform/mediastream/libwebrtc/LibWebRTCRealtimeMediaSourceCenter.cpp
 platform/mediastream/libwebrtc/LibWebRTCVideoCaptureDevice.cpp
 platform/mediastream/libwebrtc/LibWebRTCVideoCaptureDeviceManager.cpp

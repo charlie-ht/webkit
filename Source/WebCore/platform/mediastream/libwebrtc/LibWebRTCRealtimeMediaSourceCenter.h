@@ -36,7 +36,9 @@
 #include "CaptureDeviceManager.h"
 #include "RealtimeMediaSource.h"
 #include "RealtimeMediaSourceCenter.h"
+#include "LibWebRTCProvider.h"
 
+#include <webrtc/api/peerconnectioninterface.h>
 #include <wtf/RefPtr.h>
 #include <wtf/text/WTFString.h>
 
@@ -45,6 +47,8 @@ namespace WebCore {
 class LibWebRTCRealtimeMediaSourceCenter final : public RealtimeMediaSourceCenter {
 public:
     WEBCORE_EXPORT static LibWebRTCRealtimeMediaSourceCenter& singleton();
+
+    webrtc::PeerConnectionFactoryInterface* factory() { return m_libWebRTCProvider->factory(); }
 
 private:
     friend class NeverDestroyed<LibWebRTCRealtimeMediaSourceCenter>;
@@ -56,6 +60,8 @@ private:
 
     CaptureDeviceManager& defaultAudioCaptureDeviceManager() final;
     CaptureDeviceManager& defaultVideoCaptureDeviceManager() final;
+
+    UniqueRef<LibWebRTCProvider> m_libWebRTCProvider;
 };
 
 } // namespace WebCore

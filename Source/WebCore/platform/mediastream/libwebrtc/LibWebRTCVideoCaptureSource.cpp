@@ -29,7 +29,8 @@
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
 
-#include "LibWebRTCProvider.h"
+#include "LibWebRTCProviderGlib.h"
+#include "LibWebRTCRealtimeMediaSourceCenter.h"
 #include "NotImplemented.h"
 #include <WebCore/LibWebRTCMacros.h>
 #include <wtf/NeverDestroyed.h>
@@ -116,7 +117,7 @@ void LibWebRTCVideoCaptureSource::startProducingData()
         return;
 
     // Make sure the factory it is initialized before calling from the thread.
-    LibWebRTCProvider::factory();
+    LibWebRTCRealtimeMediaSourceCenter::singleton().factory();
 
     LibWebRTCProvider::callOnWebRTCNetworkThread([protectedThis = makeRef(*this)]() {
             cricket::VideoFormatPod defaultFormat;
