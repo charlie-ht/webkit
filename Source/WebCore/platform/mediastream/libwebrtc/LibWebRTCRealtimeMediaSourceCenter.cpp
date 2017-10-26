@@ -55,11 +55,12 @@ RealtimeMediaSourceCenter& RealtimeMediaSourceCenter::platformCenter()
 }
 
 LibWebRTCRealtimeMediaSourceCenter::LibWebRTCRealtimeMediaSourceCenter()
+    : m_libWebRTCProvider(makeUniqueRef<LibWebRTCProvider>())
 {
     m_supportedConstraints.setSupportsSampleRate(false);
     m_supportedConstraints.setSupportsSampleSize(false);
     m_supportedConstraints.setSupportsEchoCancellation(false);
-    m_supportedConstraints.setSupportsGroupId(true);
+    m_supportedConstraints.setSupportsGroupId(false);
 }
 
 LibWebRTCRealtimeMediaSourceCenter::~LibWebRTCRealtimeMediaSourceCenter()

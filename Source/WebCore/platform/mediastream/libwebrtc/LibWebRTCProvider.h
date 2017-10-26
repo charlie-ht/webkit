@@ -65,7 +65,7 @@ public:
 #if USE(LIBWEBRTC)
     virtual rtc::scoped_refptr<webrtc::PeerConnectionInterface> createPeerConnection(webrtc::PeerConnectionObserver&, webrtc::PeerConnectionInterface::RTCConfiguration&&);
 
-    webrtc::PeerConnectionFactoryInterface* factory();
+    virtual webrtc::PeerConnectionFactoryInterface* factory();
 
     // FIXME: Make these methods not static.
     static void callOnWebRTCNetworkThread(Function<void()>&&);
