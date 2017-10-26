@@ -28,7 +28,6 @@
 #if USE(LIBWEBRTC)
 
 #include "RTCNetwork.h"
-#include <CFNetwork/CFHost.h>
 #include <wtf/CompletionHandler.h>
 #include <wtf/text/WTFString.h>
 
@@ -42,16 +41,15 @@ public:
     using CompletionHandler = WTF::CompletionHandler<void(AddressesOrError&&)>;
 
     explicit NetworkRTCResolver(CompletionHandler&&);
-    ~NetworkRTCResolver();
+    virtual ~NetworkRTCResolver();
 
-    void start(const String& address);
-    void stop();
+    virtual void start(const String& address) { };
+    virtual void stop() { };
 
     void completed(const Vector<RTCNetwork::IPAddress>&);
 
-private:
+protected:
     CompletionHandler m_completionHandler;
-    RetainPtr<CFHostRef> m_host;
 };
 
 } // namespace WebKit

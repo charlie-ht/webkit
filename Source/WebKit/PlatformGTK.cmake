@@ -44,6 +44,8 @@ list(APPEND WebKit_SOURCES
     NetworkProcess/soup/NetworkSessionSoup.cpp
     NetworkProcess/soup/RemoteNetworkingContextSoup.cpp
 
+    NetworkProcess/webrtc/NetworkRTCResolver.cpp
+
     Platform/IPC/glib/GSocketMonitor.cpp
     Platform/IPC/unix/AttachmentUnix.cpp
     Platform/IPC/unix/ConnectionUnix.cpp
