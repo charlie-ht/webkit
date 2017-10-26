@@ -23,31 +23,27 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
-#include "NetworkRTCResolver.h"
+#pragma once
 
 #if USE(LIBWEBRTC)
 
-#include <wtf/Expected.h>
+#include "NetworkRTCResolver.h"
+
+#include <CFNetwork/CFHost.h>
 
 namespace WebKit {
 
-NetworkRTCResolver::NetworkRTCResolver(CompletionHandler&& completionHandler)
-    : m_completionHandler(WTFMove(completionHandler))
-{
-}
+class NetworkRTCResolverCocoa : public NetworkRTCResolver {
+public:
+    explicit NetworkRTCResolverCocoa(CompletionHandler&&);
+    ~NetworkRTCResolverCocoa() final;
 
-NetworkRTCResolver::~NetworkRTCResolver()
-{
-    if (auto completionHandler = WTFMove(m_completionHandler))
-        completionHandler(makeUnexpected(Error::Unknown));
-}
+    void start(const String& address) final;
+    void stop() final;
 
-void NetworkRTCResolver::completed(const Vector<RTCNetwork::IPAddress>& addresses)
-{
-    if (auto completionHandler = WTFMove(m_completionHandler))
-        completionHandler({ addresses });
-}
+private:
+    RetainPtr<CFHostRef> m_host;
+};
 
 } // namespace WebKit
 

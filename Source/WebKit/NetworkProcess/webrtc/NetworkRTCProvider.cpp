@@ -42,6 +42,12 @@
 
 namespace WebKit {
 
+#if PLATFORM(COCOA)
+using NetworkRTCResolverPlatform = NetworkRTCResolverCocoa;
+#else
+using NetworkRTCResolverPlatform = NetworkRTCResolver;
+#endif
+
 static inline std::unique_ptr<rtc::Thread> createThread()
 {
     auto thread = rtc::Thread::CreateWithSocketServer();
@@ -164,7 +170,7 @@ void NetworkRTCProvider::didReceiveNetworkRTCSocketMessage(IPC::Connection& conn
 
 void NetworkRTCProvider::createResolver(uint64_t identifier, const String& address)
 {
-    auto resolver = std::make_unique<NetworkRTCResolver>([this, identifier](NetworkRTCResolver::AddressesOrError&& result) mutable {
+    auto resolver = std::make_unique<NetworkRTCResolverPlatform>([this, identifier](NetworkRTCResolver::AddressesOrError&& result) mutable {
         if (!result.has_value()) {
             if (result.error() != NetworkRTCResolver::Error::Cancelled)
                 m_connection->connection().send(Messages::WebRTCResolver::ResolvedAddressError(1), identifier);
