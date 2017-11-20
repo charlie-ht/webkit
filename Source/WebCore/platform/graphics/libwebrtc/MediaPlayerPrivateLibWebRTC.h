@@ -32,6 +32,8 @@
 #include "webrtc/media/base/videosinkinterface.h"
 #include "webrtc/media/engine/webrtcvideocapturer.h"
 
+#include <gst/gst.h>
+
 namespace WebCore {
 
 class MediaPlayerPrivateLibWebRTC : public MediaPlayerPrivateInterface, private MediaStreamPrivate::Observer, private MediaStreamTrackPrivate::Observer {
@@ -122,6 +124,7 @@ private:
     void trackSettingsChanged(MediaStreamTrackPrivate&) final { };
     void trackEnabledChanged(MediaStreamTrackPrivate&) final { };
     void sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample&) final;
+    void audioSamplesAvailable(MediaStreamTrackPrivate&, const MediaTime&, const PlatformAudioData&, const AudioStreamDescription&, size_t) final;
     void readyStateChanged(MediaStreamTrackPrivate&) final { };
 
     void repaint();
@@ -135,6 +138,8 @@ private:
     Lock m_bufferMutex;
     rtc::scoped_refptr<webrtc::I420BufferInterface> m_buffer;
     RunLoop::Timer<MediaPlayerPrivateLibWebRTC> m_drawTimer;
+    GRefPtr<GstElement> m_pipeline;
+    GRefPtr<GstElement> m_audioSource;
 };
 
 }

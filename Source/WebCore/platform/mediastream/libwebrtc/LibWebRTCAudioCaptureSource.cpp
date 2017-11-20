@@ -31,6 +31,11 @@
 
 #include "NotImplemented.h"
 #include <wtf/NeverDestroyed.h>
+#include "webrtc/AudioDataGStreamer.h"
+#include "webrtc/AudioStreamDescriptionGStreamer.h"
+
+#include <gst/gst.h>
+#include <gst/app/gstappsink.h>
 
 namespace WebCore {
 
@@ -47,10 +52,11 @@ static LibWebRTCAudioCaptureSourceFactory& libWebRTCAudioCaptureSourceFactory()
     return factory.get();
 }
 
-
 CaptureSourceOrError LibWebRTCAudioCaptureSource::create(const String& deviceID, const MediaConstraints* constraints)
 {
-    auto source = adoptRef(*new LibWebRTCAudioCaptureSource(deviceID));
+    auto tmp = new LibWebRTCAudioCaptureSource(deviceID);
+
+    auto source = adoptRef(*tmp);
 
     if (constraints) {
         auto result = source->applyConstraints(*constraints);
@@ -66,7 +72,8 @@ RealtimeMediaSource::AudioCaptureFactory& LibWebRTCAudioCaptureSource::factory()
 }
 
 LibWebRTCAudioCaptureSource::LibWebRTCAudioCaptureSource(const String& deviceID)
-    : RealtimeMediaSource(deviceID, RealtimeMediaSource::Type::Audio, deviceID)
+    : RealtimeMediaSource(deviceID, RealtimeMediaSource::Type::Audio, deviceID),
+    m_capturer(*new GStreamerAudioCapturer(deviceID))
 {
 }
 
@@ -76,12 +83,35 @@ LibWebRTCAudioCaptureSource::~LibWebRTCAudioCaptureSource()
 
 void LibWebRTCAudioCaptureSource::startProducingData()
 {
-    notImplemented();
+    webrtc::PeerConnectionFactoryInterface* peerConnectionFactory = LibWebRTCRealtimeMediaSourceCenter::singleton().factory();
+
+    // FIXME - This does not sound 100% right
+    m_audioTrack = peerConnectionFactory->CreateAudioTrack("audio",
+        peerConnectionFactory->CreateAudioSource(nullptr));
+
+    g_signal_connect(m_capturer.m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
+    m_capturer.play();
+}
+
+GstFlowReturn LibWebRTCAudioCaptureSource::newSampleCallback(GstElement* sink, LibWebRTCAudioCaptureSource* source)
+{
+    GRefPtr<GstSample> sample = adoptGRef(gst_app_sink_pull_sample(GST_APP_SINK(sink)));
+
+    // FIXME - figure out a way to avoid copying (on write) the data.
+    GstBuffer *buf = gst_sample_get_buffer (sample.get());
+    auto frames = new AudioDataGStreamer(sample.get());
+    auto streamDesc = new AudioStreamDescriptionGStreamer((GstAudioInfo) frames->m_AudioInfo);
+
+    source->audioSamplesAvailable(
+        MediaTime(GST_TIME_AS_USECONDS (GST_BUFFER_PTS (buf)), G_USEC_PER_SEC),
+        *frames, *streamDesc, gst_buffer_get_size (buf));
+
+    return GST_FLOW_OK;
 }
 
 void LibWebRTCAudioCaptureSource::stopProducingData()
 {
-    notImplemented();
+    m_capturer.stop();
 }
 
 const RealtimeMediaSourceCapabilities& LibWebRTCAudioCaptureSource::capabilities() const
@@ -117,7 +147,6 @@ const RealtimeMediaSourceSettings& LibWebRTCAudioCaptureSource::settings() const
     }
     return m_currentSettings.value();
 }
-
 } // namespace WebCore
 
 #endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
