@@ -35,6 +35,12 @@
 #include <wtf/RefCounted.h>
 #include <wtf/RefPtr.h>
 #include <wtf/text/WTFString.h>
+#include "GRefPtrGStreamer.h"
+#include "webrtc/GStreamerAudioCapturer.h"
+
+#include "LibWebRTCMacros.h"
+#include "webrtc/api/mediastreaminterface.h"
+#include "webrtc/modules/audio_device/include/audio_device_defines.h"
 
 namespace WTF {
 class MediaTime;
@@ -44,7 +50,6 @@ namespace WebCore {
 
 class LibWebRTCAudioCaptureSource final : public RealtimeMediaSource {
 public:
-
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
 
     WEBCORE_EXPORT static AudioCaptureFactory& factory();
@@ -66,6 +71,12 @@ private:
 
     mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
     mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
+
+    rtc::scoped_refptr<webrtc::AudioTrackInterface> m_audioTrack;
+    GStreamerAudioCapturer& m_capturer;
+
+    static GstFlowReturn newSampleCallback(GstElement*, LibWebRTCAudioCaptureSource*);
+    void triggerSampleAvailable(GstSample* sample);
 };
 
 } // namespace WebCore

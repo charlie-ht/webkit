@@ -17,18 +17,27 @@
  * Boston, MA 02110-1301, USA.
  */
 
+
 #include "config.h"
 
 #if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
 
+#include "webrtc/AudioDataGStreamer.h"
 #include "GraphicsContext.h"
 #include "LibWebRTCProvider.h"
 #include "LibWebRTCRealtimeMediaSourceCenter.h"
 #include "LibWebRTCVideoCaptureSource.h"
+#include "LibWebRTCAudioCaptureSource.h"
+#include "LibWebRTCAudioCaptureDeviceManager.h"
+#include "RealtimeOutgoingAudioSourceLibWebRTC.h"
 #include "MediaPlayerPrivateLibWebRTC.h"
 
 #include <cairo.h>
+#include <gst/app/gstappsrc.h>
+
 #include "libyuv/convert_argb.h"
+#include "webrtc/voice_engine/include/voe_base.h"
+#include "webrtc/modules/audio_device/include/audio_device.h"
 #include "webrtc/api/peerconnectioninterface.h"
 #include "webrtc/api/video/i420_buffer.h"
 #include "webrtc/media/engine/webrtcvideocapturerfactory.h"
@@ -93,9 +102,24 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
     m_mediaStreamPrivate = &stream;
     m_mediaStreamPrivate->addObserver(*this);
 
+    m_pipeline = gst_pipeline_new(nullptr);
     /* FIXME: Update the tracks. Set the networkState and the ReadyState */
-    for (auto& track : m_mediaStreamPrivate->tracks())
+    for (auto &track : m_mediaStreamPrivate->tracks())
+    {
         track->addObserver(*this);
+
+        if (track->type() == RealtimeMediaSource::Type::Audio)
+        {
+            // TODO - Add error handling and handle
+            // TODO - Handle video part too?
+            GstElement *audiobin = gst_parse_bin_from_description(
+                "appsrc is-live=true format=time name=audiosource ! audioconvert ! audioresample ! autoaudiosink", TRUE, NULL);
+            m_audioSource = gst_bin_get_by_name(GST_BIN(audiobin), "audiosource");
+
+            gst_bin_add(GST_BIN(m_pipeline.get()), audiobin);
+            gst_element_set_state(m_pipeline.get(), GST_STATE_PLAYING);
+        }
+    }
 }
 
 void MediaPlayerPrivateLibWebRTC::load(const String &)
@@ -122,6 +146,7 @@ void MediaPlayerPrivateLibWebRTC::prepareToPlay()
 
 void MediaPlayerPrivateLibWebRTC::play()
 {
+    GST_ERROR ("State PLAYING");
 }
 
 void MediaPlayerPrivateLibWebRTC::pause()
@@ -134,6 +159,9 @@ void MediaPlayerPrivateLibWebRTC::paint(GraphicsContext& context, const FloatRec
         return;
 
     if (!m_player->visible())
+        return;
+
+    if (!m_buffer)
         return;
 
     std::lock_guard<Lock> lock(m_bufferMutex);
@@ -169,6 +197,17 @@ void MediaPlayerPrivateLibWebRTC::repaint()
     m_player->repaint();
 }
 
+
+void MediaPlayerPrivateLibWebRTC::audioSamplesAvailable(MediaStreamTrackPrivate&,
+    const MediaTime&, const PlatformAudioData& audioData, const AudioStreamDescription&, size_t)
+{
+    if (!m_audioSource)
+        return;
+
+    auto gstdata = static_cast<const AudioDataGStreamer&>(audioData);
+    gst_app_src_push_sample (GST_APP_SRC(m_audioSource.get()), gstdata.getSample());
+}
+
 void MediaPlayerPrivateLibWebRTC::sampleBufferUpdated(MediaStreamTrackPrivate& privateTrack, MediaSample& sample)
 {
     std::lock_guard<Lock> lock(m_bufferMutex);
@@ -195,7 +234,8 @@ MediaStreamTrackPrivate* MediaPlayerPrivateLibWebRTC::getVideoTrack() const
 
     return nullptr;
 }
-
 }
 
 #endif // ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+
+

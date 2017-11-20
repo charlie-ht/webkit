@@ -35,6 +35,7 @@ struct PlatformDescription {
     enum {
         None,
         CAAudioStreamBasicType,
+        AudioStreamDescriptionGStreamer,
     } type;
     Variant<std::nullptr_t, const AudioStreamBasicDescription*> description;
 };
