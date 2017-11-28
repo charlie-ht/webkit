@@ -58,6 +58,8 @@ private:
     void startProducingData() final;
     void stopProducingData()  final;
 
+    void OnFrame(const webrtc::VideoFrame&) final { };
+
     const RealtimeMediaSourceCapabilities& capabilities() const final;
     const RealtimeMediaSourceSettings& settings() const final;
 

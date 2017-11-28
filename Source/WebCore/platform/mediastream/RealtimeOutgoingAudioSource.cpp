@@ -39,7 +39,7 @@ namespace WebCore {
 #if PLATFORM(GTK) || PLATFORM(WPE)
 Ref<RealtimeOutgoingAudioSource> RealtimeOutgoingAudioSource::create(Ref<MediaStreamTrackPrivate>&& audioSource)
 {
-    return RealtimeOutgoingAudioSource::create(WTFMove(audioSource));
+    return adoptRef(*new RealtimeOutgoingAudioSource(WTFMove(audioSource)));
 }
 #endif
 
