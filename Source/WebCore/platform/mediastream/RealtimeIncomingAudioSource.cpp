@@ -40,7 +40,7 @@ namespace WebCore {
 #if PLATFORM(GTK) || PLATFORM(WPE)
 Ref<RealtimeIncomingAudioSource> RealtimeIncomingAudioSource::create(rtc::scoped_refptr<webrtc::AudioTrackInterface>&& audioTrack, String&& audioTrackId)
 {
-    auto source = RealtimeIncomingAudioSource::create(WTFMove(audioTrack), WTFMove(audioTrackId));
+    auto source = adoptRef(*new RealtimeIncomingAudioSource(WTFMove(audioTrack), WTFMove(audioTrackId)));
     source->start();
     return WTFMove(source);
 }
