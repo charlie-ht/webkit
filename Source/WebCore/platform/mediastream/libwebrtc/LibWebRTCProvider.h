@@ -86,7 +86,7 @@ protected:
 
     bool m_enableEnumeratingAllNetworkInterfaces { false };
     // FIXME: Remove m_useNetworkThreadWithSocketServer member variable and make it a global.
-    bool m_useNetworkThreadWithSocketServer { true };
+    bool m_useNetworkThreadWithSocketServer { false };
 
     rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> m_factory;
 #endif

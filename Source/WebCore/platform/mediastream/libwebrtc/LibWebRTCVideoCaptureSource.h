@@ -37,7 +37,9 @@
 #include <wtf/RefPtr.h>
 #include <wtf/text/WTFString.h>
 
+#include "webrtc/api/mediastreaminterface.h"
 #include "webrtc/media/base/videocapturer.h"
+#include "webrtc/media/base/videosinkinterface.h"
 
 namespace WTF {
 class MediaTime;
@@ -45,7 +47,7 @@ class MediaTime;
 
 namespace WebCore {
 
-class LibWebRTCVideoCaptureSource final : public RealtimeMediaSource {
+class LibWebRTCVideoCaptureSource final : public RealtimeMediaSource, public rtc::VideoSinkInterface<webrtc::VideoFrame> {
 public:
 
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
@@ -68,9 +70,12 @@ private:
     const RealtimeMediaSourceCapabilities& capabilities() const final;
     const RealtimeMediaSourceSettings& settings() const final;
 
+    void OnFrame(const webrtc::VideoFrame& frame) override;
+
     std::unique_ptr<cricket::VideoCapturer> m_capturer;
     mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
     mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
+    rtc::scoped_refptr<webrtc::VideoTrackInterface> m_videoTrack;
 };
 
 } // namespace WebCore

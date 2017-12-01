@@ -128,7 +128,7 @@ private:
     int32_t StopRawOutputFileRecording() final { return shouldNotBeCalled(-1); }
     int32_t StartRawInputFileRecording(const char[webrtc::kAdmMaxFileNameSize]) final { return shouldNotBeCalled(-1); }
     int32_t StopRawInputFileRecording() final { return shouldNotBeCalled(-1); }
-    int32_t SetRecordingSampleRate(const uint32_t) final { return shouldNotBeCalled(-1); }
+    int32_t SetRecordingSampleRate(const uint32_t) final { return 0; }
     int32_t RecordingSampleRate(uint32_t*) const final { return shouldNotBeCalled(-1); }
     int32_t SetPlayoutSampleRate(const uint32_t) final { return shouldNotBeCalled(-1); }
     int32_t PlayoutSampleRate(uint32_t*) const final { return shouldNotBeCalled(-1); }
