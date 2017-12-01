@@ -31,6 +31,7 @@
 
 #include "LibWebRTCVideoCaptureDevice.h"
 #include <wtf/NeverDestroyed.h>
+#include <wtf/text/WTFString.h>
 
 #include "webrtc/media/engine/webrtcvideocapturerfactory.h"
 #include "webrtc/modules/video_capture/video_capture_factory.h"
@@ -68,7 +69,7 @@ void LibWebRTCVideoCaptureDeviceManager::getVideoCaptureDevices()
         char name[deviceNameLength] = {0};
         char id[deviceIdLength] = {0};
         if (deviceInfo->GetDeviceName(i, name, deviceNameLength, id, deviceIdLength) != -1) {
-            auto device = LibWebRTCVideoCaptureDevice::create(String(name));
+            auto device = LibWebRTCVideoCaptureDevice::create(String::fromUTF8(name));
             if (!device)
                 continue;
 
