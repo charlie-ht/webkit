@@ -24,6 +24,7 @@
 #include "BitmapImage.h"
 #include "LibWebRTCMacros.h"
 #include "MediaPlayerPrivate.h"
+#include "MediaSampleLibWebRTC.h"
 #include "MediaStreamPrivate.h"
 #include "MediaStreamTrackPrivate.h"
 
@@ -33,14 +34,12 @@
 
 namespace WebCore {
 
-class MediaPlayerPrivateLibWebRTC : public MediaPlayerPrivateInterface, public rtc::VideoSinkInterface<webrtc::VideoFrame>, private MediaStreamPrivate::Observer, private MediaStreamTrackPrivate::Observer {
+class MediaPlayerPrivateLibWebRTC : public MediaPlayerPrivateInterface, private MediaStreamPrivate::Observer, private MediaStreamTrackPrivate::Observer {
 public:
     explicit MediaPlayerPrivateLibWebRTC(MediaPlayer*);
     ~MediaPlayerPrivateLibWebRTC();
 
     static void registerMediaEngine(MediaEngineRegistrar);
-
-    void OnFrame(const webrtc::VideoFrame& frame) override;
 
 private:
     static void getSupportedTypes(HashSet<String, ASCIICaseInsensitiveHash>&);
@@ -122,7 +121,7 @@ private:
     void trackMutedChanged(MediaStreamTrackPrivate&) final { };
     void trackSettingsChanged(MediaStreamTrackPrivate&) final { };
     void trackEnabledChanged(MediaStreamTrackPrivate&) final { };
-    void sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample&) final { };
+    void sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample&) final;
     void readyStateChanged(MediaStreamTrackPrivate&) final { };
 
     void repaint();
@@ -133,9 +132,6 @@ private:
     MediaPlayer::NetworkState m_networkState;
 
     RefPtr<MediaStreamPrivate> m_mediaStreamPrivate;
-    rtc::scoped_refptr<webrtc::AudioTrackInterface> m_audioTrack;
-    rtc::scoped_refptr<webrtc::VideoTrackInterface> m_videoTrack;
-    rtc::scoped_refptr<webrtc::MediaStreamInterface> m_stream;
     Lock m_bufferMutex;
     rtc::scoped_refptr<webrtc::I420BufferInterface> m_buffer;
     RunLoop::Timer<MediaPlayerPrivateLibWebRTC> m_drawTimer;

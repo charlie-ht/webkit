@@ -34,7 +34,11 @@ namespace WebCore {
 
 webrtc::PeerConnectionFactoryInterface* LibWebRTCProviderGlib::factory()
 {
-    return LibWebRTCRealtimeMediaSourceCenter::singleton().factory();
+    if (m_factory)
+        return m_factory.get();
+
+    m_factory = LibWebRTCRealtimeMediaSourceCenter::singleton().factory();
+    return m_factory;
 }
 
 } // namespace WebCore

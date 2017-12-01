@@ -31,6 +31,7 @@
 
 #include "LibWebRTCProviderGlib.h"
 #include "LibWebRTCRealtimeMediaSourceCenter.h"
+#include "MediaSampleLibWebRTC.h"
 #include "NotImplemented.h"
 #include <WebCore/LibWebRTCMacros.h>
 #include <wtf/NeverDestroyed.h>
@@ -109,6 +110,8 @@ LibWebRTCVideoCaptureSource::LibWebRTCVideoCaptureSource(const String& deviceID)
 
 LibWebRTCVideoCaptureSource::~LibWebRTCVideoCaptureSource()
 {
+    if (m_videoTrack)
+        m_videoTrack->RemoveSink(this);
 }
 
 void LibWebRTCVideoCaptureSource::startProducingData()
@@ -117,7 +120,10 @@ void LibWebRTCVideoCaptureSource::startProducingData()
         return;
 
     // Make sure the factory it is initialized before calling from the thread.
-    LibWebRTCRealtimeMediaSourceCenter::singleton().factory();
+    webrtc::PeerConnectionFactoryInterface* peerConnectionFactory = LibWebRTCRealtimeMediaSourceCenter::singleton().factory();
+
+    m_videoTrack = peerConnectionFactory->CreateVideoTrack("video", peerConnectionFactory->CreateVideoSource(m_capturer.get(), nullptr));
+    m_videoTrack->AddOrUpdateSink(this, rtc::VideoSinkWants());
 
     LibWebRTCProvider::callOnWebRTCNetworkThread([protectedThis = makeRef(*this)]() {
             cricket::VideoFormatPod defaultFormat;
@@ -229,6 +235,11 @@ const RealtimeMediaSourceSettings& LibWebRTCVideoCaptureSource::settings() const
         m_currentSettings = WTFMove(settings);
     }
     return m_currentSettings.value();
+}
+
+void LibWebRTCVideoCaptureSource::OnFrame(const webrtc::VideoFrame& frame)
+{
+    videoSampleAvailable(MediaSampleLibWebRTC::create(frame, String()));
 }
 
 } // namespace WebCore

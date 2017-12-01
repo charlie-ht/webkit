@@ -46,8 +46,6 @@ MediaPlayerPrivateLibWebRTC::~MediaPlayerPrivateLibWebRTC()
 {
     m_mediaStreamPrivate->stopProducingData();
 
-    m_videoTrack->RemoveSink(this);
-
     m_drawTimer.stop();
 
     m_mediaStreamPrivate->removeObserver(*this);
@@ -92,30 +90,10 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
     m_mediaStreamPrivate = &stream;
     m_mediaStreamPrivate->addObserver(*this);
 
-    webrtc::PeerConnectionFactoryInterface* peerConnectionFactory = LibWebRTCRealtimeMediaSourceCenter::singleton().factory();
-    m_stream = peerConnectionFactory->CreateLocalMediaStream("stream");
-
-    for (auto& track : m_mediaStreamPrivate->tracks()) {
+    /* FIXME: Update the tracks. Set the networkState and the ReadyState */
+    for (auto& track : m_mediaStreamPrivate->tracks())
         track->addObserver(*this);
 
-        if (track->type() == RealtimeMediaSource::Type::Video) {
-            LibWebRTCVideoCaptureSource& source = static_cast<LibWebRTCVideoCaptureSource&>(track->source());
-
-            cricket::WebRtcVideoDeviceCapturerFactory factory;
-
-            m_videoTrack = peerConnectionFactory->CreateVideoTrack("video", peerConnectionFactory->CreateVideoSource(source.capturer(), nullptr));
-
-            m_videoTrack->AddOrUpdateSink(this, rtc::VideoSinkWants());
-
-            m_stream->AddTrack(m_videoTrack);
-        }
-
-        if (track->type() == RealtimeMediaSource::Type::Audio) {
-            m_audioTrack = peerConnectionFactory->CreateAudioTrack("audio", peerConnectionFactory->CreateAudioSource(nullptr));
-
-            m_stream->AddTrack(m_audioTrack);
-        }
-    }
 }
 
 void MediaPlayerPrivateLibWebRTC::load(const String &)
@@ -189,19 +167,21 @@ void MediaPlayerPrivateLibWebRTC::repaint()
     m_player->repaint();
 }
 
-void MediaPlayerPrivateLibWebRTC::OnFrame(const webrtc::VideoFrame& frame)
+void MediaPlayerPrivateLibWebRTC::sampleBufferUpdated(MediaStreamTrackPrivate& privateTrack, MediaSample& sample)
 {
-    if (!frame.video_frame_buffer())
-        return;
-
     std::lock_guard<Lock> lock(m_bufferMutex);
 
-    m_buffer = frame.video_frame_buffer()->ToI420();
-
-    if (frame.rotation() != webrtc::kVideoRotation_0)
-        m_buffer = webrtc::I420Buffer::Rotate(*m_buffer, frame.rotation());
-
-    m_drawTimer.startOneShot(0_s);
+    switch (privateTrack.type()) {
+    case RealtimeMediaSource::Type::None:
+        // Do nothing.
+        break;
+    case RealtimeMediaSource::Type::Audio:
+        break;
+    case RealtimeMediaSource::Type::Video:
+        m_buffer = static_cast<MediaSampleLibWebRTC*>(&sample)->getBuffer();
+        m_drawTimer.startOneShot(0_s);
+        break;
+    }
 }
 
 MediaStreamTrackPrivate* MediaPlayerPrivateLibWebRTC::getVideoTrack() const
@@ -209,7 +189,7 @@ MediaStreamTrackPrivate* MediaPlayerPrivateLibWebRTC::getVideoTrack() const
     // It assumes we just have 1 video for rendering.
     for (auto& track : m_mediaStreamPrivate->tracks())
         if (track->type() == RealtimeMediaSource::Type::Video)
-            return track.get();;
+            return track.get();
 
     return nullptr;
 }
