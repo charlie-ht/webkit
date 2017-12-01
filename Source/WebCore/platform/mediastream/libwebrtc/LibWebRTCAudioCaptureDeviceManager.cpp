@@ -31,6 +31,7 @@
 
 #include "LibWebRTCAudioCaptureDevice.h"
 #include <wtf/NeverDestroyed.h>
+#include <wtf/text/WTFString.h>
 
 namespace WebCore {
 
@@ -70,7 +71,7 @@ void LibWebRTCAudioCaptureDeviceManager::getAudioCaptureDevices()
         char id[idLenght] = {0};
         char guid[idLenght] = {0};
         if (m_audioDeviceModule->RecordingDeviceName(i, id, guid) != 1) {
-            auto device = LibWebRTCAudioCaptureDevice::create(String(id));
+            auto device = LibWebRTCAudioCaptureDevice::create(WTF::String::fromUTF8(id));
             if (!device)
                 continue;
 
