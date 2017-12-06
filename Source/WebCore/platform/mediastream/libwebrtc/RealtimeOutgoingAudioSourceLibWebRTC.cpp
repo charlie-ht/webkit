@@ -17,19 +17,27 @@
  * Boston, MA 02110-1301, USA.
  */
 
+#include "config.h"
 #if USE(LIBWEBRTC)
+
+#include "LibWebRTCAudioFormat.h"
 #include "webrtc/AudioDataGStreamer.h"
 #include "RealtimeOutgoingAudioSourceLibWebRTC.h"
-#include "config.h"
 
 namespace WebCore {
 
 RealtimeOutgoingAudioSourceLibWebRTC::RealtimeOutgoingAudioSourceLibWebRTC(Ref<MediaStreamTrackPrivate>&& audioSource)
     : RealtimeOutgoingAudioSource(WTFMove(audioSource)),
       m_inputStreamDescription(*new AudioStreamDescriptionGStreamer()),
-      m_outputStreamDescription(*new AudioStreamDescriptionGStreamer()),
-      m_Adapter(adoptGRef(gst_adapter_new()))
+      m_outputStreamDescription(*new AudioStreamDescriptionGStreamer())
 {
+      g_mutex_init(&m_adapterMutex);
+      m_Adapter = gst_adapter_new(),
+      m_sampleConverter = nullptr;
+}
+
+RealtimeOutgoingAudioSourceLibWebRTC::~RealtimeOutgoingAudioSourceLibWebRTC() {
+    g_mutex_clear(&m_adapterMutex);
 }
 
 Ref<RealtimeOutgoingAudioSource> RealtimeOutgoingAudioSource::create(Ref<MediaStreamTrackPrivate>&& audioSource)
@@ -45,12 +53,14 @@ void RealtimeOutgoingAudioSourceLibWebRTC::audioSamplesAvailable(const MediaTime
     auto data = static_cast<const AudioDataGStreamer&>(audioData);
     auto desc = static_cast<const AudioStreamDescriptionGStreamer&>(streamDescription);
 
-    // FIXME - Actually support audio format changes.
-    if (&m_inputStreamDescription != &desc && m_sampleConverter)
-        g_clear_pointer (&m_sampleConverter, NULL);
+    if (m_sampleConverter && !gst_audio_info_is_equal (&m_inputStreamDescription.m_Info, &desc.m_Info)) {
+        GST_ERROR_OBJECT(this, "FIXME - Audio format renegotiation is not possible yet!");
+        g_clear_pointer (&m_sampleConverter, gst_audio_converter_free);
+    }
 
     if (!m_sampleConverter) {
         m_inputStreamDescription = *new AudioStreamDescriptionGStreamer(&desc.m_Info);
+        m_outputStreamDescription = *new AudioStreamDescriptionGStreamer(&desc.m_Info);
 
         m_sampleConverter = gst_audio_converter_new (GST_AUDIO_CONVERTER_FLAG_IN_WRITABLE,
             &m_inputStreamDescription.m_Info,
@@ -58,7 +68,8 @@ void RealtimeOutgoingAudioSourceLibWebRTC::audioSamplesAvailable(const MediaTime
             NULL);
     }
 
-    fprintf(stderr, "Audio samples my friend!\n");
+    WTF::GMutexLocker<GMutex> lock(m_adapterMutex);
+    gst_adapter_push (m_Adapter.get(), gst_buffer_ref(gst_sample_get_buffer(data.getSample())));
     LibWebRTCProvider::callOnWebRTCSignalingThread([protectedThis = makeRef(*this)] {
         protectedThis->pullAudioData();
     });
@@ -76,7 +87,26 @@ void RealtimeOutgoingAudioSourceLibWebRTC::sendSilence()
 
 void RealtimeOutgoingAudioSourceLibWebRTC::pullAudioData()
 {
-    fprintf(stderr, "pullAudioData\n");
+    // libwebrtc expects 10 ms chunks.
+    size_t chunkSampleCount = m_outputStreamDescription.sampleRate() / 100;
+    size_t bufferSize = chunkSampleCount * LibWebRTCAudioFormat::sampleByteSize *
+        m_outputStreamDescription.numberOfChannels();
+
+    WTF::GMutexLocker<GMutex> lock(m_adapterMutex);
+    GstBuffer *buf = gst_adapter_get_buffer(m_Adapter.get(), bufferSize);
+    GstSample * sample = gst_sample_new (buf, m_outputStreamDescription.getCaps(),
+        NULL, NULL);
+    gst_buffer_unref (buf);
+
+    auto platform_data = static_cast<PlatformAudioData>(AudioDataGStreamer(sample));
+    for (auto sink : m_sinks) {
+        GST_ERROR_OBJECT (sink, "Sending data to sinks OnData.");
+        sink->OnData(&platform_data,
+            LibWebRTCAudioFormat::sampleSize,
+            m_outputStreamDescription.sampleRate(),
+            m_outputStreamDescription.numberOfChannels(),
+            chunkSampleCount);
+    }
 }
 
 bool RealtimeOutgoingAudioSourceLibWebRTC::isReachingBufferedAudioDataHighLimit()
