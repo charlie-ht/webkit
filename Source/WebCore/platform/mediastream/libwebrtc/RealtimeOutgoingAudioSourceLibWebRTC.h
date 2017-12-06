@@ -29,6 +29,8 @@
 #include "webrtc/api/mediastreaminterface.h"
 #include "webrtc/modules/audio_device/include/audio_device_defines.h"
 #include "webrtc/AudioStreamDescriptionGStreamer.h"
+
+#include <wtf/glib/GMutexLocker.h>
 #include <gst/audio/audio.h>
 
 namespace WebCore {
@@ -42,6 +44,7 @@ public:
 
 private:
     explicit RealtimeOutgoingAudioSourceLibWebRTC(Ref<MediaStreamTrackPrivate>&&);
+    ~RealtimeOutgoingAudioSourceLibWebRTC();
 
     void audioSamplesAvailable(const MediaTime&, const PlatformAudioData&, const AudioStreamDescription&, size_t) final;
 
@@ -58,6 +61,7 @@ private:
     AudioStreamDescriptionGStreamer& m_inputStreamDescription;
     AudioStreamDescriptionGStreamer& m_outputStreamDescription;
 
+    GMutex m_adapterMutex;
     GRefPtr<GstAdapter> m_Adapter;
 };
 

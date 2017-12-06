@@ -61,6 +61,7 @@ class AudioDataGStreamer: public PlatformAudioData
   private:
     Kind kind() const { return Kind::LibWebRTCAudioData; }
     GRefPtr<GstSample> m_sample;
+    GRefPtr<GstCaps> m_caps;
 };
 } // namespace WebCore
 
