@@ -93,7 +93,6 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
     /* FIXME: Update the tracks. Set the networkState and the ReadyState */
     for (auto& track : m_mediaStreamPrivate->tracks())
         track->addObserver(*this);
-
 }
 
 void MediaPlayerPrivateLibWebRTC::load(const String &)

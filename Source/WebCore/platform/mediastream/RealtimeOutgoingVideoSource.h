@@ -101,7 +101,7 @@ private:
     void trackMutedChanged(MediaStreamTrackPrivate&) final { sourceMutedChanged(); }
     void trackEnabledChanged(MediaStreamTrackPrivate&) final { sourceEnabledChanged(); }
     void trackSettingsChanged(MediaStreamTrackPrivate&) final { initializeFromSource(); }
-    void sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample&) override { }
+    void sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample&) override;
     void trackEnded(MediaStreamTrackPrivate&) final { }
 
     Ref<MediaStreamTrackPrivate> m_videoSource;

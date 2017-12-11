@@ -32,10 +32,12 @@
 #if USE(LIBWEBRTC)
 
 #include "Logging.h"
+#include "MediaSampleLibWebRTC.h"
 #include <webrtc/api/video/i420_buffer.h>
 #include <webrtc/common_video/libyuv/include/webrtc_libyuv.h>
 #include <wtf/CurrentTime.h>
 #include <wtf/MainThread.h>
+
 
 namespace WebCore {
 
@@ -188,6 +190,12 @@ void RealtimeOutgoingVideoSource::sendFrame(rtc::scoped_refptr<webrtc::VideoFram
     webrtc::VideoFrame frame(buffer, m_shouldApplyRotation ? webrtc::kVideoRotation_0 : m_currentRotation, timestampMicroSeconds);
     for (auto* sink : m_sinks)
         sink->OnFrame(frame);
+}
+
+void RealtimeOutgoingVideoSource::sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample& sample)
+{
+    rtc::scoped_refptr<webrtc::I420BufferInterface> newBuffer = static_cast<MediaSampleLibWebRTC*>(&sample)->getBuffer();
+    sendFrame(WTFMove(newBuffer));
 }
 
 } // namespace WebCore
