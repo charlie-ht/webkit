@@ -110,8 +110,10 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
 
         if (track->type() == RealtimeMediaSource::Type::Audio)
         {
-            // TODO - Add error handling and handle
-            // TODO - Handle video part too?
+            if (track->isCaptureTrack())
+                continue;
+
+            // TODO - Add error handling
             GstElement *audiobin = gst_parse_bin_from_description(
                 "appsrc is-live=true format=time name=audiosource ! audioconvert ! audioresample ! autoaudiosink", TRUE, NULL);
             m_audioSource = gst_bin_get_by_name(GST_BIN(audiobin), "audiosource");
