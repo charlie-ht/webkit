@@ -65,6 +65,8 @@ public:
     uint32_t sampleWordSize() const final { return GST_AUDIO_INFO_BPS (&m_Info); }
 
     bool operator==(const AudioStreamDescriptionGStreamer& other) { return gst_audio_info_is_equal (&m_Info, &other.m_Info); }
+    bool operator!=(const AudioStreamDescriptionGStreamer& other) { return !operator == (other); }
+
     GstCaps *getCaps() {return m_Caps.get(); }
 
     GstAudioInfo m_Info;
