@@ -25,6 +25,7 @@
 
 #include "GStreamerAudioCapturer.h"
 #include <gst/app/gstappsink.h>
+#include "GStreamerUtilities.h"
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 namespace WebCore {
@@ -32,6 +33,8 @@ namespace WebCore {
 GRefPtr<GstDeviceMonitor> GStreamerAudioCapturer::s_deviceMonitor = nullptr;
 GStreamerAudioCapturer::GStreamerAudioCapturer(const String& deviceID) {
     if (!s_deviceMonitor) {
+        initializeGStreamer ();
+
         s_deviceMonitor = gst_device_monitor_new ();
 
         gst_device_monitor_add_filter (s_deviceMonitor.get(), "Audio/Source", NULL);

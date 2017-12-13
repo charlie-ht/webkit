@@ -41,6 +41,7 @@
 #include "webrtc/api/peerconnectioninterface.h"
 #include "webrtc/api/video/i420_buffer.h"
 #include "webrtc/media/engine/webrtcvideocapturerfactory.h"
+#include "GStreamerUtilities.h"
 
 namespace WebCore {
 
@@ -49,6 +50,7 @@ MediaPlayerPrivateLibWebRTC::MediaPlayerPrivateLibWebRTC(MediaPlayer* player)
     , m_networkState(MediaPlayer::Empty)
     , m_drawTimer(RunLoop::main(), this, &MediaPlayerPrivateLibWebRTC::repaint)
 {
+    initializeGStreamer ();
 }
 
 MediaPlayerPrivateLibWebRTC::~MediaPlayerPrivateLibWebRTC()
