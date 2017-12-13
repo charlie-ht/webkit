@@ -33,6 +33,7 @@
 #include "webrtc/media/engine/webrtcvideocapturer.h"
 
 #include <gst/gst.h>
+#include <gst/audio/streamvolume.h>
 
 namespace WebCore {
 
@@ -81,10 +82,10 @@ private:
     void setPreservesPitch(bool) final { }
     bool paused() const final { return false; }
 
-    void setVolumeDouble(double) final { }
+    void setVolumeDouble(double volume) final;
 
     bool supportsMuting() const final { return false; }
-    void setMuted(bool) final { }
+    void setMuted(bool) final;
 
     bool hasClosedCaptions() const final { return false; }
     void setClosedCaptionsVisible(bool) final { };
@@ -120,7 +121,7 @@ private:
     // MediaStreamPrivateTrack::Observer
     void trackStarted(MediaStreamTrackPrivate&) final { };
     void trackEnded(MediaStreamTrackPrivate&) final { };
-    void trackMutedChanged(MediaStreamTrackPrivate&) final { };
+    void trackMutedChanged(MediaStreamTrackPrivate&) final;
     void trackSettingsChanged(MediaStreamTrackPrivate&) final { };
     void trackEnabledChanged(MediaStreamTrackPrivate&) final { };
     void sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample&) final;
@@ -140,6 +141,7 @@ private:
     RunLoop::Timer<MediaPlayerPrivateLibWebRTC> m_drawTimer;
     GRefPtr<GstElement> m_pipeline;
     GRefPtr<GstElement> m_audioSource;
+    GRefPtr<GstStreamVolume> m_volume;
 };
 
 }
