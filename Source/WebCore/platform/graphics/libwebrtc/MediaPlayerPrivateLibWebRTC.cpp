@@ -80,6 +80,9 @@ FloatSize MediaPlayerPrivateLibWebRTC::naturalSize() const
 {
     int width, height;
     MediaStreamTrackPrivate* videoTrack = getVideoTrack();
+    if (!videoTrack)
+        return FloatSize();
+
     LibWebRTCVideoCaptureSource& source = static_cast<LibWebRTCVideoCaptureSource&>(videoTrack->source());
     source.capturer()->GetInputSize(&width, &height);
     return FloatSize(width, height);
