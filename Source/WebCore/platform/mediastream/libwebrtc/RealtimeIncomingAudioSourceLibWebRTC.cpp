@@ -69,20 +69,8 @@ void RealtimeIncomingAudioSourceLibWebRTC::OnData(const void* audioData, int bit
 
     auto mediaTime  = MediaTime((m_numberOfFrames * G_USEC_PER_SEC) / sampleRate, G_USEC_PER_SEC);
 
-    GST_ERROR("%" GST_PTR_FORMAT
-            " - bbs: %d"
-            " - sample-rate: %d "
-            " - nchannels: %d "
-            " - numberOfFrames: %d",
-            gst_audio_info_to_caps(&info),
-            bitsPerSample,
-            (int) sampleRate,
-            (int) numberOfChannels,
-            numberOfFrames);
-
     m_numberOfFrames += numberOfFrames;
 
-    GST_MEMDUMP ("Available data: ", (const guint8*) audioData, 30);
     audioSamplesAvailable(mediaTime, data, AudioStreamDescriptionGStreamer(info),
         numberOfFrames);
 }

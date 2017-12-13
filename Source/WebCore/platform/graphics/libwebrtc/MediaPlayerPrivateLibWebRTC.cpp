@@ -112,15 +112,15 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
 
         if (track->type() == RealtimeMediaSource::Type::Audio)
         {
-            if (track->isCaptureTrack())
-                continue;
-
             // TODO - Add error handling
             GstElement *audiobin = gst_parse_bin_from_description(
-                "appsrc is-live=true format=time name=audiosource ! audioconvert ! audioresample ! autoaudiosink", TRUE, NULL);
+                "appsrc is-live=true format=time name=audiosource ! playsink flags=audio+soft-volume name=sink",
+                TRUE, NULL);
             m_audioSource = gst_bin_get_by_name(GST_BIN(audiobin), "audiosource");
+            m_volume = GST_STREAM_VOLUME (gst_bin_get_by_name(GST_BIN(audiobin), "sink"));
 
             gst_bin_add(GST_BIN(m_pipeline.get()), audiobin);
+            gst_stream_volume_set_mute (m_volume.get(), m_player->muted());
             gst_element_set_state(m_pipeline.get(), GST_STATE_PLAYING);
         }
     }
@@ -146,6 +146,11 @@ void MediaPlayerPrivateLibWebRTC::cancelLoad()
 
 void MediaPlayerPrivateLibWebRTC::prepareToPlay()
 {
+}
+
+void MediaPlayerPrivateLibWebRTC::setMuted(bool muted)
+{
+    gst_stream_volume_set_mute (m_volume.get(), muted);
 }
 
 void MediaPlayerPrivateLibWebRTC::play()
@@ -210,6 +215,17 @@ void MediaPlayerPrivateLibWebRTC::audioSamplesAvailable(MediaStreamTrackPrivate&
 
     auto gstdata = static_cast<const AudioDataGStreamer&>(audioData);
     gst_app_src_push_sample (GST_APP_SRC(m_audioSource.get()), gstdata.getSample());
+}
+
+void MediaPlayerPrivateLibWebRTC::setVolumeDouble(double volume)
+{
+    gst_stream_volume_set_volume (m_volume.get(),
+        (GstStreamVolumeFormat) GST_STREAM_VOLUME_FORMAT_LINEAR, volume);
+}
+
+void MediaPlayerPrivateLibWebRTC::trackMutedChanged(MediaStreamTrackPrivate& track)
+{
+    gst_stream_volume_set_mute (m_volume.get(), track.muted());
 }
 
 void MediaPlayerPrivateLibWebRTC::sampleBufferUpdated(MediaStreamTrackPrivate& privateTrack, MediaSample& sample)
