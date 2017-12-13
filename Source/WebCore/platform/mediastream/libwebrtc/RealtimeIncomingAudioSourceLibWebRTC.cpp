@@ -64,7 +64,6 @@ void RealtimeIncomingAudioSourceLibWebRTC::OnData(const void* audioData, int bit
         LibWebRTCAudioFormat::sampleSize,
         LibWebRTCAudioFormat::sampleSize);
 
-
     gst_audio_info_set_format (&info, format, sampleRate, numberOfChannels, NULL);
     auto data = AudioDataGStreamer(audioData, numberOfFrames, numberOfChannels, sampleRate);
 

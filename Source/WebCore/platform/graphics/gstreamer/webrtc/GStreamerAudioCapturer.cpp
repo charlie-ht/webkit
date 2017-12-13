@@ -44,7 +44,9 @@ GStreamerAudioCapturer::GStreamerAudioCapturer(const String& deviceID) {
     for (GList *tmp = devices; tmp; tmp = tmp->next) {
         GstDevice * device = GST_DEVICE (tmp->data);
 
-        String display_name = gst_device_get_display_name (device);
+        String display_name = String::fromUTF8(gst_device_get_display_name (device));
+        // HACK- libwebrtc adds 'default: ' before the default device
+        // name.
         String default_name = String("default: ");
         default_name.append(display_name);
 
