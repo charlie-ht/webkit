@@ -31,7 +31,12 @@
 namespace WebCore {
 
 GRefPtr<GstDeviceMonitor> GStreamerAudioCapturer::s_deviceMonitor = nullptr;
-GStreamerAudioCapturer::GStreamerAudioCapturer(const String& deviceID) {
+GStreamerAudioCapturer::GStreamerAudioCapturer(const String& deviceID)
+    : m_deviceID(deviceID)
+{
+}
+
+void GStreamerAudioCapturer::start() {
     if (!s_deviceMonitor) {
         initializeGStreamer ();
 
@@ -50,7 +55,7 @@ GStreamerAudioCapturer::GStreamerAudioCapturer(const String& deviceID) {
         String default_name = String("default: ");
         default_name.append(display_name);
 
-        if (deviceID == display_name || deviceID == default_name) {
+        if (m_deviceID == display_name || m_deviceID == default_name) {
             m_device = (GstDevice*) gst_object_ref (device);
             break;
         }
