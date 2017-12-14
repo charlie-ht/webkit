@@ -40,12 +40,14 @@ namespace WebCore {
 class GStreamerAudioCapturer {
 public:
     GStreamerAudioCapturer(const String& deviceID);
+    void start();
     void play();
     void stop();
 
     GRefPtr<GstElement> m_sink;
 
 private:
+    const String m_deviceID;
     GRefPtr<GstElement> m_pipeline;
     GRefPtr<GstDevice> m_device;
     static GRefPtr<GstDeviceMonitor> s_deviceMonitor;
