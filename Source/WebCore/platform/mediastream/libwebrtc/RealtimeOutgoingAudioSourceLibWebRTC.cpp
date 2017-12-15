@@ -99,7 +99,31 @@ void RealtimeOutgoingAudioSourceLibWebRTC::handleMutedIfNeeded()
 
 void RealtimeOutgoingAudioSourceLibWebRTC::sendSilence()
 {
-    fprintf(stderr, "sendSilence\n");
+    LibWebRTCProvider::callOnWebRTCSignalingThread([ this, protectedThis = makeRef(*this) ] {
+        GstMapInfo outmap;
+
+        size_t outChunkSampleCount = m_outputStreamDescription.sampleRate() / 100;
+        size_t outBufferSize = outChunkSampleCount * m_outputStreamDescription.m_Info.bpf;
+
+        if (!outBufferSize)
+            return;
+
+        GstBuffer *outbuf = gst_buffer_new_allocate(NULL, outBufferSize, 0);
+
+        gst_buffer_map(outbuf, &outmap, (GstMapFlags)GST_MAP_WRITE);
+        gst_audio_format_fill_silence(m_outputStreamDescription.m_Info.finfo,
+            outmap.data, outBufferSize);
+
+        for (auto sink : m_sinks)
+            sink->OnData(outmap.data,
+                LibWebRTCAudioFormat::sampleSize,
+                m_outputStreamDescription.sampleRate(),
+                m_outputStreamDescription.numberOfChannels(),
+                outChunkSampleCount);
+
+        gst_buffer_unmap(outbuf, &outmap);
+        gst_buffer_unref (outbuf);
+    });
 }
 
 void RealtimeOutgoingAudioSourceLibWebRTC::pullAudioData()
