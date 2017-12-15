@@ -105,7 +105,7 @@ GstFlowReturn LibWebRTCAudioCaptureSource::newSampleCallback(GstElement* sink, L
 
     source->audioSamplesAvailable(
         MediaTime(GST_TIME_AS_USECONDS (GST_BUFFER_PTS (buf)), G_USEC_PER_SEC),
-        *frames, *streamDesc, gst_buffer_get_size (buf));
+        *frames, *streamDesc, gst_buffer_get_size (buf) / frames->m_AudioInfo.bpf);
 
     return GST_FLOW_OK;
 }

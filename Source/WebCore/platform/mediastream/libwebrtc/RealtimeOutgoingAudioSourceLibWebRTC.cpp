@@ -124,31 +124,20 @@ void RealtimeOutgoingAudioSourceLibWebRTC::pullAudioData()
     gpointer out[1] = { outmap.data };
 
     gst_audio_converter_samples (m_sampleConverter,
-        (GstAudioConverterFlags) GST_AUDIO_CONVERTER_FLAG_IN_WRITABLE,
-        in, inChunkSampleCount,
+        (GstAudioConverterFlags) 0, in, inChunkSampleCount,
         out, outChunkSampleCount);
 
     gst_buffer_unmap (inbuf, &inmap);
     gst_buffer_unref (inbuf);
-    gst_buffer_unmap (outbuf, &outmap);
-
-    GstSample * sample = gst_sample_new (outbuf, m_outputStreamDescription.getCaps(),
-        NULL, NULL);
-    gst_buffer_unref (outbuf);
-
-    GST_ERROR ("Pusing sample: %" GST_PTR_FORMAT, m_outputStreamDescription.getCaps());
-
-    auto platform_data = static_cast<PlatformAudioData>(AudioDataGStreamer(sample));
-
-    GST_ERROR ("onData for the win: %" GST_PTR_FORMAT, m_outputStreamDescription.getCaps());
     for (auto sink : m_sinks) {
-        GST_ERROR_OBJECT (sink, "Sending data to sinks OnData.");
-        sink->OnData(&platform_data,
+        sink->OnData(outmap.data,
             m_outputStreamDescription.sampleWordSize(),
             (int) m_outputStreamDescription.sampleRate(),
             (int) m_outputStreamDescription.numberOfChannels(),
             outChunkSampleCount);
     }
+    gst_buffer_unmap (outbuf, &outmap);
+    gst_buffer_unref (outbuf);
 
 }
 
