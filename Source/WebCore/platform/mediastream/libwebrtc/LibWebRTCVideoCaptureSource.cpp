@@ -49,20 +49,6 @@ const static int defaultWidth = 640;
 const static int defaultHeight = 480;
 const static int defaultFramerate = 30;
 
-class LibWebRTCVideoCaptureSourceFactory : public RealtimeMediaSource::VideoCaptureFactory {
-public:
-    CaptureSourceOrError createVideoCaptureSource(const String& deviceID, const MediaConstraints* constraints) final {
-        return LibWebRTCVideoCaptureSource::create(deviceID, constraints);
-    }
-};
-
-static LibWebRTCVideoCaptureSourceFactory& libWebRTCVideoCaptureSourceFactory()
-{
-    static NeverDestroyed<LibWebRTCVideoCaptureSourceFactory> factory;
-    return factory.get();
-}
-
-
 CaptureSourceOrError LibWebRTCVideoCaptureSource::create(const String& deviceID, const MediaConstraints* constraints)
 {
     auto source = adoptRef(*new LibWebRTCVideoCaptureSource(deviceID));
@@ -73,11 +59,6 @@ CaptureSourceOrError LibWebRTCVideoCaptureSource::create(const String& deviceID,
             return WTFMove(result.value().first);
     }
     return CaptureSourceOrError(WTFMove(source));
-}
-
-RealtimeMediaSource::VideoCaptureFactory& LibWebRTCVideoCaptureSource::factory()
-{
-    return libWebRTCVideoCaptureSourceFactory();
 }
 
 LibWebRTCVideoCaptureSource::LibWebRTCVideoCaptureSource(const String& deviceID)

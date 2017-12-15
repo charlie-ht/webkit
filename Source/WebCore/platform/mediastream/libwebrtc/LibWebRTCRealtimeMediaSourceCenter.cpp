@@ -42,6 +42,26 @@
 
 namespace WebCore {
 
+class VideoCaptureSourceFactoryLibWebRTC final : public RealtimeMediaSource::VideoCaptureFactory
+{
+public:
+    CaptureSourceOrError createVideoCaptureSource(const CaptureDevice& device, const MediaConstraints* constraints) final
+    {
+        return LibWebRTCVideoCaptureSource::create(device.persistentId(), constraints);
+    }
+};
+
+RealtimeMediaSource::VideoCaptureFactory& LibWebRTCRealtimeMediaSourceCenter::videoCaptureSourceFactory()
+{
+    static NeverDestroyed<VideoCaptureSourceFactoryLibWebRTC> factory;
+    return factory.get();
+}
+
+RealtimeMediaSource::AudioCaptureFactory& LibWebRTCRealtimeMediaSourceCenter::audioCaptureSourceFactory()
+{
+    return LibWebRTCRealtimeMediaSourceCenter::singleton().audioFactory();
+}
+
 LibWebRTCRealtimeMediaSourceCenter& LibWebRTCRealtimeMediaSourceCenter::singleton()
 {
     ASSERT(isMainThread());
@@ -57,32 +77,31 @@ RealtimeMediaSourceCenter& RealtimeMediaSourceCenter::platformCenter()
 LibWebRTCRealtimeMediaSourceCenter::LibWebRTCRealtimeMediaSourceCenter()
     : m_libWebRTCProvider(makeUniqueRef<LibWebRTCProvider>())
 {
-    m_supportedConstraints.setSupportsSampleRate(false);
-    m_supportedConstraints.setSupportsSampleSize(false);
-    m_supportedConstraints.setSupportsEchoCancellation(false);
-    m_supportedConstraints.setSupportsGroupId(false);
 }
 
 LibWebRTCRealtimeMediaSourceCenter::~LibWebRTCRealtimeMediaSourceCenter()
 {
 }
 
-RealtimeMediaSource::AudioCaptureFactory& LibWebRTCRealtimeMediaSourceCenter::defaultAudioFactory()
+RealtimeMediaSource::AudioCaptureFactory& LibWebRTCRealtimeMediaSourceCenter::audioFactory()
 {
+    if (m_audioFactoryOverride)
+        return *m_audioFactoryOverride;
+
     return LibWebRTCAudioCaptureSource::factory();
 }
 
-RealtimeMediaSource::VideoCaptureFactory& LibWebRTCRealtimeMediaSourceCenter::defaultVideoFactory()
+RealtimeMediaSource::VideoCaptureFactory& LibWebRTCRealtimeMediaSourceCenter::videoFactory()
 {
-    return LibWebRTCVideoCaptureSource::factory();
+    return videoCaptureSourceFactory();
 }
 
-CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::defaultAudioCaptureDeviceManager()
+CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::audioCaptureDeviceManager()
 {
     return LibWebRTCAudioCaptureDeviceManager::singleton();
 }
 
-CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::defaultVideoCaptureDeviceManager()
+CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::videoCaptureDeviceManager()
 {
     return LibWebRTCVideoCaptureDeviceManager::singleton();
 }

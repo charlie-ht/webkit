@@ -36,8 +36,8 @@ namespace WebCore {
 
 class LibWebRTCAudioCaptureSourceFactory : public RealtimeMediaSource::AudioCaptureFactory {
 public:
-    CaptureSourceOrError createAudioCaptureSource(const String& deviceID, const MediaConstraints* constraints) final {
-        return LibWebRTCAudioCaptureSource::create(deviceID, constraints);
+    CaptureSourceOrError createAudioCaptureSource(const CaptureDevice& device, const MediaConstraints* constraints) final {
+        return LibWebRTCAudioCaptureSource::create(device.persistentId(), constraints);
     }
 };
 

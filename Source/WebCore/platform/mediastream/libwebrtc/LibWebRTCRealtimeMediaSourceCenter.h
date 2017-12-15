@@ -50,17 +50,24 @@ public:
 
     webrtc::PeerConnectionFactoryInterface* factory() { return m_libWebRTCProvider->factory(); }
 
+    static RealtimeMediaSource::VideoCaptureFactory& videoCaptureSourceFactory();
+    static RealtimeMediaSource::AudioCaptureFactory& audioCaptureSourceFactory();
+
 private:
     friend class NeverDestroyed<LibWebRTCRealtimeMediaSourceCenter>;
     LibWebRTCRealtimeMediaSourceCenter();
     ~LibWebRTCRealtimeMediaSourceCenter();
 
-    RealtimeMediaSource::AudioCaptureFactory& defaultAudioFactory() final;
-    RealtimeMediaSource::VideoCaptureFactory& defaultVideoFactory() final;
+    void setAudioFactory(RealtimeMediaSource::AudioCaptureFactory& factory) final { m_audioFactoryOverride = &factory; }
+    void unsetAudioFactory(RealtimeMediaSource::AudioCaptureFactory&) final { m_audioFactoryOverride = nullptr; }
 
-    CaptureDeviceManager& defaultAudioCaptureDeviceManager() final;
-    CaptureDeviceManager& defaultVideoCaptureDeviceManager() final;
+    RealtimeMediaSource::AudioCaptureFactory& audioFactory() final;
+    RealtimeMediaSource::VideoCaptureFactory& videoFactory() final;
 
+    CaptureDeviceManager& audioCaptureDeviceManager() final;
+    CaptureDeviceManager& videoCaptureDeviceManager() final;
+
+    RealtimeMediaSource::AudioCaptureFactory* m_audioFactoryOverride { nullptr };
     UniqueRef<LibWebRTCProvider> m_libWebRTCProvider;
 };
 
