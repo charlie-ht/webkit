@@ -52,8 +52,6 @@ public:
 
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
 
-    WEBCORE_EXPORT static VideoCaptureFactory& factory();
-
     cricket::VideoCapturer* capturer() { return m_capturer.get(); }
 
 private:

@@ -57,7 +57,6 @@
 #include <wtf/MainThread.h>
 
 namespace WebCore {
-using namespace PAL;
 
 LibWebRTCMediaEndpoint::LibWebRTCMediaEndpoint(LibWebRTCPeerConnectionBackend& peerConnection, LibWebRTCProvider& client)
     : m_peerConnectionBackend(peerConnection)
