@@ -28,7 +28,6 @@
 #include "LibWebRTCRealtimeMediaSourceCenter.h"
 #include "LibWebRTCVideoCaptureSource.h"
 #include "LibWebRTCAudioCaptureSource.h"
-#include "LibWebRTCAudioCaptureDeviceManager.h"
 #include "RealtimeOutgoingAudioSourceLibWebRTC.h"
 #include "MediaPlayerPrivateLibWebRTC.h"
 
