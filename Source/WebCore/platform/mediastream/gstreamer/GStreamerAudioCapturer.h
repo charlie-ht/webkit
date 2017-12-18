@@ -44,11 +44,15 @@ public:
     void start();
     void play();
     void stop();
+    bool setSampleRate(int sampleRate);
 
     GRefPtr<GstElement> m_sink;
+    GRefPtr<GstElement> m_capsfilter;
+    GStreamerCaptureDevice m_device;
 
 private:
-    GStreamerCaptureDevice m_device;
+    GRefPtr<GstCaps> m_caps;
+
     GRefPtr<GstElement> m_pipeline;
     static GRefPtr<GstDeviceMonitor> s_deviceMonitor;
 };

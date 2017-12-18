@@ -33,6 +33,7 @@ namespace WebCore {
 GStreamerAudioCapturer::GStreamerAudioCapturer(GStreamerCaptureDevice device)
     : m_device(device)
 {
+    m_caps = adoptGRef(gst_caps_new_empty_simple("audio/x-raw"));
 }
 
 void GStreamerAudioCapturer::start() {
@@ -41,12 +42,25 @@ void GStreamerAudioCapturer::start() {
     GRefPtr<GstElement> source = m_device.gstSourceElement();
     GRefPtr<GstElement> converter = gst_parse_bin_from_description ("audioconvert ! audioresample",
         TRUE, NULL); // FIXME Handle errors.
+    GRefPtr<GstElement> m_capsfilter = gst_element_factory_make ("capsfilter", nullptr);
     m_sink = gst_element_factory_make ("appsink", NULL);
+
     gst_app_sink_set_emit_signals(GST_APP_SINK (m_sink.get()), TRUE);
+    g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
+
 
     gst_bin_add_many (GST_BIN (m_pipeline.get()), source.get(), converter.get(),
-        m_sink.get(), NULL);
-    gst_element_link_many (source.get(), converter.get(), m_sink.get(), NULL);
+        m_capsfilter.get(), m_sink.get(), NULL);
+    gst_element_link_many (source.get(), converter.get(), m_capsfilter.get(), m_sink.get(), NULL);
+}
+
+bool GStreamerAudioCapturer::setSampleRate(int sampleRate)
+{
+    m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", "rate",
+        G_TYPE_INT, sampleRate, nullptr));
+
+    if (m_capsfilter.get())
+        g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
 }
 
 void GStreamerAudioCapturer::play() {

@@ -122,14 +122,35 @@ void LibWebRTCAudioCaptureSource::stopProducingData()
 const RealtimeMediaSourceCapabilities& LibWebRTCAudioCaptureSource::capabilities() const
 {
     if (!m_capabilities) {
+        GRefPtr<GstCaps> caps = m_capturer.m_device.caps();
+        gint min_samplerate = 0, max_samplerate = 0;
+        guint i;
+
+        for (i = 0; i < gst_caps_get_size (caps.get()); i++) {
+            GstStructure * str = gst_caps_get_structure (caps.get(), i);
+
+            if (gst_structure_has_name (str, "audio/x-raw")) {
+                g_assert (gst_structure_get (str, "rate",
+                    GST_TYPE_INT_RANGE, &min_samplerate, &max_samplerate,
+                    nullptr));
+
+                break;
+            }
+        }
+
         RealtimeMediaSourceCapabilities capabilities(settings().supportedConstraints());
         capabilities.setDeviceId(id());
         capabilities.setEchoCancellation(RealtimeMediaSourceCapabilities::EchoCancellation::ReadWrite);
         capabilities.setVolume(CapabilityValueOrRange(0.0, 1.0));
-        capabilities.setSampleRate(CapabilityValueOrRange(8000, 96000));
+        capabilities.setSampleRate(CapabilityValueOrRange(min_samplerate, max_samplerate));
         m_capabilities = WTFMove(capabilities);
     }
     return m_capabilities.value();
+}
+
+bool LibWebRTCAudioCaptureSource::applySampleRate(int sampleRate)
+{
+    m_capturer.setSampleRate(sampleRate);
 }
 
 const RealtimeMediaSourceSettings& LibWebRTCAudioCaptureSource::settings() const
