@@ -42,7 +42,7 @@ public:
 
     WEBCORE_EXPORT AudioStreamDescriptionGStreamer() {
         gst_audio_info_init (&m_Info);
-        m_Caps = gst_audio_info_to_caps (&m_Info);
+        m_Caps = nullptr;
     }
 
     WEBCORE_EXPORT ~AudioStreamDescriptionGStreamer() {};
