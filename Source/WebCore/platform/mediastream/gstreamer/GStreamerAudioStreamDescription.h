@@ -28,27 +28,27 @@
 
 namespace WebCore {
 
-class AudioStreamDescriptionGStreamer final: public AudioStreamDescription {
+class GStreamerAudioStreamDescription final: public AudioStreamDescription {
 public:
-    WEBCORE_EXPORT AudioStreamDescriptionGStreamer(GstAudioInfo info):
+    WEBCORE_EXPORT GStreamerAudioStreamDescription(GstAudioInfo info):
         m_Info(info) {
         m_Caps = gst_audio_info_to_caps (&m_Info);
     }
 
-    WEBCORE_EXPORT AudioStreamDescriptionGStreamer(GstAudioInfo *info):
+    WEBCORE_EXPORT GStreamerAudioStreamDescription(GstAudioInfo *info):
         m_Info(*info) {
         m_Caps = gst_audio_info_to_caps (&m_Info);
     }
 
-    WEBCORE_EXPORT AudioStreamDescriptionGStreamer() {
+    WEBCORE_EXPORT GStreamerAudioStreamDescription() {
         gst_audio_info_init (&m_Info);
         m_Caps = nullptr;
     }
 
-    WEBCORE_EXPORT ~AudioStreamDescriptionGStreamer() {};
+    WEBCORE_EXPORT ~GStreamerAudioStreamDescription() {};
 
     const PlatformDescription& platformDescription() const {
-        return { PlatformDescription::AudioStreamDescriptionGStreamer, nullptr };
+        return { PlatformDescription::GStreamerAudioStreamDescription, nullptr };
     }
 
     WEBCORE_EXPORT PCMFormat format() const final { return Int16; } // FIXME
@@ -64,8 +64,8 @@ public:
     uint32_t numberOfChannels() const final { return GST_AUDIO_INFO_CHANNELS (&m_Info); }
     uint32_t sampleWordSize() const final { return GST_AUDIO_INFO_BPS (&m_Info); }
 
-    bool operator==(const AudioStreamDescriptionGStreamer& other) { return gst_audio_info_is_equal (&m_Info, &other.m_Info); }
-    bool operator!=(const AudioStreamDescriptionGStreamer& other) { return !operator == (other); }
+    bool operator==(const GStreamerAudioStreamDescription& other) { return gst_audio_info_is_equal (&m_Info, &other.m_Info); }
+    bool operator!=(const GStreamerAudioStreamDescription& other) { return !operator == (other); }
 
     GstCaps *getCaps() {return m_Caps.get(); }
 

@@ -36,7 +36,7 @@
 #include <wtf/RefPtr.h>
 #include <wtf/text/WTFString.h>
 #include "GRefPtrGStreamer.h"
-#include "webrtc/GStreamerAudioCapturer.h"
+#include "gstreamer/GStreamerAudioCapturer.h"
 
 #include "LibWebRTCMacros.h"
 #include "webrtc/api/mediastreaminterface.h"

@@ -22,7 +22,7 @@
 
 #if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
 
-#include "webrtc/AudioDataGStreamer.h"
+#include "gstreamer/GStreamerAudioData.h"
 #include "GraphicsContext.h"
 #include "LibWebRTCProvider.h"
 #include "LibWebRTCRealtimeMediaSourceCenter.h"
@@ -213,7 +213,7 @@ void MediaPlayerPrivateLibWebRTC::audioSamplesAvailable(MediaStreamTrackPrivate&
     if (!m_audioSource)
         return;
 
-    auto gstdata = static_cast<const AudioDataGStreamer&>(audioData);
+    auto gstdata = static_cast<const GStreamerAudioData&>(audioData);
     gst_app_src_push_sample (GST_APP_SRC(m_audioSource.get()), gstdata.getSample());
 }
 

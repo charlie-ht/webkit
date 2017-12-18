@@ -28,8 +28,8 @@
 #include "config.h"
 #include "RealtimeIncomingAudioSourceLibWebRTC.h"
 #include "LibWebRTCAudioFormat.h"
-#include "webrtc/AudioDataGStreamer.h"
-#include "webrtc/AudioStreamDescriptionGStreamer.h"
+#include "gstreamer/GStreamerAudioData.h"
+#include "gstreamer/GStreamerAudioStreamDescription.h"
 
 #include <gst/gst.h>
 #include <gst/audio/audio.h>
@@ -65,13 +65,13 @@ void RealtimeIncomingAudioSourceLibWebRTC::OnData(const void* audioData, int bit
         LibWebRTCAudioFormat::sampleSize);
 
     gst_audio_info_set_format (&info, format, sampleRate, numberOfChannels, NULL);
-    auto data = AudioDataGStreamer(audioData, numberOfFrames, numberOfChannels, sampleRate);
+    auto data = GStreamerAudioData(audioData, numberOfFrames, numberOfChannels, sampleRate);
 
     auto mediaTime  = MediaTime((m_numberOfFrames * G_USEC_PER_SEC) / sampleRate, G_USEC_PER_SEC);
 
     m_numberOfFrames += numberOfFrames;
 
-    audioSamplesAvailable(mediaTime, data, AudioStreamDescriptionGStreamer(info),
+    audioSamplesAvailable(mediaTime, data, GStreamerAudioStreamDescription(info),
         numberOfFrames);
 }
 }

@@ -31,8 +31,8 @@
 
 #include "NotImplemented.h"
 #include <wtf/NeverDestroyed.h>
-#include "webrtc/AudioDataGStreamer.h"
-#include "webrtc/AudioStreamDescriptionGStreamer.h"
+#include "gstreamer/GStreamerAudioData.h"
+#include "gstreamer/GStreamerAudioStreamDescription.h"
 
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
@@ -54,9 +54,7 @@ static LibWebRTCAudioCaptureSourceFactory& libWebRTCAudioCaptureSourceFactory()
 
 CaptureSourceOrError LibWebRTCAudioCaptureSource::create(const String& deviceID, const MediaConstraints* constraints)
 {
-    auto tmp = new LibWebRTCAudioCaptureSource(deviceID);
-
-    auto source = adoptRef(*tmp);
+    auto source = adoptRef(*new LibWebRTCAudioCaptureSource(deviceID));
 
     if (constraints) {
         auto result = source->applyConstraints(*constraints);
@@ -100,8 +98,8 @@ GstFlowReturn LibWebRTCAudioCaptureSource::newSampleCallback(GstElement* sink, L
 
     // FIXME - figure out a way to avoid copying (on write) the data.
     GstBuffer *buf = gst_sample_get_buffer (sample.get());
-    auto frames = new AudioDataGStreamer(sample.get());
-    auto streamDesc = new AudioStreamDescriptionGStreamer((GstAudioInfo) frames->m_AudioInfo);
+    auto frames = new GStreamerAudioData(sample.get());
+    auto streamDesc = new GStreamerAudioStreamDescription((GstAudioInfo) frames->m_AudioInfo);
 
     source->audioSamplesAvailable(
         MediaTime(GST_TIME_AS_USECONDS (GST_BUFFER_PTS (buf)), G_USEC_PER_SEC),
