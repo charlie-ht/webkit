@@ -26,10 +26,10 @@
 #include "GRefPtrGStreamer.h"
 
 namespace WebCore {
-class AudioDataGStreamer: public PlatformAudioData
+class GStreamerAudioData: public PlatformAudioData
 {
   public:
-    AudioDataGStreamer(GstSample *sample) {
+    GStreamerAudioData(GstSample *sample) {
 
         gst_audio_info_from_caps (&m_AudioInfo,
           gst_sample_get_caps (sample));
@@ -37,7 +37,7 @@ class AudioDataGStreamer: public PlatformAudioData
         m_sample = adoptGRef(sample);
     }
 
-    AudioDataGStreamer(const void *audio_data,
+    GStreamerAudioData(const void *audio_data,
                        const size_t number_of_frames,
                        const size_t number_of_channels,
                        const uint32_t sample_rate)

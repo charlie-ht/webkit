@@ -34,7 +34,8 @@ if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
         platform/graphics/gstreamer/mse/SourceBufferPrivateGStreamer.cpp
         platform/graphics/gstreamer/mse/WebKitMediaSourceGStreamer.cpp
 
-        platform/graphics/gstreamer/webrtc/GStreamerAudioCapturer.cpp
+        platform/mediastream/gstreamer/GStreamerAudioCapturer.cpp
+
     )
 
     list(APPEND WebCore_SYSTEM_INCLUDE_DIRECTORIES

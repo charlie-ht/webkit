@@ -28,7 +28,7 @@
 #include "LibWebRTCProvider.h"
 #include "webrtc/api/mediastreaminterface.h"
 #include "webrtc/modules/audio_device/include/audio_device_defines.h"
-#include "webrtc/AudioStreamDescriptionGStreamer.h"
+#include "gstreamer/GStreamerAudioStreamDescription.h"
 
 #include <wtf/glib/GMutexLocker.h>
 #include <gst/audio/audio.h>
@@ -57,9 +57,9 @@ private:
     void handleMutedIfNeeded() final;
     void sendSilence() final;
 
-    GstAudioConverter * m_sampleConverter; 
-    AudioStreamDescriptionGStreamer& m_inputStreamDescription;
-    AudioStreamDescriptionGStreamer& m_outputStreamDescription;
+    GstAudioConverter * m_sampleConverter;
+    GStreamerAudioStreamDescription& m_inputStreamDescription;
+    GStreamerAudioStreamDescription& m_outputStreamDescription;
 
     GMutex m_adapterMutex;
     GRefPtr<GstAdapter> m_Adapter;
