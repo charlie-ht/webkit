@@ -37,6 +37,7 @@
 #include <wtf/text/WTFString.h>
 #include "GRefPtrGStreamer.h"
 #include "gstreamer/GStreamerAudioCapturer.h"
+#include "gstreamer/GStreamerCaptureDevice.h"
 
 #include "LibWebRTCMacros.h"
 #include "webrtc/api/mediastreaminterface.h"
@@ -55,7 +56,7 @@ public:
     WEBCORE_EXPORT static AudioCaptureFactory& factory();
 
 private:
-    LibWebRTCAudioCaptureSource(const String& deviceID);
+    LibWebRTCAudioCaptureSource(GStreamerCaptureDevice device);
     virtual ~LibWebRTCAudioCaptureSource();
 
     friend class LibWebRTCAudioCaptureSourceFactory;

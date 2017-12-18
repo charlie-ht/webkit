@@ -30,51 +30,23 @@
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 namespace WebCore {
 
-GRefPtr<GstDeviceMonitor> GStreamerAudioCapturer::s_deviceMonitor = nullptr;
-GStreamerAudioCapturer::GStreamerAudioCapturer(const String& deviceID)
-    : m_deviceID(deviceID)
+GStreamerAudioCapturer::GStreamerAudioCapturer(GStreamerCaptureDevice device)
+    : m_device(device)
 {
 }
 
 void GStreamerAudioCapturer::start() {
-    if (!s_deviceMonitor) {
-        initializeGStreamer ();
+    m_pipeline = gst_element_factory_make ("pipeline", NULL);
 
-        s_deviceMonitor = gst_device_monitor_new ();
+    GRefPtr<GstElement> source = m_device.gstSourceElement();
+    GRefPtr<GstElement> converter = gst_parse_bin_from_description ("audioconvert ! audioresample",
+        TRUE, NULL); // FIXME Handle errors.
+    m_sink = gst_element_factory_make ("appsink", NULL);
+    gst_app_sink_set_emit_signals(GST_APP_SINK (m_sink.get()), TRUE);
 
-        gst_device_monitor_add_filter (s_deviceMonitor.get(), "Audio/Source", NULL);
-    }
-
-    GList *devices = gst_device_monitor_get_devices (s_deviceMonitor.get());
-    for (GList *tmp = devices; tmp; tmp = tmp->next) {
-        GstDevice * device = GST_DEVICE (tmp->data);
-
-        String display_name = String::fromUTF8(gst_device_get_display_name (device));
-        // HACK- libwebrtc adds 'default: ' before the default device
-        // name.
-        String default_name = String("default: ");
-        default_name.append(display_name);
-
-        if (m_deviceID == display_name || m_deviceID == default_name) {
-            m_device = (GstDevice*) gst_object_ref (device);
-            break;
-        }
-    }
-
-    if (m_device) {
-        m_pipeline = gst_element_factory_make ("pipeline", NULL);
-        GRefPtr<GstElement> source = gst_device_create_element (m_device.get(), NULL);
-        GRefPtr<GstElement> converter = gst_parse_bin_from_description ("audioconvert ! audioresample",
-            TRUE, NULL); // FIXME Handle errors.
-        m_sink = gst_element_factory_make ("appsink", NULL);
-        gst_app_sink_set_emit_signals(GST_APP_SINK (m_sink.get()), TRUE);
-
-        gst_bin_add_many (GST_BIN (m_pipeline.get()), source.get(), converter.get(),
-            m_sink.get(), NULL);
-        gst_element_link_many (source.get(), converter.get(), m_sink.get(), NULL);
-    }
-
-    g_list_free_full (devices, gst_object_unref);
+    gst_bin_add_many (GST_BIN (m_pipeline.get()), source.get(), converter.get(),
+        m_sink.get(), NULL);
+    gst_element_link_many (source.get(), converter.get(), m_sink.get(), NULL);
 }
 
 void GStreamerAudioCapturer::play() {

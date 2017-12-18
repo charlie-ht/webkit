@@ -33,8 +33,8 @@
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
 
-#include "LibWebRTCAudioCaptureDeviceManager.h"
-#include "LibWebRTCAudioCaptureSource.h"
+#include "gstreamer/GStreamerCaptureDeviceManager.h"
+#include "gstreamer/GStreamerCaptureDevice.h"
 #include "LibWebRTCVideoCaptureSource.h"
 #include "LibWebRTCRealtimeMediaSourceCenter.h"
 #include "LibWebRTCVideoCaptureDeviceManager.h"
@@ -98,7 +98,7 @@ RealtimeMediaSource::VideoCaptureFactory& LibWebRTCRealtimeMediaSourceCenter::vi
 
 CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::audioCaptureDeviceManager()
 {
-    return LibWebRTCAudioCaptureDeviceManager::singleton();
+    return GStreamerAudioCaptureDeviceManager::singleton();
 }
 
 CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::videoCaptureDeviceManager()

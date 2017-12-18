@@ -33,6 +33,7 @@
 #include <wtf/NeverDestroyed.h>
 #include "gstreamer/GStreamerAudioData.h"
 #include "gstreamer/GStreamerAudioStreamDescription.h"
+#include "gstreamer/GStreamerCaptureDeviceManager.h"
 
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
@@ -54,7 +55,12 @@ static LibWebRTCAudioCaptureSourceFactory& libWebRTCAudioCaptureSourceFactory()
 
 CaptureSourceOrError LibWebRTCAudioCaptureSource::create(const String& deviceID, const MediaConstraints* constraints)
 {
-    auto source = adoptRef(*new LibWebRTCAudioCaptureSource(deviceID));
+    auto device = GStreamerAudioCaptureDeviceManager::singleton().gstreamerDeviceWithUID(deviceID);
+    if (!device)
+        return { };
+
+    auto source = adoptRef(*new LibWebRTCAudioCaptureSource(
+        static_cast<GStreamerCaptureDevice>(device.value())));
 
     if (constraints) {
         auto result = source->applyConstraints(*constraints);
@@ -69,9 +75,9 @@ RealtimeMediaSource::AudioCaptureFactory& LibWebRTCAudioCaptureSource::factory()
     return libWebRTCAudioCaptureSourceFactory();
 }
 
-LibWebRTCAudioCaptureSource::LibWebRTCAudioCaptureSource(const String& deviceID)
-    : RealtimeMediaSource(deviceID, RealtimeMediaSource::Type::Audio, deviceID),
-    m_capturer(*new GStreamerAudioCapturer(deviceID))
+LibWebRTCAudioCaptureSource::LibWebRTCAudioCaptureSource(GStreamerCaptureDevice device)
+    : RealtimeMediaSource(device.persistentId(), RealtimeMediaSource::Type::Audio, device.persistentId()),
+    m_capturer(*new GStreamerAudioCapturer(device))
 {
 }
 
