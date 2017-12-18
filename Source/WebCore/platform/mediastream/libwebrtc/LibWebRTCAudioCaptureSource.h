@@ -61,6 +61,7 @@ private:
 
     friend class LibWebRTCAudioCaptureSourceFactory;
 
+    bool applySampleRate(int) final;
     bool isCaptureSource() const final { return true; }
     void startProducingData() final;
     void stopProducingData() final;
