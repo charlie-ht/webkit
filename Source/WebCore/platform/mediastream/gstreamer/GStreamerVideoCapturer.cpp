@@ -23,41 +23,62 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "GStreamerAudioCapturer.h"
+#include "GStreamerVideoCapturer.h"
 #include <gst/app/gstappsink.h>
 #include "GStreamerUtilities.h"
 
+
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#define VIDEO_FORMAT "BGRx"
+#else
+#define VIDEO_FORMAT "xRGB"
+#endif
+
 namespace WebCore {
 
-GStreamerAudioCapturer::GStreamerAudioCapturer(GStreamerCaptureDevice device)
-    : GStreamerCapturer(device, adoptGRef(gst_caps_new_empty_simple("audio/x-raw")))
+GStreamerVideoCapturer::GStreamerVideoCapturer(GStreamerCaptureDevice device)
+    : GStreamerCapturer(device, adoptGRef(gst_caps_new_empty_simple("video/x-raw")))
 {
-    m_caps = adoptGRef(gst_caps_new_empty_simple("audio/x-raw"));
+    m_caps = adoptGRef(gst_caps_new_simple("video/x-raw", 
+        "format", G_TYPE_STRING, VIDEO_FORMAT, nullptr));
 }
 
-void GStreamerAudioCapturer::setupPipeline() {
+void GStreamerVideoCapturer::setupPipeline() {
     m_pipeline = gst_element_factory_make ("pipeline", NULL);
 
     GRefPtr<GstElement> source = m_device.gstSourceElement();
-    GRefPtr<GstElement> converter = gst_parse_bin_from_description ("audioconvert ! audioresample",
+    GRefPtr<GstElement> converter = gst_parse_bin_from_description ("videoscale ! videoconvert",
         TRUE, NULL); // FIXME Handle errors.
     GRefPtr<GstElement> m_capsfilter = gst_element_factory_make ("capsfilter", nullptr);
     m_sink = gst_element_factory_make ("appsink", NULL);
 
     gst_app_sink_set_emit_signals(GST_APP_SINK (m_sink.get()), TRUE);
-    g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
-
 
     gst_bin_add_many (GST_BIN (m_pipeline.get()), source.get(), converter.get(),
         m_capsfilter.get(), m_sink.get(), NULL);
     gst_element_link_many (source.get(), converter.get(), m_capsfilter.get(), m_sink.get(), NULL);
+    g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
+    GST_ERROR ("Pipeline set!");
+
+    GStreamerCapturer::setupPipeline();
 }
 
-bool GStreamerAudioCapturer::setSampleRate(int sampleRate)
+GstVideoInfo GStreamerVideoCapturer::GetBestFormat()
 {
-    m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", "rate",
-        G_TYPE_INT, sampleRate, nullptr));
+    GstCaps *caps = gst_caps_fixate(m_device.caps());
+    GstVideoInfo info;
+    gst_video_info_from_caps (&info, caps);
+    gst_caps_unref (caps);
+
+    return info;
+}
+
+bool GStreamerVideoCapturer::setSize(int width, int height)
+{
+    gst_caps_set_simple (m_caps.get(), "width", G_TYPE_INT, width, "height",
+        G_TYPE_INT, height, nullptr);
 
     if (m_capsfilter.get())
         g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);

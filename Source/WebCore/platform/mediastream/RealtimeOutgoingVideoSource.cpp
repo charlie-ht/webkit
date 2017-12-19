@@ -41,13 +41,6 @@
 
 namespace WebCore {
 
-#if PLATFORM(GTK) || PLATFORM(WPE)
-Ref<RealtimeOutgoingVideoSource> RealtimeOutgoingVideoSource::create(Ref<MediaStreamTrackPrivate>&& videoSource)
-{
-    return adoptRef(*new RealtimeOutgoingVideoSource(WTFMove(videoSource)));
-}
-#endif
-
 RealtimeOutgoingVideoSource::RealtimeOutgoingVideoSource(Ref<MediaStreamTrackPrivate>&& videoSource)
     : m_videoSource(WTFMove(videoSource))
     , m_blackFrameTimer(*this, &RealtimeOutgoingVideoSource::sendOneBlackFrame)

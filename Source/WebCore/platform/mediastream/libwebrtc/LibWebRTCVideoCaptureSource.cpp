@@ -24,10 +24,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
 #include "LibWebRTCVideoCaptureSource.h"
+#include "config.h"
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+
+#include "GStreamerMediaSample.h"
+#include <gst/app/gstappsink.h>
 
 #include "LibWebRTCProviderGlib.h"
 #include "LibWebRTCRealtimeMediaSourceCenter.h"
@@ -51,7 +54,12 @@ const static int defaultFramerate = 30;
 
 CaptureSourceOrError LibWebRTCVideoCaptureSource::create(const String& deviceID, const MediaConstraints* constraints)
 {
-    auto source = adoptRef(*new LibWebRTCVideoCaptureSource(deviceID));
+    auto device = GStreamerVideoCaptureDeviceManager::singleton().gstreamerDeviceWithUID(deviceID);
+    if (!device)
+        return {};
+
+    auto source = adoptRef(*new LibWebRTCVideoCaptureSource(
+        static_cast<GStreamerCaptureDevice>(device.value())));
 
     if (constraints) {
         auto result = source->applyConstraints(*constraints);
@@ -61,132 +69,132 @@ CaptureSourceOrError LibWebRTCVideoCaptureSource::create(const String& deviceID,
     return CaptureSourceOrError(WTFMove(source));
 }
 
-LibWebRTCVideoCaptureSource::LibWebRTCVideoCaptureSource(const String& deviceID)
-    : RealtimeMediaSource(deviceID, RealtimeMediaSource::Type::Video, deviceID)
+LibWebRTCVideoCaptureSource::LibWebRTCVideoCaptureSource(GStreamerCaptureDevice device)
+    : RealtimeMediaSource(device.persistentId(), RealtimeMediaSource::Type::Video, device.persistentId())
+    , m_capturer(*new GStreamerVideoCapturer(device))
 {
-    cricket::WebRtcVideoDeviceCapturerFactory factory;
-    std::string deviceName = std::string(deviceID.ascii().data(), deviceID.ascii().length());
-
-    std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo> deviceInfo(webrtc::VideoCaptureFactory::CreateDeviceInfo());
-
-    if (!deviceInfo)
-        return;
-
-    int numberOfDevices = deviceInfo->NumberOfDevices();
-    std::string deviceId;
-    for (int i = 0; i < numberOfDevices; ++i) {
-        const uint32_t deviceNameLength = 256;
-        const uint32_t deviceIdLength = 256;
-        char name[deviceNameLength] = {0};
-        char id[deviceIdLength] = {0};
-        if (deviceInfo->GetDeviceName(i, name, deviceNameLength, id, deviceIdLength) != -1) {
-            if (deviceName == reinterpret_cast<char*>(name))
-                deviceId = std::string(id);
-        }
-    }
-
-    cricket::Device device = cricket::Device(deviceName, deviceId);
-    m_capturer = factory.Create(device);
 }
 
 LibWebRTCVideoCaptureSource::~LibWebRTCVideoCaptureSource()
 {
-    if (m_videoTrack)
-        m_videoTrack->RemoveSink(this);
+    // if (m_videoTrack)
+    //     m_videoTrack->RemoveSink(this);
+}
+
+void LibWebRTCVideoCaptureSource::GetInputSize(int* width, int* height)
+{
+    GstVideoInfo info = m_capturer.GetBestFormat();
+
+    *width = info.width;
+    *height = info.height;
 }
 
 void LibWebRTCVideoCaptureSource::startProducingData()
 {
-    if (!m_capturer)
-        return;
+    const auto& tmpsettings = settings();
 
-    // Make sure the factory it is initialized before calling from the thread.
-    webrtc::PeerConnectionFactoryInterface* peerConnectionFactory = LibWebRTCRealtimeMediaSourceCenter::singleton().factory();
+    m_capturer.setSize(tmpsettings.width(), tmpsettings.height());
+    m_capturer.setupPipeline();
+    g_signal_connect(m_capturer.m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
+    m_capturer.play();
+}
 
-    m_videoTrack = peerConnectionFactory->CreateVideoTrack("video", peerConnectionFactory->CreateVideoSource(m_capturer.get(), nullptr));
-    m_videoTrack->AddOrUpdateSink(this, rtc::VideoSinkWants());
-
-    LibWebRTCProvider::callOnWebRTCNetworkThread([protectedThis = makeRef(*this)]() {
-            cricket::VideoFormatPod defaultFormat;
-            defaultFormat.width = protectedThis->size().width();
-            defaultFormat.height = protectedThis->size().height();
-            defaultFormat.interval = cricket::VideoFormat::FpsToInterval(protectedThis->frameRate());
-            defaultFormat.fourcc = cricket::FOURCC_ANY;
-            cricket::VideoFormat desiredFormat = cricket::VideoFormat(defaultFormat);
-            cricket::VideoFormat bestFormat;
-            if (!protectedThis->m_capturer->GetBestCaptureFormat(desiredFormat, &bestFormat))
-                return;
-
-            protectedThis->m_currentSettings->setWidth(bestFormat.width);
-            protectedThis->m_currentSettings->setHeight(bestFormat.height);
-            protectedThis->m_currentSettings->setFrameRate(bestFormat.framerate());
-            protectedThis->m_currentSettings->setAspectRatio((float)bestFormat.width / (float)bestFormat.height);
-
-            protectedThis->m_capturer->Start(bestFormat);
-        });
+GstFlowReturn LibWebRTCVideoCaptureSource::newSampleCallback(GstElement* sink, LibWebRTCVideoCaptureSource* source)
+{
+    // FIXME - Check how presentationSize is supposed to be used here.
+    source->videoSampleAvailable(GStreamerMediaSample::create(gst_app_sink_pull_sample(GST_APP_SINK(sink)),
+        WebCore::FloatSize(), String()));
 }
 
 void LibWebRTCVideoCaptureSource::stopProducingData()
 {
-    if (!m_capturer)
-        return;
-
-    LibWebRTCProvider::callOnWebRTCNetworkThread([protectedThis = makeRef(*this)]() {
-            protectedThis->m_capturer->Stop();
-        });
+    m_capturer.stop();
 }
 
 const RealtimeMediaSourceCapabilities& LibWebRTCVideoCaptureSource::capabilities() const
 {
     if (!m_capabilities) {
         RealtimeMediaSourceCapabilities capabilities(settings().supportedConstraints());
+
+        GRefPtr<GstCaps> caps = m_capturer.m_device.caps();
         capabilities.setDeviceId(id());
 
-        std::unique_ptr<webrtc::VideoCaptureModule::DeviceInfo> deviceInfo(webrtc::VideoCaptureFactory::CreateDeviceInfo());
-        if (deviceInfo) {
-            std::string uniqueId = m_capturer->GetId();
-            int32_t numberOfCapabilities = deviceInfo->NumberOfCapabilities(uniqueId.c_str());
-            int32_t minWidth, minHeight, minFramerate = 0;
-            float minAspectRatio = 0.0;
-            int32_t maxWidth, maxHeight, maxFramerate = 0;
-            float maxAspectRatio = 0.0;
-            for (int i = 0; i < numberOfCapabilities; ++i) {
-                webrtc::VideoCaptureCapability capability;
-                deviceInfo->GetCapability(uniqueId.c_str(), i, capability);
-                float capabilityAspectRatio = (float)capability.width / (float)capability.height;
-                if (i == 0) {
-                    minWidth = maxWidth = capability.width;
-                    minHeight = maxHeight = capability.height;
-                    minFramerate = maxFramerate = capability.maxFPS;
-                    minAspectRatio = maxAspectRatio = capabilityAspectRatio;
-                } else {
-                    if (capability.width < minWidth)
-                        minWidth = capability.width;
-                    if (capability.width > maxWidth)
-                        maxWidth = capability.width;
-                    if (capability.height < minHeight)
-                        minHeight = capability.height;
-                    if (capability.height > maxHeight)
-                        maxHeight = capability.height;
-                    if (capability.maxFPS < minFramerate)
-                        minFramerate = capability.maxFPS;
-                    if (capability.maxFPS > maxFramerate)
-                        maxFramerate = capability.maxFPS;
-                    if (capabilityAspectRatio < minAspectRatio)
-                        minAspectRatio = capabilityAspectRatio;
-                    if (capabilityAspectRatio > maxAspectRatio)
-                        maxAspectRatio = capabilityAspectRatio;
+        int32_t minWidth = G_MAXINT32, minHeight = G_MAXINT32, minFramerate = G_MAXINT32;
+        int32_t maxWidth = G_MININT32, maxHeight = G_MININT32, maxFramerate = G_MININT32;
+
+        // float minAspectRatio = G_MAXFLOAT;
+        // float maxAspectRatio = G_MINFLOAT;
+
+        for (guint i = 0; i < gst_caps_get_size(caps.get()); i++) {
+            GstStructure* str = gst_caps_get_structure(caps.get(), i);
+
+            // Only accept raw video for now.
+            if (!gst_structure_has_name(str, "video/x-raw"))
+                continue;
+
+            int32_t tmpMinWidth, tmpMinHeight, tmpMinFPS_n, tmpMinFPS_d, tmpMinFramerate;
+            float tmpMinAspectRatio = 0.0;
+            int32_t tmpMaxWidth, tmpMaxHeight, tmpMaxFPS_n, tmpMaxFPS_d, tmpMaxFramerate;
+            // float tmpMaxAspectRatio = 0.0;
+
+            if (!gst_structure_get(str,
+                    "width", GST_TYPE_INT_RANGE, &tmpMinWidth, &tmpMaxWidth,
+                    "height", GST_TYPE_INT_RANGE, &tmpMinHeight, &tmpMaxHeight, nullptr)) {
+
+                g_assert(gst_structure_get(str,
+                    "width", G_TYPE_INT, &tmpMinWidth,
+                    "height", G_TYPE_INT, &tmpMinHeight, nullptr));
+                tmpMaxWidth = tmpMinWidth;
+                tmpMaxHeight = tmpMinHeight;
+            }
+
+            if (gst_structure_get(str,
+                    "framerate", GST_TYPE_FRACTION_RANGE,
+                    &tmpMinFPS_n, &tmpMinFPS_d,
+                    &tmpMaxFPS_n, &tmpMaxFPS_d, nullptr)) {
+                tmpMinFramerate = (int)(tmpMinFPS_n / tmpMinFPS_d);
+                tmpMaxFramerate = (int)(tmpMaxFPS_n / tmpMaxFPS_d);
+            } else if (gst_structure_get(str,
+                           "framerate", GST_TYPE_FRACTION, &tmpMinFPS_n, &tmpMinFPS_d, nullptr)) {
+                tmpMaxFPS_n = tmpMinFPS_n;
+                tmpMaxFPS_d = tmpMinFPS_d;
+                tmpMinFramerate = (int)(tmpMinFPS_n / tmpMinFPS_d);
+                tmpMaxFramerate = (int)(tmpMaxFPS_n / tmpMaxFPS_d);
+            } else {
+                GValueArray* array;
+                tmpMinFramerate = G_MAXINT;
+                tmpMaxFramerate = 0;
+
+                g_assert(gst_structure_get_list(str, "framerate", &array));
+                for (guint i = 0; i < array->n_values; i++) {
+                    GValue* val = &array->values[i];
+
+                    g_assert(G_VALUE_TYPE(val) == GST_TYPE_FRACTION);
+                    gint framerate = (int)(gst_value_get_fraction_numerator(val) / gst_value_get_fraction_denominator(val));
+
+                    tmpMinFramerate = MIN(tmpMinFramerate, framerate);
+                    tmpMaxFramerate = MAX(tmpMaxFramerate, framerate);
                 }
             }
 
-            m_currentSettings->setWidth(maxWidth);
-            m_currentSettings->setHeight(maxHeight);
+            minWidth = MIN(tmpMinWidth, minWidth);
+            minHeight = MIN(tmpMinHeight, minHeight);
+            minFramerate = MIN(tmpMinFramerate, minFramerate);
+            // minAspectRatio = MIN(tmpMinAspectRatio, minAspectRatio);
+
+            maxWidth = MAX(tmpMaxWidth, maxWidth);
+            maxHeight = MAX(tmpMaxHeight, maxHeight);
+            maxFramerate = MAX(tmpMaxFramerate, maxFramerate);
+            // maxAspectRatio = MAX (tmpMaxAspectRatio, maxAspectRatio);
+
+            m_currentSettings->setWidth(minWidth);
+            m_currentSettings->setHeight(minHeight);
             m_currentSettings->setFrameRate(maxFramerate);
-            m_currentSettings->setAspectRatio(maxAspectRatio);
+            // m_currentSettings->setAspectRatio(maxAspectRatio);
 
             capabilities.setWidth(CapabilityValueOrRange(minWidth, maxWidth));
             capabilities.setHeight(CapabilityValueOrRange(minHeight, maxHeight));
-            capabilities.setAspectRatio(CapabilityValueOrRange(minAspectRatio, maxAspectRatio));
+            // capabilities.setAspectRatio(CapabilityValueOrRange(minAspectRatio, maxAspectRatio));
             capabilities.setFrameRate(CapabilityValueOrRange(minFramerate, maxFramerate));
             m_capabilities = WTFMove(capabilities);
         }
@@ -216,11 +224,6 @@ const RealtimeMediaSourceSettings& LibWebRTCVideoCaptureSource::settings() const
         m_currentSettings = WTFMove(settings);
     }
     return m_currentSettings.value();
-}
-
-void LibWebRTCVideoCaptureSource::OnFrame(const webrtc::VideoFrame& frame)
-{
-    videoSampleAvailable(MediaSampleLibWebRTC::create(frame, String()));
 }
 
 } // namespace WebCore

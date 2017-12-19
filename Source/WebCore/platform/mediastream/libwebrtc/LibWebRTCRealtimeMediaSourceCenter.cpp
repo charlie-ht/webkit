@@ -103,7 +103,7 @@ CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::audioCaptureDeviceMana
 
 CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::videoCaptureDeviceManager()
 {
-    return LibWebRTCVideoCaptureDeviceManager::singleton();
+    return GStreamerVideoCaptureDeviceManager::singleton();
 }
 
 } // namespace WebCore

@@ -29,14 +29,16 @@
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 
 #include "gstreamer/GStreamerCapturer.h"
+#include <gst/video/video.h>
 
 namespace WebCore {
 
-class GStreamerAudioCapturer: public GStreamerCapturer {
+class GStreamerVideoCapturer: public GStreamerCapturer {
 public:
-    GStreamerAudioCapturer(GStreamerCaptureDevice device);
+    GStreamerVideoCapturer(GStreamerCaptureDevice device);
     void setupPipeline() final;
-    bool setSampleRate(int sampleRate);
+    bool setSize(int width, int height);
+    GstVideoInfo GetBestFormat();
 };
 
 } // namespace WebCore

@@ -43,7 +43,7 @@ namespace WebCore {
 class GStreamerCapturer {
 public:
     GStreamerCapturer(GStreamerCaptureDevice device, GRefPtr<GstCaps> caps);
-    virtual void setupPipeline() {};
+    virtual void setupPipeline();
     virtual void play();
     virtual void stop();
 
