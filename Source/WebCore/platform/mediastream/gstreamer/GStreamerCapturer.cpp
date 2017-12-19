@@ -23,6 +23,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <wtf/glib/RunLoopSourcePriority.h>
+
 #include "GStreamerCapturer.h"
 #include <gst/app/gstappsink.h>
 #include "GStreamerUtilities.h"
@@ -37,8 +39,32 @@ GStreamerCapturer::GStreamerCapturer(GStreamerCaptureDevice device,
 {
 }
 
+static void busMessageCallback(GstBus*, GstMessage* message, GstBin *pipeline)
+{
+    switch (GST_MESSAGE_TYPE(message)) {
+    case GST_MESSAGE_ERROR:
+        GST_ERROR ("Got message: %" GST_PTR_FORMAT, message);
+
+        GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS (pipeline, GST_DEBUG_GRAPH_SHOW_ALL,
+            "error");
+        break;
+    default:
+        break;
+    }
+
+}
+
+void GStreamerCapturer::setupPipeline()
+{
+    GRefPtr<GstBus> bus = adoptGRef(gst_pipeline_get_bus(GST_PIPELINE(m_pipeline.get())));
+    gst_bus_add_signal_watch_full(bus.get(), RunLoopSourcePriority::RunLoopDispatcher);
+    g_signal_connect(bus.get(), "message", G_CALLBACK(busMessageCallback), this->m_pipeline.get());
+}
+
 void GStreamerCapturer::play() {
     g_assert(m_pipeline.get());
+
+    GST_ERROR_OBJECT ((gpointer) m_pipeline.get(), "Going to PLAYING!");
 
     gst_element_set_state (m_pipeline.get(), GST_STATE_PLAYING);
 }

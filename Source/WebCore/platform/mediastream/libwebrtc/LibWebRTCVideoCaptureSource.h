@@ -41,24 +41,28 @@
 #include "webrtc/media/base/videocapturer.h"
 #include "webrtc/media/base/videosinkinterface.h"
 
+#include "gstreamer/GStreamerVideoCapturer.h"
+
 namespace WTF {
 class MediaTime;
 }
 
 namespace WebCore {
 
-class LibWebRTCVideoCaptureSource final : public RealtimeMediaSource, public rtc::VideoSinkInterface<webrtc::VideoFrame> {
+class LibWebRTCVideoCaptureSource final : public RealtimeMediaSource {
 public:
 
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
 
-    cricket::VideoCapturer* capturer() { return m_capturer.get(); }
+    void GetInputSize(int *width, int * height);
 
 private:
-    LibWebRTCVideoCaptureSource(const String& deviceID);
+    LibWebRTCVideoCaptureSource(GStreamerCaptureDevice device);
     virtual ~LibWebRTCVideoCaptureSource();
 
     friend class LibWebRTCVideoCaptureSourceFactory;
+
+    static GstFlowReturn newSampleCallback(GstElement*, LibWebRTCVideoCaptureSource*);
 
     bool isCaptureSource() const final { return true; }
     void startProducingData() final;
@@ -68,9 +72,7 @@ private:
     const RealtimeMediaSourceCapabilities& capabilities() const final;
     const RealtimeMediaSourceSettings& settings() const final;
 
-    void OnFrame(const webrtc::VideoFrame& frame) override;
-
-    std::unique_ptr<cricket::VideoCapturer> m_capturer;
+    GStreamerVideoCapturer& m_capturer;
     mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
     mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
     rtc::scoped_refptr<webrtc::VideoTrackInterface> m_videoTrack;

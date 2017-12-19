@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2017 Igalia S.L. All rights reserved.
  * Copyright (C) 2017 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -11,9 +12,6 @@
  *    notice, this list of conditions and the following disclaimer
  *    in the documentation and/or other materials provided with the
  *    distribution.
- * 3. Neither the name of Ericsson nor the names of its contributors
- *    may be used to endorse or promote products derived from this
- *    software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -30,44 +28,32 @@
 
 #pragma once
 
-#if USE(LIBWEBRTC)
+#include "config.h"
 
-#include "LibWebRTCMacros.h"
-#include "RealtimeMediaSource.h"
-#include <webrtc/api/mediastreaminterface.h>
-#include <wtf/RetainPtr.h>
+#if USE(LIBWEBRTC) && USE(GSTREAMER)
+
+#include "RealtimeIncomingVideoSource.h"
+#include "GRefPtrGStreamer.h"
+#include "GStreamerMediaSample.h"
 
 namespace WebCore {
 
-class CaptureDevice;
-
-class RealtimeIncomingVideoSource : public RealtimeMediaSource, private rtc::VideoSinkInterface<webrtc::VideoFrame> {
+class RealtimeIncomingVideoSourceGStreamer final : public RealtimeIncomingVideoSource {
 public:
-    static Ref<RealtimeIncomingVideoSource> create(rtc::scoped_refptr<webrtc::VideoTrackInterface>&&, String&&);
-    ~RealtimeIncomingVideoSource() { stopProducingData(); }
-
-    void setSourceTrack(rtc::scoped_refptr<webrtc::VideoTrackInterface>&&);
-
-protected:
-    RealtimeIncomingVideoSource(rtc::scoped_refptr<webrtc::VideoTrackInterface>&&, String&&);
-
-    RealtimeMediaSourceSettings m_currentSettings;
+    static Ref<RealtimeIncomingVideoSourceGStreamer> create(rtc::scoped_refptr<webrtc::VideoTrackInterface>&&, String&&);
 
 private:
-    // RealtimeMediaSource API
-    void startProducingData() final;
-    void stopProducingData()  final;
+    RealtimeIncomingVideoSourceGStreamer(rtc::scoped_refptr<webrtc::VideoTrackInterface>&&, String&&);
+    void processNewSample(GstSample *sample);
 
-    void OnFrame(const webrtc::VideoFrame&);
-
-    const RealtimeMediaSourceCapabilities& capabilities() const final;
-    const RealtimeMediaSourceSettings& settings() const final;
-
-    bool applySize(const IntSize&) final { return true; }
-
-    rtc::scoped_refptr<webrtc::VideoTrackInterface> m_videoTrack;
+    // rtc::VideoSinkInterface
+    void OnFrame(const webrtc::VideoFrame&) final;
+    void setCapsFromSettings();
+    GRefPtr<GstCaps> m_caps;
+    GstVideoInfo m_info;
 };
 
 } // namespace WebCore
 
 #endif // USE(LIBWEBRTC)
+

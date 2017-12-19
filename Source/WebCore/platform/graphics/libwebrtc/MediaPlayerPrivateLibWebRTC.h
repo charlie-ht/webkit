@@ -128,6 +128,7 @@ private:
     void audioSamplesAvailable(MediaStreamTrackPrivate&, const MediaTime&, const PlatformAudioData&, const AudioStreamDescription&, size_t) final;
     void readyStateChanged(MediaStreamTrackPrivate&) final { };
 
+    static GstFlowReturn videoSinkSampleCb(GstElement* sink, MediaPlayerPrivateLibWebRTC * source);
     void repaint();
 
     MediaStreamTrackPrivate* getVideoTrack() const;
@@ -136,11 +137,12 @@ private:
     MediaPlayer::NetworkState m_networkState;
 
     RefPtr<MediaStreamPrivate> m_mediaStreamPrivate;
-    Lock m_bufferMutex;
-    rtc::scoped_refptr<webrtc::I420BufferInterface> m_buffer;
+    Lock m_sampleMutex;
+    GRefPtr<GstSample> m_sample;
     RunLoop::Timer<MediaPlayerPrivateLibWebRTC> m_drawTimer;
     GRefPtr<GstElement> m_pipeline;
     GRefPtr<GstElement> m_audioSource;
+    GRefPtr<GstElement> m_videoSource;
     GRefPtr<GstStreamVolume> m_volume;
 };
 
