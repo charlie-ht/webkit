@@ -23,54 +23,27 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "GStreamerAudioCapturer.h"
+#include "GStreamerCapturer.h"
 #include <gst/app/gstappsink.h>
 #include "GStreamerUtilities.h"
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 namespace WebCore {
 
-GStreamerAudioCapturer::GStreamerAudioCapturer(GStreamerCaptureDevice device)
-    : GStreamerCapturer(device, adoptGRef(gst_caps_new_empty_simple("audio/x-raw")))
+GStreamerCapturer::GStreamerCapturer(GStreamerCaptureDevice device,
+    GRefPtr<GstCaps> caps)
+    : m_device(device),
+      m_caps(caps)
 {
-    m_caps = adoptGRef(gst_caps_new_empty_simple("audio/x-raw"));
 }
 
-void GStreamerAudioCapturer::setupPipeline() {
-    m_pipeline = gst_element_factory_make ("pipeline", NULL);
-
-    GRefPtr<GstElement> source = m_device.gstSourceElement();
-    GRefPtr<GstElement> converter = gst_parse_bin_from_description ("audioconvert ! audioresample",
-        TRUE, NULL); // FIXME Handle errors.
-    GRefPtr<GstElement> m_capsfilter = gst_element_factory_make ("capsfilter", nullptr);
-    m_sink = gst_element_factory_make ("appsink", NULL);
-
-    gst_app_sink_set_emit_signals(GST_APP_SINK (m_sink.get()), TRUE);
-    g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
-
-
-    gst_bin_add_many (GST_BIN (m_pipeline.get()), source.get(), converter.get(),
-        m_capsfilter.get(), m_sink.get(), NULL);
-    gst_element_link_many (source.get(), converter.get(), m_capsfilter.get(), m_sink.get(), NULL);
-}
-
-bool GStreamerAudioCapturer::setSampleRate(int sampleRate)
-{
-    m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", "rate",
-        G_TYPE_INT, sampleRate, nullptr));
-
-    if (m_capsfilter.get())
-        g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
-}
-
-void GStreamerAudioCapturer::play() {
+void GStreamerCapturer::play() {
     g_assert(m_pipeline.get());
 
-    String res = gst_element_state_change_return_get_name (
-        gst_element_set_state (m_pipeline.get(), GST_STATE_PLAYING));
+    gst_element_set_state (m_pipeline.get(), GST_STATE_PLAYING);
 }
 
-void GStreamerAudioCapturer::stop() {
+void GStreamerCapturer::stop() {
     g_assert(m_pipeline.get());
 
     gst_element_set_state (m_pipeline.get(), GST_STATE_NULL);
