@@ -93,7 +93,7 @@ void LibWebRTCAudioCaptureSource::startProducingData()
     m_audioTrack = peerConnectionFactory->CreateAudioTrack("audio",
         peerConnectionFactory->CreateAudioSource(nullptr));
 
-    m_capturer.start();
+    m_capturer.setupPipeline();
     g_signal_connect(m_capturer.m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
     m_capturer.play();
 }

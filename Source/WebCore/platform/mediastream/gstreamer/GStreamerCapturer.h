@@ -28,18 +28,32 @@
 #include "config.h"
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 
-#include "gstreamer/GStreamerCapturer.h"
+#include "GRefPtrGStreamer.h"
+
+#include "LibWebRTCMacros.h"
+#include "webrtc/api/mediastreaminterface.h"
+#include "LibWebRTCRealtimeMediaSourceCenter.h"
+#include <gst/gst.h>
+#include "gstreamer/GStreamerCaptureDevice.h"
+
+#pragma once
 
 namespace WebCore {
 
-class GStreamerAudioCapturer: public GStreamerCapturer {
+class GStreamerCapturer {
 public:
-    GStreamerAudioCapturer(GStreamerCaptureDevice device);
-    void setupPipeline() final;
-    void play();
-    void stop();
-    bool setSampleRate(int sampleRate);
+    GStreamerCapturer(GStreamerCaptureDevice device, GRefPtr<GstCaps> caps);
+    virtual void setupPipeline() {};
+    virtual void play();
+    virtual void stop();
+
+    GRefPtr<GstElement> m_sink;
+    GRefPtr<GstElement> m_capsfilter;
+    GStreamerCaptureDevice m_device;
+    GRefPtr<GstCaps> m_caps;
+    GRefPtr<GstElement> m_pipeline;
 };
 
 } // namespace WebCore
 #endif //ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+

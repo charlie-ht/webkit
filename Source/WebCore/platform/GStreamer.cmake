@@ -33,6 +33,7 @@ if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
         platform/graphics/gstreamer/mse/SourceBufferPrivateGStreamer.cpp
         platform/graphics/gstreamer/mse/WebKitMediaSourceGStreamer.cpp
 
+        platform/mediastream/gstreamer/GStreamerCapturer.cpp
         platform/mediastream/gstreamer/GStreamerAudioCapturer.cpp
         platform/mediastream/gstreamer/GStreamerCaptureDeviceManager.cpp
     )
