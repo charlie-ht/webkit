@@ -432,6 +432,7 @@ GstContext* MediaPlayerPrivateGStreamerBase::requestGLContext(const gchar* conte
 
 bool MediaPlayerPrivateGStreamerBase::ensureGstGLContext()
 {
+    GST_INFO_OBJECT (m_pipeline.get(), "Ensuring GL Context");
     if (m_glContext)
         return true;
 
@@ -613,6 +614,7 @@ void MediaPlayerPrivateGStreamerBase::setMuted(bool muted)
     if (!m_volumeElement)
         return;
 
+    GST_ERROR_OBJECT (m_volumeElement.get(), "Muting? %d", muted);
     g_object_set(m_volumeElement.get(), "mute", muted, nullptr);
 }
 
@@ -710,13 +712,17 @@ void MediaPlayerPrivateGStreamerBase::pushTextureToCompositor()
 
     LockHolder holder(m_platformLayerProxy->lock());
 
-    if (!m_platformLayerProxy->isActive())
+    if (!m_platformLayerProxy->isActive()) {
+        GST_ERROR ("Erg... not active. this is ugly I think.");
         return;
+    }
+
 
 #if USE(GSTREAMER_GL)
     std::unique_ptr<GstVideoFrameHolder> frameHolder = std::make_unique<GstVideoFrameHolder>(m_sample.get(), texMapFlagFromOrientation(m_videoSourceOrientation));
     if (UNLIKELY(!frameHolder->isValid()))
         return;
+    GST_ERROR ("Still going");
 
     std::unique_ptr<TextureMapperPlatformLayerBuffer> layerBuffer = std::make_unique<TextureMapperPlatformLayerBuffer>(frameHolder->textureID(), frameHolder->size(), frameHolder->flags(), GraphicsContext3D::RGBA);
     layerBuffer->setUnmanagedBufferDataHolder(WTFMove(frameHolder));
@@ -725,6 +731,7 @@ void MediaPlayerPrivateGStreamerBase::pushTextureToCompositor()
     GstVideoInfo videoInfo;
     if (UNLIKELY(!getSampleVideoInfo(m_sample.get(), videoInfo)))
         return;
+    GST_ERROR ("Still going");
 
     IntSize size = IntSize(GST_VIDEO_INFO_WIDTH(&videoInfo), GST_VIDEO_INFO_HEIGHT(&videoInfo));
     std::unique_ptr<TextureMapperPlatformLayerBuffer> buffer = m_platformLayerProxy->getAvailableBuffer(size, GL_DONT_CARE);
@@ -736,9 +743,11 @@ void MediaPlayerPrivateGStreamerBase::pushTextureToCompositor()
         texture->reset(size, GST_VIDEO_INFO_HAS_ALPHA(&videoInfo) ? BitmapTexture::SupportsAlpha : BitmapTexture::NoFlag);
         buffer = std::make_unique<TextureMapperPlatformLayerBuffer>(WTFMove(texture));
     }
+    GST_ERROR ("Still going");
     updateTexture(buffer->textureGL(), videoInfo);
     buffer->setExtraFlags(texMapFlagFromOrientation(m_videoSourceOrientation) | (GST_VIDEO_INFO_HAS_ALPHA(&videoInfo) ? TextureMapperGL::ShouldBlend : 0));
     m_platformLayerProxy->pushNextBuffer(WTFMove(buffer));
+    GST_ERROR ("All done!");
 #endif // USE(GSTREAMER_GL)
 }
 #endif // USE(TEXTURE_MAPPER_GL)
@@ -748,6 +757,7 @@ void MediaPlayerPrivateGStreamerBase::repaint()
     ASSERT(m_sample);
     ASSERT(isMainThread());
 
+    GST_ERROR ("Repaing");
     m_player->repaint();
 
     LockHolder lock(m_drawMutex);
