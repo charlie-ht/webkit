@@ -30,19 +30,12 @@
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-#define VIDEO_FORMAT "BGRx"
-#else
-#define VIDEO_FORMAT "xRGB"
-#endif
-
 namespace WebCore {
 
 GStreamerVideoCapturer::GStreamerVideoCapturer(GStreamerCaptureDevice device)
     : GStreamerCapturer(device, adoptGRef(gst_caps_new_empty_simple("video/x-raw")))
 {
-    m_caps = adoptGRef(gst_caps_new_simple("video/x-raw", 
-        "format", G_TYPE_STRING, VIDEO_FORMAT, nullptr));
+    m_caps = adoptGRef(gst_caps_new_empty_simple("video/x-raw"));
 }
 
 void GStreamerVideoCapturer::setupPipeline() {

@@ -92,30 +92,6 @@ void RealtimeOutgoingVideoSourceGStreamer::sampleBufferUpdated(MediaStreamTrackP
     GstBuffer* buf = gst_buffer_make_writable(gst_sample_get_buffer(gstsample));
 
     gst_video_frame_map(&frame, &info, buf, GST_MAP_READWRITE);
-    if (pixelFormatType == GST_VIDEO_FORMAT_I420) {
-        GST_ERROR("FIXME - unmapGstFrameWhenDone.");
-#if 0
-        rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer = new rtc::RefCountedObject<webrtc::WrappedI420Buffer>(
-            GST_VIDEO_FRAME_WIDTH (&frame),
-            GST_VIDEO_FRAME_HEIGHT (&frame),
-            GST_VIDEO_FRAME_PLANE_DATA (&frame, 0),
-            GST_VIDEO_FRAME_PLANE_STRIDE (&frame, 0),
-            GST_VIDEO_FRAME_PLANE_DATA (&frame, 1),
-            GST_VIDEO_FRAME_PLANE_STRIDE (&frame, 1),
-            GST_VIDEO_FRAME_PLANE_DATA (&frame, 2),
-            GST_VIDEO_FRAME_PLANE_STRIDE (&frame, 2),
-            nullptr); // FIXME!! nmapGstFrameWhenDone(&frame));
-
-        if (m_shouldApplyRotation && m_currentRotation != webrtc::kVideoRotation_0) {
-            // FIXME: We should make GStreamerVideoCapturer handle the rotation whenever possible.
-            auto rotatedBuffer = buffer->ToI420();
-            ASSERT(rotatedBuffer);
-            buffer = webrtc::I420Buffer::Rotate(*rotatedBuffer, m_currentRotation);
-        }
-        sendFrame(WTFMove(buffer));
-#endif
-        return;
-    }
 
     ASSERT(m_width);
     ASSERT(m_height);
@@ -127,12 +103,27 @@ void RealtimeOutgoingVideoSourceGStreamer::sampleBufferUpdated(MediaStreamTrackP
         return;
     }
 
-    if (pixelFormatType == GST_VIDEO_FORMAT_BGRA || pixelFormatType == GST_VIDEO_FORMAT_BGRx)
-        webrtc::ConvertToI420(webrtc::VideoType::kARGB, (const uint8_t*)frame.data[0], 0, 0, m_width, m_height, 0, webrtc::kVideoRotation_0, newBuffer);
-    else {
-        ASSERT(pixelFormatType == GST_VIDEO_FORMAT_ARGB || pixelFormatType == GST_VIDEO_FORMAT_xRGB);
-        webrtc::ConvertToI420(webrtc::VideoType::kBGRA, (const uint8_t*)frame.data[0], 0, 0, m_width, m_height, 0, webrtc::kVideoRotation_0, newBuffer);
+    webrtc::VideoType sformat;
+    switch (pixelFormatType) {
+    case GST_VIDEO_FORMAT_BGRA:
+    case GST_VIDEO_FORMAT_BGRx:
+        sformat = webrtc::VideoType::kBGRA;
+        break;
+    case GST_VIDEO_FORMAT_ARGB:
+    case GST_VIDEO_FORMAT_xRGB:
+        sformat = webrtc::VideoType::kARGB;
+        break;
+    case GST_VIDEO_FORMAT_I420:
+        sformat = webrtc::VideoType::kI420;
+        break;
+    case GST_VIDEO_FORMAT_YUY2:
+        sformat = webrtc::VideoType::kYUY2;
+        break;
+    default:
+        g_assert_not_reached();
     }
+    webrtc::ConvertToI420(sformat, (const uint8_t*)frame.data[0], 0, 0, m_width, m_height, 0, m_currentRotation, newBuffer);
+
     gst_video_frame_unmap(&frame);
     if (m_shouldApplyRotation && m_currentRotation != webrtc::kVideoRotation_0)
         newBuffer = webrtc::I420Buffer::Rotate(*newBuffer, m_currentRotation);

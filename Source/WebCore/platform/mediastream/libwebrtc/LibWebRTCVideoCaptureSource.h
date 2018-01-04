@@ -54,7 +54,7 @@ public:
 
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
 
-    void GetInputSize(int *width, int * height);
+    IntSize size();
 
 private:
     LibWebRTCVideoCaptureSource(GStreamerCaptureDevice device);

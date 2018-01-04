@@ -96,7 +96,6 @@ void RealtimeIncomingVideoSourceGStreamer::OnFrame(const webrtc::VideoFrame& fra
 void RealtimeIncomingVideoSourceGStreamer::processNewSample(GstSample *sample)
 {
     // FIXME - handle setting changes!
-    // m_buffer = sample;
     // if (width != m_currentSettings.width() || height != m_currentSettings.height()) {
     //     m_currentSettings.setWidth(width);
     //     m_currentSettings.setHeight(height);

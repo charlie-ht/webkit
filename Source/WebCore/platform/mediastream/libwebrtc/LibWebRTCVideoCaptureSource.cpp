@@ -81,12 +81,11 @@ LibWebRTCVideoCaptureSource::~LibWebRTCVideoCaptureSource()
     //     m_videoTrack->RemoveSink(this);
 }
 
-void LibWebRTCVideoCaptureSource::GetInputSize(int* width, int* height)
+IntSize LibWebRTCVideoCaptureSource::size()
 {
     GstVideoInfo info = m_capturer.GetBestFormat();
 
-    *width = info.width;
-    *height = info.height;
+    return IntSize(info.width, info.height);
 }
 
 void LibWebRTCVideoCaptureSource::startProducingData()
@@ -101,9 +100,15 @@ void LibWebRTCVideoCaptureSource::startProducingData()
 
 GstFlowReturn LibWebRTCVideoCaptureSource::newSampleCallback(GstElement* sink, LibWebRTCVideoCaptureSource* source)
 {
+    GstSample *sample = gst_app_sink_pull_sample(GST_APP_SINK(sink));
+
     // FIXME - Check how presentationSize is supposed to be used here.
-    source->videoSampleAvailable(GStreamerMediaSample::create(gst_app_sink_pull_sample(GST_APP_SINK(sink)),
-        WebCore::FloatSize(), String()));
+    callOnMainThread([protectedThis = makeRef(*source), sample] {
+        protectedThis->videoSampleAvailable(GStreamerMediaSample::create(sample,
+            WebCore::FloatSize(), String()));
+    });
+
+    return GST_FLOW_OK;
 }
 
 void LibWebRTCVideoCaptureSource::stopProducingData()

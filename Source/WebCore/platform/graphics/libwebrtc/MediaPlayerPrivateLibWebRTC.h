@@ -32,12 +32,14 @@
 #include "webrtc/media/base/videosinkinterface.h"
 #include "webrtc/media/engine/webrtcvideocapturer.h"
 
+#include "MediaPlayerPrivateGStreamerBase.h"
+
 #include <gst/gst.h>
 #include <gst/audio/streamvolume.h>
 
 namespace WebCore {
 
-class MediaPlayerPrivateLibWebRTC : public MediaPlayerPrivateInterface, private MediaStreamPrivate::Observer, private MediaStreamTrackPrivate::Observer {
+class MediaPlayerPrivateLibWebRTC : public MediaPlayerPrivateGStreamerBase, private MediaStreamTrackPrivate::Observer {
 public:
     explicit MediaPlayerPrivateLibWebRTC(MediaPlayer*);
     ~MediaPlayerPrivateLibWebRTC();
@@ -45,36 +47,31 @@ public:
     static void registerMediaEngine(MediaEngineRegistrar);
 
 private:
+    String engineDescription() const final { return "GStreamerLibWebRTC"; }
+
+    static bool initializeGStreamerAndGStreamerDebugging();
     static void getSupportedTypes(HashSet<String, ASCIICaseInsensitiveHash>&);
     static MediaPlayer::SupportsType supportsType(const MediaEngineSupportParameters&);
 
 #if ENABLE(MEDIA_SOURCE)
     void load(const String& url, MediaSourcePrivateClient*);
 #endif
-
     void load(MediaStreamPrivate&) final;
-
     void load(const String&) final;
-
     void cancelLoad() final;
 
     void prepareToPlay() final;
     void play() final;
     void pause() final;
 
-    PlatformMedia platformMedia() const final { return NoPlatformMedia; }
-    PlatformLayer* platformLayer() const final { return 0; }
-
     FloatSize naturalSize() const final;
 
-    bool hasVideo() const final { return false; }
-    bool hasAudio() const final { return false; }
+    bool hasVideo() const final { return m_videoTrack; }
+    bool hasAudio() const final { return m_audioTrack; }
 
-    void setVisible(bool) final { }
+    float duration() const final { return 0; }
 
-    double durationDouble() const final { return 0; }
-
-    double currentTimeDouble() const final { return 0; }
+    float currentTime() const final;
     void seekDouble(double) final { }
     bool seeking() const final { return false; }
 
@@ -82,16 +79,10 @@ private:
     void setPreservesPitch(bool) final { }
     bool paused() const final { return false; }
 
-    void setVolumeDouble(double volume) final;
-
-    bool supportsMuting() const final { return false; }
-    void setMuted(bool) final;
+    bool isLiveStream() const override { return true; }
 
     bool hasClosedCaptions() const final { return false; }
     void setClosedCaptionsVisible(bool) final { };
-
-    MediaPlayer::NetworkState networkState() const final { return MediaPlayer::Empty; }
-    MediaPlayer::ReadyState readyState() const final { return MediaPlayer::HaveNothing; }
 
     float maxTimeSeekable() const final { return 0; }
     double minTimeSeekable() const final { return 0; }
@@ -103,20 +94,8 @@ private:
     unsigned long long totalBytes() const final { return 0; }
     bool didLoadingProgress() const final { return false; }
 
-    void setSize(const IntSize&) final { }
-
-    void paint(GraphicsContext&, const FloatRect&) final;
-
     bool canLoadPoster() const final { return false; }
     void setPoster(const String&) final { }
-
-    bool hasSingleSecurityOrigin() const final { return true; }
-
-    // MediaStreamPrivate::Observer
-    void activeStatusChanged() final { };
-    void characteristicsChanged() final { };
-    void didAddTrack(MediaStreamTrackPrivate&) final { };
-    void didRemoveTrack(MediaStreamTrackPrivate&) final { };
 
     // MediaStreamPrivateTrack::Observer
     void trackStarted(MediaStreamTrackPrivate&) final { };
@@ -128,22 +107,15 @@ private:
     void audioSamplesAvailable(MediaStreamTrackPrivate&, const MediaTime&, const PlatformAudioData&, const AudioStreamDescription&, size_t) final;
     void readyStateChanged(MediaStreamTrackPrivate&) final { };
 
-    static GstFlowReturn videoSinkSampleCb(GstElement* sink, MediaPlayerPrivateLibWebRTC * source);
-    void repaint();
+    void loadingFailed(MediaPlayer::NetworkState error);
 
-    MediaStreamTrackPrivate* getVideoTrack() const;
+    RefPtr<MediaStreamTrackPrivate> m_videoTrack;
+    RefPtr<MediaStreamTrackPrivate> m_audioTrack;
+    RefPtr<MediaStreamPrivate> m_streamPrivate;
+    GRefPtr<GstElement> m_audioSrc;
+    GRefPtr<GstElement> m_videoSrc;
 
-    MediaPlayer* m_player;
-    MediaPlayer::NetworkState m_networkState;
-
-    RefPtr<MediaStreamPrivate> m_mediaStreamPrivate;
-    Lock m_sampleMutex;
-    GRefPtr<GstSample> m_sample;
-    RunLoop::Timer<MediaPlayerPrivateLibWebRTC> m_drawTimer;
-    GRefPtr<GstElement> m_pipeline;
-    GRefPtr<GstElement> m_audioSource;
-    GRefPtr<GstElement> m_videoSource;
-    GRefPtr<GstStreamVolume> m_volume;
+    void acceleratedRenderingStateChanged() final { GST_FIXME("Get GL rendering working!"); }
 };
 
 }
