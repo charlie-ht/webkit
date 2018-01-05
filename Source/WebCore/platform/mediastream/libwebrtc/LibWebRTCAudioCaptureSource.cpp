@@ -150,7 +150,7 @@ const RealtimeMediaSourceCapabilities& LibWebRTCAudioCaptureSource::capabilities
 
 bool LibWebRTCAudioCaptureSource::applySampleRate(int sampleRate)
 {
-    m_capturer.setSampleRate(sampleRate);
+    return m_capturer.setSampleRate(sampleRate);
 }
 
 const RealtimeMediaSourceSettings& LibWebRTCAudioCaptureSource::settings() const

@@ -81,12 +81,11 @@ LibWebRTCVideoCaptureSource::~LibWebRTCVideoCaptureSource()
     //     m_videoTrack->RemoveSink(this);
 }
 
-void LibWebRTCVideoCaptureSource::GetInputSize(int* width, int* height)
+IntSize LibWebRTCVideoCaptureSource::size()
 {
     GstVideoInfo info = m_capturer.GetBestFormat();
 
-    *width = info.width;
-    *height = info.height;
+    return IntSize(info.width, info.height);
 }
 
 void LibWebRTCVideoCaptureSource::startProducingData()

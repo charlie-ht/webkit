@@ -60,7 +60,6 @@ namespace WebCore {
 
 MediaPlayerPrivateLibWebRTC::MediaPlayerPrivateLibWebRTC(MediaPlayer* player)
     : MediaPlayerPrivateGStreamerBase(player)
-    , m_networkState(MediaPlayer::Empty)
 {
     initializeGStreamerAndGStreamerDebugging();
 }
@@ -106,9 +105,8 @@ static void busMessageCallback(GstBus*, GstMessage* message, GstBin* pipeline)
 
 MediaPlayerPrivateLibWebRTC::~MediaPlayerPrivateLibWebRTC()
 {
-    m_mediaStreamPrivate->stopProducingData();
-    m_mediaStreamPrivate->removeObserver(*this);
-    for (auto& track : m_mediaStreamPrivate->tracks()) {
+    m_streamPrivate->stopProducingData();
+    for (auto& track : m_streamPrivate->tracks()) {
         track->removeObserver(*this);
     }
 }
@@ -150,21 +148,35 @@ MediaPlayer::SupportsType MediaPlayerPrivateLibWebRTC::supportsType(const MediaE
     return MediaPlayer::IsNotSupported;
 }
 
+float MediaPlayerPrivateLibWebRTC::currentTime() const
+{
+    gint64 position = GST_CLOCK_TIME_NONE;
+
+    gst_element_query_duration (m_pipeline.get(), GST_FORMAT_TIME, &position);
+
+    float result = 0;
+    if (static_cast<GstClockTime>(position) != GST_CLOCK_TIME_NONE)
+        result = static_cast<double>(position) / GST_SECOND;
+
+    GST_INFO("Position %" GST_TIME_FORMAT, GST_TIME_ARGS(position));
+
+    return result;
+}
+
+
 FloatSize MediaPlayerPrivateLibWebRTC::naturalSize() const
 {
-    int width, height;
-    MediaStreamTrackPrivate* videoTrack = getVideoTrack();
-    if (!videoTrack)
-        return FloatSize();
+    if (m_videoTrack && m_videoTrack->isCaptureTrack()) {
+        LibWebRTCVideoCaptureSource& source = static_cast<LibWebRTCVideoCaptureSource&>(m_videoTrack->source());
+        return source.size();
+    }
 
-    LibWebRTCVideoCaptureSource& source = static_cast<LibWebRTCVideoCaptureSource&>(videoTrack->source());
-    source.GetInputSize(&width, &height);
-    return FloatSize(width, height);
+    return MediaPlayerPrivateGStreamerBase::naturalSize();
 }
 
 void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
 {
-    m_mediaStreamPrivate = &stream;
+    m_streamPrivate = &stream;
 
     auto name = g_strdup_printf("MediaPlayerPrivateLibWebRTCPipeline_%p", this);
     GST_ERROR("Pipeline: %s - hasCaptureVideoSource() %d", name, stream.hasCaptureVideoSource());
@@ -177,7 +189,7 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
     m_player->networkStateChanged();
     m_player->readyStateChanged();
 
-    for (auto& track : m_mediaStreamPrivate->tracks()) {
+    for (auto& track : m_streamPrivate->tracks()) {
 
         if (!track->enabled()) {
             GST_DEBUG("Track %s disabled", track->label().ascii().data());
@@ -185,26 +197,36 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
         }
 
         if (track->type() == RealtimeMediaSource::Type::Audio) {
+            if (m_audioTrack) {
+                GST_FIXME ("Support multiple track of the same type.");
+                continue;
+            }
+
+            m_audioTrack = track;
+
             auto sink = gst_parse_bin_from_description("audioconvert ! audioresample ! volume name=v ! autoaudiosink",
                 TRUE, NULL);
+            m_audioSrc = gst_element_factory_make("appsrc", "WebRTCMediaPlayerPrivate-audiosrc");
+            g_object_set(m_audioSrc.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
 
-            // TODO - Add error handling
-            m_audioSource = gst_element_factory_make("appsrc", "WebRTCMediaPlayerPrivate-audiosrc");
-            g_object_set(m_audioSource.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
-
-            gst_bin_add_many(GST_BIN(m_pipeline.get()), m_audioSource.get(), sink, nullptr);
+            gst_bin_add_many(GST_BIN(m_pipeline.get()), m_audioSrc.get(), sink, nullptr);
             setStreamVolumeElement(GST_STREAM_VOLUME(gst_bin_get_by_name(GST_BIN(sink), "v")));
-            g_assert(gst_element_link_pads(m_audioSource.get(), "src", sink, "sink"));
+            g_assert(gst_element_link_pads(m_audioSrc.get(), "src", sink, "sink"));
 
             setMuted(m_player->muted());
         } else if (track->type() == RealtimeMediaSource::Type::Video) {
+            if (m_videoTrack) {
+                GST_FIXME ("Support multiple track of the same type.");
+                continue;
+            }
+
+            m_videoTrack = track;
             GstElement* sink = createVideoSink();
+            m_videoSrc = gst_element_factory_make("appsrc", "WebRTCMediaPlayerPrivate-videosrc");
+            g_object_set(m_videoSrc.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
 
-            m_videoSource = gst_element_factory_make("appsrc", "WebRTCMediaPlayerPrivate-videosrc");
-            g_object_set(m_videoSource.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
-
-            gst_bin_add_many(GST_BIN(m_pipeline.get()), m_videoSource.get(), sink, nullptr);
-            gst_element_link(m_videoSource.get(), sink);
+            gst_bin_add_many(GST_BIN(m_pipeline.get()), m_videoSrc.get(), sink, nullptr);
+            gst_element_link(m_videoSrc.get(), sink);
         } else {
             GST_INFO ("Unsuported track type: %d", track->type());
 
@@ -247,10 +269,32 @@ void MediaPlayerPrivateLibWebRTC::prepareToPlay()
 {
 }
 
+void MediaPlayerPrivateLibWebRTC::loadingFailed(MediaPlayer::NetworkState error)
+{
+    if (m_networkState != error) {
+        GST_WARNING("Loading failed, error: %d", error);
+        m_networkState = error;
+        m_player->networkStateChanged();
+    }
+    if (m_readyState != MediaPlayer::HaveNothing) {
+        m_readyState = MediaPlayer::HaveNothing;
+        m_player->readyStateChanged();
+    }
+}
+
 void MediaPlayerPrivateLibWebRTC::play()
 {
-    GST_INFO ("Setting state PLAYING");
-    gst_element_set_state(m_pipeline.get(), GST_STATE_PLAYING);
+    GST_DEBUG("Play");
+
+    if (!m_streamPrivate || !m_streamPrivate->active()) {
+        m_readyState = MediaPlayer::HaveNothing;
+        loadingFailed(MediaPlayer::Empty);
+        return;
+    }
+
+    GST_DEBUG("Connecting to live stream, descriptor: %p", m_streamPrivate.get());
+
+    gst_element_set_state(pipeline(), GST_STATE_PLAYING);
 }
 
 void MediaPlayerPrivateLibWebRTC::pause()
@@ -260,11 +304,11 @@ void MediaPlayerPrivateLibWebRTC::pause()
 void MediaPlayerPrivateLibWebRTC::audioSamplesAvailable(MediaStreamTrackPrivate&,
     const MediaTime&, const PlatformAudioData& audioData, const AudioStreamDescription&, size_t)
 {
-    if (!m_audioSource)
+    if (!m_audioSrc)
         return;
 
     auto gstdata = static_cast<const GStreamerAudioData&>(audioData);
-    g_assert(gst_app_src_push_sample(GST_APP_SRC(m_audioSource.get()), gstdata.getSample()) == GST_FLOW_OK);
+    g_assert(gst_app_src_push_sample(GST_APP_SRC(m_audioSrc.get()), gstdata.getSample()) == GST_FLOW_OK);
 }
 
 void MediaPlayerPrivateLibWebRTC::trackMutedChanged(MediaStreamTrackPrivate& track)
@@ -275,27 +319,7 @@ void MediaPlayerPrivateLibWebRTC::trackMutedChanged(MediaStreamTrackPrivate& tra
 void MediaPlayerPrivateLibWebRTC::sampleBufferUpdated(MediaStreamTrackPrivate& privateTrack, MediaSample& sample)
 {
     auto gstsample = static_cast<GStreamerMediaSample*>(&sample)->sample();
-    gst_app_src_push_sample(GST_APP_SRC(m_videoSource.get()), gstsample);
-}
-
-MediaStreamTrackPrivate* MediaPlayerPrivateLibWebRTC::getVideoTrack() const
-{
-    // It assumes we just have 1 video for rendering.
-    for (auto& track : m_mediaStreamPrivate->tracks())
-        if (track->type() == RealtimeMediaSource::Type::Video)
-            return track.get();
-
-    return nullptr;
-}
-
-MediaStreamTrackPrivate* MediaPlayerPrivateLibWebRTC::getAudioTrack() const
-{
-    // It assumes we just have 1 audio for rendering.
-    for (auto& track : m_mediaStreamPrivate->tracks())
-        if (track->type() == RealtimeMediaSource::Type::Audio)
-            return track.get();
-
-    return nullptr;
+    gst_app_src_push_sample(GST_APP_SRC(m_videoSrc.get()), gstsample);
 }
 }
 #endif // ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
