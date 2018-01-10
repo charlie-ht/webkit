@@ -127,9 +127,6 @@ const RealtimeMediaSourceCapabilities& LibWebRTCVideoCaptureSource::capabilities
         int32_t minWidth = G_MAXINT32, minHeight = G_MAXINT32, minFramerate = G_MAXINT32;
         int32_t maxWidth = G_MININT32, maxHeight = G_MININT32, maxFramerate = G_MININT32;
 
-        // float minAspectRatio = G_MAXFLOAT;
-        // float maxAspectRatio = G_MINFLOAT;
-
         for (guint i = 0; i < gst_caps_get_size(caps.get()); i++) {
             GstStructure* str = gst_caps_get_structure(caps.get(), i);
 
@@ -138,9 +135,7 @@ const RealtimeMediaSourceCapabilities& LibWebRTCVideoCaptureSource::capabilities
                 continue;
 
             int32_t tmpMinWidth, tmpMinHeight, tmpMinFPS_n, tmpMinFPS_d, tmpMinFramerate;
-            float tmpMinAspectRatio = 0.0;
             int32_t tmpMaxWidth, tmpMaxHeight, tmpMaxFPS_n, tmpMaxFPS_d, tmpMaxFramerate;
-            // float tmpMaxAspectRatio = 0.0;
 
             if (!gst_structure_get(str,
                     "width", GST_TYPE_INT_RANGE, &tmpMinWidth, &tmpMaxWidth,
@@ -185,21 +180,17 @@ const RealtimeMediaSourceCapabilities& LibWebRTCVideoCaptureSource::capabilities
             minWidth = MIN(tmpMinWidth, minWidth);
             minHeight = MIN(tmpMinHeight, minHeight);
             minFramerate = MIN(tmpMinFramerate, minFramerate);
-            // minAspectRatio = MIN(tmpMinAspectRatio, minAspectRatio);
 
             maxWidth = MAX(tmpMaxWidth, maxWidth);
             maxHeight = MAX(tmpMaxHeight, maxHeight);
             maxFramerate = MAX(tmpMaxFramerate, maxFramerate);
-            // maxAspectRatio = MAX (tmpMaxAspectRatio, maxAspectRatio);
 
             m_currentSettings->setWidth(minWidth);
             m_currentSettings->setHeight(minHeight);
             m_currentSettings->setFrameRate(maxFramerate);
-            // m_currentSettings->setAspectRatio(maxAspectRatio);
 
             capabilities.setWidth(CapabilityValueOrRange(minWidth, maxWidth));
             capabilities.setHeight(CapabilityValueOrRange(minHeight, maxHeight));
-            // capabilities.setAspectRatio(CapabilityValueOrRange(minAspectRatio, maxAspectRatio));
             capabilities.setFrameRate(CapabilityValueOrRange(minFramerate, maxFramerate));
             m_capabilities = WTFMove(capabilities);
         }

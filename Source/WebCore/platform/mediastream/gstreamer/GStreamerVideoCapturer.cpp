@@ -27,7 +27,6 @@
 #include <gst/app/gstappsink.h>
 #include "GStreamerUtilities.h"
 
-
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 
 namespace WebCore {
@@ -39,7 +38,7 @@ GStreamerVideoCapturer::GStreamerVideoCapturer(GStreamerCaptureDevice device)
 }
 
 void GStreamerVideoCapturer::setupPipeline() {
-    m_pipeline = gst_element_factory_make ("pipeline", NULL);
+    m_pipeline = gst_element_factory_make ("pipeline", "VideoCapturer");
 
     GRefPtr<GstElement> source = m_device.gstSourceElement();
     GRefPtr<GstElement> converter = gst_parse_bin_from_description ("videoscale ! videoconvert",
@@ -53,7 +52,6 @@ void GStreamerVideoCapturer::setupPipeline() {
         m_capsfilter.get(), m_sink.get(), NULL);
     gst_element_link_many (source.get(), converter.get(), m_capsfilter.get(), m_sink.get(), NULL);
     g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
-    GST_ERROR ("Pipeline set!");
 
     GStreamerCapturer::setupPipeline();
 }
@@ -73,8 +71,12 @@ bool GStreamerVideoCapturer::setSize(int width, int height)
     gst_caps_set_simple (m_caps.get(), "width", G_TYPE_INT, width, "height",
         G_TYPE_INT, height, nullptr);
 
-    if (m_capsfilter.get())
+    if (m_capsfilter.get()) {
         g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
+        return true;
+    }
+
+    return false;
 }
 } // namespace WebCore
 #endif //ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)

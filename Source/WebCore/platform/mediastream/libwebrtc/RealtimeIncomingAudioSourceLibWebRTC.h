@@ -27,9 +27,15 @@
 
 #pragma once
 
-#if USE(LIBWEBRTC)
+#include "config.h"
+
+#if USE(LIBWEBRTC) && USE(GSTREAMER)
 
 #include "RealtimeIncomingAudioSource.h"
+#include "GRefPtrGStreamer.h"
+
+#include <gst/audio/audio.h>
+#include <gst/gst.h>
 
 namespace WebCore {
 
@@ -44,6 +50,8 @@ private:
     void OnData(const void* audioData, int bitsPerSample, int sampleRate, size_t numberOfChannels, size_t numberOfFrames) final;
 
     uint64_t m_numberOfFrames { 0 };
+    GRefPtr<GstCaps> m_caps;
+    GstAudioInfo m_info;
 };
 
 } // namespace WebCore

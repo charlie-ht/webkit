@@ -34,8 +34,8 @@
 
 #include "MediaPlayerPrivateGStreamerBase.h"
 
-#include <gst/gst.h>
 #include <gst/audio/streamvolume.h>
+#include <gst/gst.h>
 
 namespace WebCore {
 
@@ -72,17 +72,17 @@ private:
     float duration() const final { return 0; }
 
     float currentTime() const final;
-    void seekDouble(double) final { }
+    void seekDouble(double) final {}
     bool seeking() const final { return false; }
 
-    void setRateDouble(double) final { }
-    void setPreservesPitch(bool) final { }
+    void setRateDouble(double) final {}
+    void setPreservesPitch(bool) final {}
     bool paused() const final { return false; }
 
     bool isLiveStream() const override { return true; }
 
     bool hasClosedCaptions() const final { return false; }
-    void setClosedCaptionsVisible(bool) final { };
+    void setClosedCaptionsVisible(bool) final{};
 
     float maxTimeSeekable() const final { return 0; }
     double minTimeSeekable() const final { return 0; }
@@ -95,17 +95,17 @@ private:
     bool didLoadingProgress() const final { return false; }
 
     bool canLoadPoster() const final { return false; }
-    void setPoster(const String&) final { }
+    void setPoster(const String&) final {}
 
     // MediaStreamPrivateTrack::Observer
-    void trackStarted(MediaStreamTrackPrivate&) final { };
-    void trackEnded(MediaStreamTrackPrivate&) final { };
+    void trackStarted(MediaStreamTrackPrivate&) final{};
+    void trackEnded(MediaStreamTrackPrivate&) final{};
     void trackMutedChanged(MediaStreamTrackPrivate&) final;
-    void trackSettingsChanged(MediaStreamTrackPrivate&) final { };
-    void trackEnabledChanged(MediaStreamTrackPrivate&) final { };
+    void trackSettingsChanged(MediaStreamTrackPrivate&) final{};
+    void trackEnabledChanged(MediaStreamTrackPrivate&) final{};
     void sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample&) final;
     void audioSamplesAvailable(MediaStreamTrackPrivate&, const MediaTime&, const PlatformAudioData&, const AudioStreamDescription&, size_t) final;
-    void readyStateChanged(MediaStreamTrackPrivate&) final { };
+    void readyStateChanged(MediaStreamTrackPrivate&) final{};
 
     void loadingFailed(MediaPlayer::NetworkState error);
 
@@ -117,7 +117,6 @@ private:
 
     void acceleratedRenderingStateChanged() final { GST_FIXME("Get GL rendering working!"); }
 };
-
 }
 
 #endif // ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)

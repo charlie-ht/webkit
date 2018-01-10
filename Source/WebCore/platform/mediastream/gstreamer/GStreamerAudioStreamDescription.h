@@ -33,6 +33,7 @@ public:
     WEBCORE_EXPORT GStreamerAudioStreamDescription(GstAudioInfo info):
         m_Info(info) {
         m_Caps = gst_audio_info_to_caps (&m_Info);
+
     }
 
     WEBCORE_EXPORT GStreamerAudioStreamDescription(GstAudioInfo *info):
@@ -48,7 +49,9 @@ public:
     WEBCORE_EXPORT ~GStreamerAudioStreamDescription() {};
 
     const PlatformDescription& platformDescription() const {
-        return { PlatformDescription::GStreamerAudioStreamDescription, nullptr };
+        m_platformDescription = { PlatformDescription::GStreamerAudioStreamDescription, (AudioStreamBasicDescription*) &m_Info};
+
+        return m_platformDescription;
     }
 
     WEBCORE_EXPORT PCMFormat format() const final { return Int16; } // FIXME
@@ -72,6 +75,7 @@ public:
     GstAudioInfo m_Info;
 private:
     GRefPtr<GstCaps> m_Caps;
+    mutable PlatformDescription m_platformDescription;
 };
 
 } // WebCore 

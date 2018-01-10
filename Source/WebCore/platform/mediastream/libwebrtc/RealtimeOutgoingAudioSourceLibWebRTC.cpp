@@ -42,7 +42,6 @@ RealtimeOutgoingAudioSourceLibWebRTC::~RealtimeOutgoingAudioSourceLibWebRTC() {
 
 Ref<RealtimeOutgoingAudioSource> RealtimeOutgoingAudioSource::create(Ref<MediaStreamTrackPrivate>&& audioSource)
 {
-    fprintf(stderr, "create\n");
     return RealtimeOutgoingAudioSourceLibWebRTC::create(WTFMove(audioSource));
 }
 
@@ -58,7 +57,7 @@ static inline GStreamerAudioStreamDescription& libwebrtcAudioFormat(int sampleRa
     GstAudioInfo info;
 
     size_t libWebRTCChannelCount = channelCount >= 2 ? 2 : channelCount;
-    gst_audio_info_set_format (&info, format, sampleRate, channelCount, NULL);
+    gst_audio_info_set_format (&info, format, sampleRate, libWebRTCChannelCount, NULL);
 
     return *new GStreamerAudioStreamDescription(info);
 }

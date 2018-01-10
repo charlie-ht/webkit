@@ -89,9 +89,8 @@ void RealtimeOutgoingVideoSourceGStreamer::sampleBufferUpdated(MediaStreamTrackP
     auto gstsample = gst_sample_ref(static_cast<GStreamerMediaSample*>(&sample)->sample());
 
     // TODO - Check the liftime of `sample`.
-    GstBuffer* buf = gst_buffer_make_writable(gst_sample_get_buffer(gstsample));
-
-    gst_video_frame_map(&frame, &info, buf, GST_MAP_READWRITE);
+    GstBuffer* buf = gst_sample_get_buffer(gstsample);
+    gst_video_frame_map(&frame, &info, buf, GST_MAP_READ);
 
     ASSERT(m_width);
     ASSERT(m_height);

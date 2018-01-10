@@ -25,16 +25,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
 #include "RealtimeIncomingAudioSourceLibWebRTC.h"
 #include "LibWebRTCAudioFormat.h"
+#include "config.h"
+
+#include "GStreamerMediaSample.h"
+
 #include "gstreamer/GStreamerAudioData.h"
 #include "gstreamer/GStreamerAudioStreamDescription.h"
 
-#include <gst/gst.h>
-#include <gst/audio/audio.h>
-
-#if USE(LIBWEBRTC)
+#if USE(LIBWEBRTC) && USE(GSTREAMER)
 
 namespace WebCore {
 
@@ -52,29 +52,39 @@ Ref<RealtimeIncomingAudioSourceLibWebRTC> RealtimeIncomingAudioSourceLibWebRTC::
 
 RealtimeIncomingAudioSourceLibWebRTC::RealtimeIncomingAudioSourceLibWebRTC(rtc::scoped_refptr<webrtc::AudioTrackInterface>&& audioTrack, String&& audioTrackId)
     : RealtimeIncomingAudioSource(WTFMove(audioTrack), WTFMove(audioTrackId))
+    , m_caps(nullptr)
 {
+    gst_audio_info_init(&m_info);
 }
 
 void RealtimeIncomingAudioSourceLibWebRTC::OnData(const void* audioData, int bitsPerSample, int sampleRate, size_t numberOfChannels, size_t numberOfFrames)
 {
     GstAudioInfo info;
-    GstAudioFormat format = gst_audio_format_build_integer (
+    GstAudioFormat format = gst_audio_format_build_integer(
         LibWebRTCAudioFormat::isSigned,
         LibWebRTCAudioFormat::isBigEndian ? G_BIG_ENDIAN : G_LITTLE_ENDIAN,
         LibWebRTCAudioFormat::sampleSize,
         LibWebRTCAudioFormat::sampleSize);
 
-    gst_audio_info_set_format (&info, format, sampleRate, numberOfChannels, NULL);
-    auto data = GStreamerAudioData(audioData, numberOfFrames, numberOfChannels, sampleRate);
+    gst_audio_info_set_format(&info, format, sampleRate, numberOfChannels, NULL);
 
-    auto mediaTime  = MediaTime((m_numberOfFrames * G_USEC_PER_SEC) / sampleRate, G_USEC_PER_SEC);
+    if (!gst_audio_info_is_equal(&m_info, &info)) {
+        m_info = info;
+        m_caps = gst_audio_info_to_caps(&m_info);
+    }
+
+    GstBuffer* buf = gst_buffer_new_wrapped(
+        g_memdup(audioData, GST_AUDIO_INFO_BPF(&m_info) * numberOfFrames),
+        GST_AUDIO_INFO_BPF(&m_info) * numberOfFrames);
+    auto sample = gst_sample_new(buf, m_caps.get(), nullptr, nullptr);
+    gst_buffer_unref(buf);
+    auto data = GStreamerAudioData(sample, info);
+
+    auto mediaTime = MediaTime((m_numberOfFrames * G_USEC_PER_SEC) / sampleRate, G_USEC_PER_SEC);
+    audioSamplesAvailable(mediaTime, data, GStreamerAudioStreamDescription(info), numberOfFrames);
 
     m_numberOfFrames += numberOfFrames;
-
-    audioSamplesAvailable(mediaTime, data, GStreamerAudioStreamDescription(info),
-        numberOfFrames);
 }
 }
 
 #endif // USE(LIBWEBRTC)
-

@@ -26,39 +26,27 @@
 #include "GRefPtrGStreamer.h"
 
 namespace WebCore {
-class GStreamerAudioData: public PlatformAudioData
-{
-  public:
-    GStreamerAudioData(GstSample *sample) {
-
-        gst_audio_info_from_caps (&m_AudioInfo,
-          gst_sample_get_caps (sample));
-
+class GStreamerAudioData : public PlatformAudioData {
+public:
+    GStreamerAudioData(GstSample* sample, GstAudioInfo info)
+    {
+        m_AudioInfo = info;
         m_sample = adoptGRef(sample);
     }
 
-    GStreamerAudioData(const void *audio_data,
-                       const size_t number_of_frames,
-                       const size_t number_of_channels,
-                       const uint32_t sample_rate)
+    GStreamerAudioData(GstSample* sample)
     {
-        gst_audio_info_set_format(&m_AudioInfo,
-                                  GST_AUDIO_FORMAT_S16LE, // Forced format in libwebrtc
-                                  sample_rate, number_of_channels, NULL);
-        GstBuffer *buf = gst_buffer_new_wrapped(
-          g_memdup(audio_data, GST_AUDIO_INFO_BPF(&m_AudioInfo) * number_of_frames),
-          GST_AUDIO_INFO_BPF(&m_AudioInfo) * number_of_frames);
 
-        m_sample = adoptGRef(gst_sample_new(buf,
-            gst_audio_info_to_caps (&m_AudioInfo), nullptr, nullptr));
-        gst_buffer_unref (buf);
+        gst_audio_info_from_caps(&m_AudioInfo,
+            gst_sample_get_caps(sample));
+
+        m_sample = adoptGRef(sample);
     }
-
-    GstSample * getSample() { return m_sample.get(); }
+    GstSample* getSample() { return m_sample.get(); }
 
     GstAudioInfo m_AudioInfo;
 
-  private:
+private:
     Kind kind() const { return Kind::LibWebRTCAudioData; }
     GRefPtr<GstSample> m_sample;
     GRefPtr<GstCaps> m_caps;
