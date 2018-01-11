@@ -23,46 +23,53 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "GStreamerAudioCapturer.h"
-#include <gst/app/gstappsink.h>
-#include "GStreamerUtilities.h"
+#include "config.h"
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+
+#include "GStreamerAudioCapturer.h"
+#include "GStreamerUtilities.h"
+#include "LibWebRTCAudioFormat.h"
+#include <gst/app/gstappsink.h>
+
 namespace WebCore {
 
 GStreamerAudioCapturer::GStreamerAudioCapturer(GStreamerCaptureDevice device)
     : GStreamerCapturer(device, adoptGRef(gst_caps_new_empty_simple("audio/x-raw")))
 {
-    m_caps = adoptGRef(gst_caps_new_empty_simple("audio/x-raw"));
+    m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", "rate",
+        G_TYPE_INT, LibWebRTCAudioFormat::sampleRate, nullptr));
 }
 
-void GStreamerAudioCapturer::setupPipeline() {
-    m_pipeline = gst_element_factory_make ("pipeline", "AudioCapturer");
-
+void GStreamerAudioCapturer::setupPipeline()
+{
+    m_pipeline = gst_element_factory_make("pipeline", "AudioCapturer");
 
     GRefPtr<GstElement> source = m_device.gstSourceElement();
-    GRefPtr<GstElement> converter = gst_parse_bin_from_description ("audioconvert ! audioresample",
+    GRefPtr<GstElement> converter = gst_parse_bin_from_description("audioconvert ! audioresample",
         TRUE, NULL); // FIXME Handle errors.
-    GRefPtr<GstElement> m_capsfilter = gst_element_factory_make ("capsfilter", nullptr);
-    m_sink = gst_element_factory_make ("appsink", NULL);
+    GRefPtr<GstElement> m_capsfilter = gst_element_factory_make("capsfilter", nullptr);
+    m_sink = gst_element_factory_make("appsink", NULL);
 
-    gst_app_sink_set_emit_signals(GST_APP_SINK (m_sink.get()), TRUE);
-    g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
+    gst_app_sink_set_emit_signals(GST_APP_SINK(m_sink.get()), TRUE);
+    g_object_set(m_capsfilter.get(), "caps", m_caps.get(), nullptr);
 
-    gst_bin_add_many (GST_BIN (m_pipeline.get()), source.get(), converter.get(),
+    gst_bin_add_many(GST_BIN(m_pipeline.get()), source.get(), converter.get(),
         m_capsfilter.get(), m_sink.get(), NULL);
-    gst_element_link_many (source.get(), converter.get(), m_capsfilter.get(), m_sink.get(), NULL);
+    gst_element_link_many(source.get(), converter.get(), m_capsfilter.get(), m_sink.get(), NULL);
 
     GStreamerCapturer::setupPipeline();
 }
 
 bool GStreamerAudioCapturer::setSampleRate(int sampleRate)
 {
+    GST_INFO_OBJECT (m_pipeline.get(), "Setting SampleRate %d", sampleRate);
+
     m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", "rate",
         G_TYPE_INT, sampleRate, nullptr));
 
     if (m_capsfilter.get())
-        g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
+        g_object_set(m_capsfilter.get(), "caps", m_caps.get(), nullptr);
 }
 } // namespace WebCore
 #endif //ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
