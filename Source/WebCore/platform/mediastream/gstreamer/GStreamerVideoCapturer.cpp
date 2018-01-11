@@ -66,7 +66,7 @@ GstVideoInfo GStreamerVideoCapturer::GetBestFormat()
     return info;
 }
 
-bool GStreamerVideoCapturer::setSize(int width, int height)
+void GStreamerVideoCapturer::setSize(int width, int height)
 {
     gst_caps_set_simple (m_caps.get(), "width", G_TYPE_INT, width, "height",
         G_TYPE_INT, height, nullptr);
@@ -78,5 +78,6 @@ bool GStreamerVideoCapturer::setSize(int width, int height)
 
     return false;
 }
+
 } // namespace WebCore
 #endif //ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)

@@ -81,18 +81,9 @@ LibWebRTCVideoCaptureSource::~LibWebRTCVideoCaptureSource()
     //     m_videoTrack->RemoveSink(this);
 }
 
-IntSize LibWebRTCVideoCaptureSource::size()
-{
-    GstVideoInfo info = m_capturer.GetBestFormat();
-
-    return IntSize(info.width, info.height);
-}
-
 void LibWebRTCVideoCaptureSource::startProducingData()
 {
-    const auto& tmpsettings = settings();
-
-    m_capturer.setSize(tmpsettings.width(), tmpsettings.height());
+    m_capturer.setSize(size().width(), size().height());
     m_capturer.setupPipeline();
     g_signal_connect(m_capturer.m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
     m_capturer.play();
