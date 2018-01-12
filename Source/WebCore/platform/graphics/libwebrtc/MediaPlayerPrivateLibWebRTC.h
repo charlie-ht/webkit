@@ -114,8 +114,6 @@ private:
     RefPtr<MediaStreamPrivate> m_streamPrivate;
     GRefPtr<GstElement> m_audioSrc;
     GRefPtr<GstElement> m_videoSrc;
-
-    void acceleratedRenderingStateChanged() final { GST_FIXME("Get GL rendering working!"); }
 };
 }
 
