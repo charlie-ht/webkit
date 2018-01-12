@@ -66,7 +66,7 @@ GstVideoInfo GStreamerVideoCapturer::GetBestFormat()
     return info;
 }
 
-void GStreamerVideoCapturer::setSize(int width, int height)
+bool GStreamerVideoCapturer::setSize(int width, int height)
 {
     gst_caps_set_simple (m_caps.get(), "width", G_TYPE_INT, width, "height",
         G_TYPE_INT, height, nullptr);

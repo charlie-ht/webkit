@@ -37,7 +37,7 @@ class GStreamerVideoCapturer: public GStreamerCapturer {
 public:
     GStreamerVideoCapturer(GStreamerCaptureDevice device);
     void setupPipeline() final;
-    void setSize(int width, int height);
+    bool setSize(int width, int height);
     GstVideoInfo GetBestFormat();
 };
 
