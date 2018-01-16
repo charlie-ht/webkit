@@ -82,8 +82,8 @@ void RealtimeOutgoingVideoSourceGStreamer::sampleBufferUpdated(MediaStreamTrackP
 
     // FIXME - ASSERT(sample.platformSample().type == PlatformSample::GStreamerMediaSample);
     GstVideoFrame frame;
-    GStreamerMediaSample& medisample = static_cast<GStreamerMediaSample&>(sample);
-    GstVideoInfo info = medisample.videoInfo();
+    GStreamerMediaSample& mediaSample = static_cast<GStreamerMediaSample&>(sample);
+    GstVideoInfo info = mediaSample.videoInfo();
     auto pixelFormatType = GST_VIDEO_INFO_FORMAT(&info);
 
     auto gstsample = gst_sample_ref(static_cast<GStreamerMediaSample*>(&sample)->sample());
