@@ -52,7 +52,7 @@ MediaSampleGStreamer::MediaSampleGStreamer(GRefPtr<GstSample>&& sample, const Fl
         m_duration = createMediaTime(GST_BUFFER_DURATION(buffer));
 
     m_size = gst_buffer_get_size(buffer);
-    m_sample = sample;
+    m_sample = adoptGRef(sample);
 
     if (GST_BUFFER_FLAG_IS_SET(buffer, GST_BUFFER_FLAG_DELTA_UNIT))
         m_flags = MediaSample::None;
