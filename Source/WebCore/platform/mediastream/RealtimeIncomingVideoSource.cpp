@@ -47,6 +47,12 @@ RealtimeIncomingVideoSource::RealtimeIncomingVideoSource(rtc::scoped_refptr<webr
     notifyMutedChange(!m_videoTrack);
 }
 
+RealtimeIncomingVideoSource::~RealtimeIncomingVideoSource()
+{
+    if (isProducingData())
+        stopProducingData();
+}
+
 void RealtimeIncomingVideoSource::startProducingData()
 {
     if (m_videoTrack)
