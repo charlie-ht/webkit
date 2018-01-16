@@ -84,8 +84,10 @@ LibWebRTCVideoCaptureSource::~LibWebRTCVideoCaptureSource()
 void LibWebRTCVideoCaptureSource::startProducingData()
 {
     m_capturer.setSize(size().width(), size().height());
+    m_capturer.setFrameRate(frameRate());
     m_currentSettings->setWidth(size().width());
     m_currentSettings->setHeight(size().height());
+    m_currentSettings->setFrameRate(frameRate());
     m_capturer.setupPipeline();
     g_signal_connect(m_capturer.m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
     m_capturer.play();

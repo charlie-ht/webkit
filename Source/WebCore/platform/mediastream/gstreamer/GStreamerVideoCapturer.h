@@ -38,6 +38,7 @@ public:
     GStreamerVideoCapturer(GStreamerCaptureDevice device);
     void setupPipeline() final;
     bool setSize(int width, int height);
+    bool setFrameRate(double);
     GstVideoInfo GetBestFormat();
 };
 

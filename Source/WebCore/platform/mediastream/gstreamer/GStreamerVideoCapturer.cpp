@@ -79,5 +79,16 @@ bool GStreamerVideoCapturer::setSize(int width, int height)
     return false;
 }
 
+bool GStreamerVideoCapturer::setFrameRate(double frameRate)
+{
+    gst_caps_set_simple (m_caps.get(), "framerate", GST_TYPE_FRACTION, (int)frameRate , 1, nullptr);
+
+    if (!m_capsfilter)
+        return false;
+
+    g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
+    return true;
+}
+
 } // namespace WebCore
 #endif //ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
