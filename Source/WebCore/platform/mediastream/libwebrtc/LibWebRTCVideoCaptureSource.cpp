@@ -95,12 +95,11 @@ void LibWebRTCVideoCaptureSource::startProducingData()
 
 GstFlowReturn LibWebRTCVideoCaptureSource::newSampleCallback(GstElement* sink, LibWebRTCVideoCaptureSource* source)
 {
-    GstSample *sample = gst_app_sink_pull_sample(GST_APP_SINK(sink));
+    auto sample = GStreamerMediaSample::create(gst_app_sink_pull_sample(GST_APP_SINK(sink)), WebCore::FloatSize(), String());
 
     // FIXME - Check how presentationSize is supposed to be used here.
-    callOnMainThread([protectedThis = makeRef(*source), sample] {
-        protectedThis->videoSampleAvailable(GStreamerMediaSample::create(sample,
-            WebCore::FloatSize(), String()));
+    callOnMainThread([protectedThis = makeRef(*source), sample = WTFMove(sample)] {
+            protectedThis->videoSampleAvailable(sample.get());
     });
 
     return GST_FLOW_OK;

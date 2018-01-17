@@ -82,11 +82,11 @@ void RealtimeOutgoingVideoSourceGStreamer::sampleBufferUpdated(MediaStreamTrackP
 
     // FIXME - ASSERT(sample.platformSample().type == PlatformSample::GStreamerMediaSample);
     GstVideoFrame frame;
-    GStreamerMediaSample& mediaSample = static_cast<GStreamerMediaSample&>(sample);
+    auto& mediaSample = static_cast<GStreamerMediaSample&>(sample);
     GstVideoInfo info = mediaSample.videoInfo();
     auto pixelFormatType = GST_VIDEO_INFO_FORMAT(&info);
 
-    auto gstsample = gst_sample_ref(static_cast<GStreamerMediaSample*>(&sample)->sample());
+    auto gstsample = gst_sample_ref(mediaSample.sample());
 
     // TODO - Check the liftime of `sample`.
     GstBuffer* buf = gst_sample_get_buffer(gstsample);
