@@ -72,8 +72,13 @@ bool GStreamerAudioCapturer::setSampleRate(int sampleRate)
     m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", "rate",
         G_TYPE_INT, sampleRate, nullptr));
 
-    if (m_capsfilter.get())
+    if (m_capsfilter.get()) {
         g_object_set(m_capsfilter.get(), "caps", m_caps.get(), nullptr);
+
+        return true;
+    }
+
+    return false;
 }
 } // namespace WebCore
 #endif //ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
