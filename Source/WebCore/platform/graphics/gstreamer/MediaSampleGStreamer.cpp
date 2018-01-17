@@ -125,7 +125,7 @@ Ref<MediaSample> MediaSampleGStreamer::createNonDisplayingCopy() const
 
 GstVideoInfo GStreamerMediaSample::videoInfo()
 {
-    GRefPtr<GstCaps> caps = adoptGRef(gst_sample_get_caps (m_sample.get()));
+    GRefPtr<GstCaps> caps = gst_sample_get_caps (m_sample.get());
     g_assert (gst_caps_is_fixed (caps.get()));
     g_assert (gst_structure_has_name (gst_caps_get_structure(caps.get(), 0), "video/x-raw"));
 

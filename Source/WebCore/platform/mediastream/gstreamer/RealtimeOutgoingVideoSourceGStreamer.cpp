@@ -86,10 +86,8 @@ void RealtimeOutgoingVideoSourceGStreamer::sampleBufferUpdated(MediaStreamTrackP
     GstVideoInfo info = mediaSample.videoInfo();
     auto pixelFormatType = GST_VIDEO_INFO_FORMAT(&info);
 
-    auto gstsample = gst_sample_ref(mediaSample.sample());
-
     // TODO - Check the liftime of `sample`.
-    GstBuffer* buf = gst_sample_get_buffer(gstsample);
+    GstBuffer* buf = gst_sample_get_buffer(mediaSample.sample());
     gst_video_frame_map(&frame, &info, buf, GST_MAP_READ);
 
     ASSERT(m_width);
@@ -98,6 +96,7 @@ void RealtimeOutgoingVideoSourceGStreamer::sampleBufferUpdated(MediaStreamTrackP
     auto newBuffer = m_bufferPool.CreateBuffer(GST_VIDEO_FRAME_WIDTH(&frame), GST_VIDEO_FRAME_HEIGHT(&frame));
     ASSERT(newBuffer);
     if (!newBuffer) {
+        gst_video_frame_unmap(&frame);
         GST_INFO("RealtimeOutgoingVideoSourceGStreamer::videoSampleAvailable unable to allocate buffer for conversion to YUV");
         return;
     }
