@@ -81,7 +81,10 @@ bool GStreamerVideoCapturer::setSize(int width, int height)
 
 bool GStreamerVideoCapturer::setFrameRate(double frameRate)
 {
-    gst_caps_set_simple (m_caps.get(), "framerate", GST_TYPE_FRACTION, (int)frameRate , 1, nullptr);
+    int numerator, denominator;
+    gst_util_double_to_fraction(frameRate, &numerator, &denominator);
+
+    gst_caps_set_simple (m_caps.get(), "framerate", GST_TYPE_FRACTION, numerator, denominator, nullptr);
 
     if (!m_capsfilter)
         return false;
