@@ -58,8 +58,8 @@ private:
     void sendSilence() final;
 
     GstAudioConverter * m_sampleConverter;
-    GStreamerAudioStreamDescription& m_inputStreamDescription;
-    GStreamerAudioStreamDescription& m_outputStreamDescription;
+    std::unique_ptr<GStreamerAudioStreamDescription> m_inputStreamDescription;
+    std::unique_ptr<GStreamerAudioStreamDescription> m_outputStreamDescription;
 
     GMutex m_adapterMutex;
     GRefPtr<GstAdapter> m_Adapter;

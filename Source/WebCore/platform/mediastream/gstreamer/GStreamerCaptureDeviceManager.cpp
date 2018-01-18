@@ -18,6 +18,7 @@
 
 #include "config.h"
 #include "GStreamerCaptureDeviceManager.h"
+#include <wtf/glib/GUniquePtr.h>
 
 #if ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 
@@ -64,11 +65,15 @@ void GStreamerCaptureDeviceManager::deviceAdded(GstDevice* device)
     GstStructure* properties = gst_device_get_properties(device);
     const gchar* klass = gst_structure_get_string(properties, "device.class");
 
-    if (klass && !g_strcmp0(klass, "monitor"))
+    if (klass && !g_strcmp0(klass, "monitor")) {
+        gst_structure_free(properties);
         return;
+    }
+    gst_structure_free(properties);
 
     CaptureDevice::DeviceType type = deviceType();
-    String deviceClass = gst_device_get_device_class(device);
+    GUniquePtr<gchar> deviceClassChar(gst_device_get_device_class(device));
+    String deviceClass(String(deviceClassChar.get()));
     if (type == CaptureDevice::DeviceType::Audio && !deviceClass.startsWith("Audio"))
         return;
     if (type == CaptureDevice::DeviceType::Video && !deviceClass.startsWith("Video"))
@@ -76,7 +81,8 @@ void GStreamerCaptureDeviceManager::deviceAdded(GstDevice* device)
 
     // FIXME: This isn't really a UID but should be good enough (libwebrtc itself does that
     // at least for pulseaudio devices.)
-    String identifier = String::fromUTF8(gst_device_get_display_name (device));
+    GUniquePtr<gchar> deviceName(gst_device_get_display_name(device));
+    String identifier = String::fromUTF8(deviceName.get());
 
     auto gstCaptureDevice = GStreamerCaptureDevice(device, identifier, type, identifier);
     gstCaptureDevice.setEnabled(true);

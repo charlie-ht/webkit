@@ -27,9 +27,7 @@
 namespace WebCore {
 
 RealtimeOutgoingAudioSourceLibWebRTC::RealtimeOutgoingAudioSourceLibWebRTC(Ref<MediaStreamTrackPrivate>&& audioSource)
-    : RealtimeOutgoingAudioSource(WTFMove(audioSource)),
-      m_inputStreamDescription(*new GStreamerAudioStreamDescription()),
-      m_outputStreamDescription(*new GStreamerAudioStreamDescription())
+    : RealtimeOutgoingAudioSource(WTFMove(audioSource))
 {
       g_mutex_init(&m_adapterMutex);
       m_Adapter = gst_adapter_new(),
@@ -45,7 +43,7 @@ Ref<RealtimeOutgoingAudioSource> RealtimeOutgoingAudioSource::create(Ref<MediaSt
     return RealtimeOutgoingAudioSourceLibWebRTC::create(WTFMove(audioSource));
 }
 
-static inline GStreamerAudioStreamDescription& libwebrtcAudioFormat(int sampleRate,
+static inline std::unique_ptr<GStreamerAudioStreamDescription> libwebrtcAudioFormat(int sampleRate,
     size_t channelCount)
 {
     GstAudioFormat format = gst_audio_format_build_integer (
@@ -59,7 +57,7 @@ static inline GStreamerAudioStreamDescription& libwebrtcAudioFormat(int sampleRa
     size_t libWebRTCChannelCount = channelCount >= 2 ? 2 : channelCount;
     gst_audio_info_set_format (&info, format, sampleRate, libWebRTCChannelCount, NULL);
 
-    return *new GStreamerAudioStreamDescription(info);
+    return std::unique_ptr<GStreamerAudioStreamDescription>(new GStreamerAudioStreamDescription(info));
 }
 
 void RealtimeOutgoingAudioSourceLibWebRTC::audioSamplesAvailable(const MediaTime&,
@@ -69,18 +67,18 @@ void RealtimeOutgoingAudioSourceLibWebRTC::audioSamplesAvailable(const MediaTime
     auto data = static_cast<const GStreamerAudioData&>(audioData);
     auto desc = static_cast<const GStreamerAudioStreamDescription&>(streamDescription);
 
-    if (m_sampleConverter && !gst_audio_info_is_equal (m_inputStreamDescription.getInfo(), desc.getInfo())) {
+    if (m_sampleConverter && !gst_audio_info_is_equal (m_inputStreamDescription->getInfo(), desc.getInfo())) {
         GST_ERROR_OBJECT(this, "FIXME - Audio format renegotiation is not possible yet!");
         g_clear_pointer (&m_sampleConverter, gst_audio_converter_free);
     }
 
     if (!m_sampleConverter) {
-        m_inputStreamDescription = *new GStreamerAudioStreamDescription(desc.getInfo());
+        m_inputStreamDescription = std::unique_ptr<GStreamerAudioStreamDescription>(new GStreamerAudioStreamDescription(desc.getInfo()));
         m_outputStreamDescription = libwebrtcAudioFormat(LibWebRTCAudioFormat::sampleRate, streamDescription.numberOfChannels());
 
         m_sampleConverter = gst_audio_converter_new (GST_AUDIO_CONVERTER_FLAG_IN_WRITABLE,
-            m_inputStreamDescription.getInfo(),
-            m_inputStreamDescription.getInfo(),
+            m_inputStreamDescription->getInfo(),
+            m_inputStreamDescription->getInfo(),
             NULL);
     }
 
@@ -98,11 +96,14 @@ void RealtimeOutgoingAudioSourceLibWebRTC::handleMutedIfNeeded()
 
 void RealtimeOutgoingAudioSourceLibWebRTC::sendSilence()
 {
+    if (!m_outputStreamDescription)
+        return;
+
     LibWebRTCProvider::callOnWebRTCSignalingThread([ this, protectedThis = makeRef(*this) ] {
         GstMapInfo outmap;
 
-        size_t outChunkSampleCount = m_outputStreamDescription.sampleRate() / 100;
-        size_t outBufferSize = outChunkSampleCount * m_outputStreamDescription.getInfo()->bpf;
+        size_t outChunkSampleCount = m_outputStreamDescription->sampleRate() / 100;
+        size_t outBufferSize = outChunkSampleCount * m_outputStreamDescription->getInfo()->bpf;
 
         if (!outBufferSize)
             return;
@@ -110,14 +111,14 @@ void RealtimeOutgoingAudioSourceLibWebRTC::sendSilence()
         GstBuffer *outbuf = gst_buffer_new_allocate(NULL, outBufferSize, 0);
 
         gst_buffer_map(outbuf, &outmap, (GstMapFlags)GST_MAP_WRITE);
-        gst_audio_format_fill_silence(m_outputStreamDescription.getInfo()->finfo,
+        gst_audio_format_fill_silence(m_outputStreamDescription->getInfo()->finfo,
             outmap.data, outBufferSize);
 
         for (auto sink : m_sinks)
             sink->OnData(outmap.data,
                 LibWebRTCAudioFormat::sampleSize,
-                m_outputStreamDescription.sampleRate(),
-                m_outputStreamDescription.numberOfChannels(),
+                m_outputStreamDescription->sampleRate(),
+                m_outputStreamDescription->numberOfChannels(),
                 outChunkSampleCount);
 
         gst_buffer_unmap(outbuf, &outmap);
@@ -127,12 +128,15 @@ void RealtimeOutgoingAudioSourceLibWebRTC::sendSilence()
 
 void RealtimeOutgoingAudioSourceLibWebRTC::pullAudioData()
 {
-    // libwebrtc expects 10 ms chunks.
-    size_t inChunkSampleCount = m_inputStreamDescription.sampleRate() / 100;
-    size_t inBufferSize = inChunkSampleCount * m_inputStreamDescription.getInfo()->bpf;
+    if (!m_inputStreamDescription || !m_outputStreamDescription)
+        return;
 
-    size_t outChunkSampleCount = m_outputStreamDescription.sampleRate() / 100;
-    size_t outBufferSize = outChunkSampleCount * m_outputStreamDescription.getInfo()->bpf;
+    // libwebrtc expects 10 ms chunks.
+    size_t inChunkSampleCount = m_inputStreamDescription->sampleRate() / 100;
+    size_t inBufferSize = inChunkSampleCount * m_inputStreamDescription->getInfo()->bpf;
+
+    size_t outChunkSampleCount = m_outputStreamDescription->sampleRate() / 100;
+    size_t outBufferSize = outChunkSampleCount * m_outputStreamDescription->getInfo()->bpf;
 
     WTF::GMutexLocker<GMutex> lock(m_adapterMutex);
     GstBuffer *inbuf = gst_adapter_take_buffer (m_Adapter.get(), inBufferSize);
@@ -154,9 +158,9 @@ void RealtimeOutgoingAudioSourceLibWebRTC::pullAudioData()
     gst_buffer_unref (inbuf);
     for (auto sink : m_sinks) {
         sink->OnData(outmap.data,
-            m_outputStreamDescription.sampleWordSize(),
-            (int) m_outputStreamDescription.sampleRate(),
-            (int) m_outputStreamDescription.numberOfChannels(),
+            m_outputStreamDescription->sampleWordSize(),
+            (int) m_outputStreamDescription->sampleRate(),
+            (int) m_outputStreamDescription->numberOfChannels(),
             outChunkSampleCount);
     }
     gst_buffer_unmap (outbuf, &outmap);
