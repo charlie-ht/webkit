@@ -64,7 +64,7 @@ static void busMessageCallback(GstBus*, GstMessage* message, GstBin *pipeline)
             gst_message_parse_state_changed(message, &oldstate, &newstate,
                 &pending);
 
-            GST_ERROR("State changed (old: %s, new: %s, pending: %s)",
+            GST_INFO_OBJECT (pipeline, "State changed (old: %s, new: %s, pending: %s)",
                 gst_element_state_get_name(oldstate),
                 gst_element_state_get_name(newstate),
                 gst_element_state_get_name(pending));
@@ -96,7 +96,7 @@ void GStreamerCapturer::setupPipeline()
 void GStreamerCapturer::play() {
     g_assert(m_pipeline.get());
 
-    GST_ERROR_OBJECT ((gpointer) m_pipeline.get(), "Going to PLAYING!");
+    GST_INFO_OBJECT ((gpointer) m_pipeline.get(), "Going to PLAYING!");
 
     gst_element_set_state (m_pipeline.get(), GST_STATE_PLAYING);
 }
@@ -104,7 +104,7 @@ void GStreamerCapturer::play() {
 void GStreamerCapturer::stop() {
     g_assert(m_pipeline.get());
 
-    GST_ERROR_OBJECT ((gpointer) m_pipeline.get(), "Tearing down!");
+    GST_INFO_OBJECT ((gpointer) m_pipeline.get(), "Tearing down!");
 
     gst_element_set_state (m_pipeline.get(), GST_STATE_NULL);
 }

@@ -74,7 +74,7 @@ static void busMessageCallback(GstBus*, GstMessage* message, GstBin* pipeline)
             gst_message_parse_state_changed(message, &oldstate, &newstate,
                 &pending);
 
-            GST_ERROR("State changed (old: %s, new: %s, pending: %s)",
+            GST_INFO_OBJECT(pipeline, "State changed (old: %s, new: %s, pending: %s)",
                 gst_element_state_get_name(oldstate),
                 gst_element_state_get_name(newstate),
                 gst_element_state_get_name(pending));
