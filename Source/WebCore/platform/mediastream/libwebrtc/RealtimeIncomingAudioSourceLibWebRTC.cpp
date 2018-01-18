@@ -67,16 +67,15 @@ void RealtimeIncomingAudioSourceLibWebRTC::OnData(const void* audioData, int, in
     gst_audio_info_set_format(&info, format, sampleRate, numberOfChannels, NULL);
 
 
-    GstBuffer* buf = gst_buffer_new_wrapped(
+    auto buffer = adoptGRef(gst_buffer_new_wrapped(
         g_memdup(audioData, GST_AUDIO_INFO_BPF(&info) * numberOfFrames),
-        GST_AUDIO_INFO_BPF(&info) * numberOfFrames);
-    GRefPtr<GstCaps> caps = gst_audio_info_to_caps (&info);
-    auto sample = gst_sample_new(buf, caps.get(), nullptr, nullptr);
-    gst_buffer_unref(buf);
-    auto data = GStreamerAudioData(sample, info);
+        GST_AUDIO_INFO_BPF(&info) * numberOfFrames));
+    GRefPtr<GstCaps> caps = adoptGRef(gst_audio_info_to_caps (&info));
+    auto sample = adoptGRef(gst_sample_new(buffer.get(), caps.get(), nullptr, nullptr));
+    auto data(std::unique_ptr<GStreamerAudioData>(new GStreamerAudioData(WTFMove(sample), info)));
 
     auto mediaTime = MediaTime((m_numberOfFrames * G_USEC_PER_SEC) / sampleRate, G_USEC_PER_SEC);
-    audioSamplesAvailable(mediaTime, data, GStreamerAudioStreamDescription(info), numberOfFrames);
+    audioSamplesAvailable(mediaTime, *data.get(), GStreamerAudioStreamDescription(info), numberOfFrames);
 
     m_numberOfFrames += numberOfFrames;
 }
