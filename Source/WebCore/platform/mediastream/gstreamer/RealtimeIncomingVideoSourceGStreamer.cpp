@@ -71,9 +71,7 @@ void RealtimeIncomingVideoSourceGStreamer::OnFrame(const webrtc::VideoFrame& fra
     }
 
     auto webrtcbuffer = frame.video_frame_buffer().get();
-    GstBuffer *buffer = gst_buffer_new();
-
-    // GstBuffer *buffer = gst_buffer_new_wrapped((gpointer) webrtcbuffer->DataY(), m_info.size);
+    auto buffer = adoptGRef(gst_buffer_new());
 
     // FIXME - Check lifetime of those buffers.
     const uint8_t *comps[3] = {webrtcbuffer->DataY(), webrtcbuffer->DataU(), webrtcbuffer->DataV()};
@@ -84,10 +82,10 @@ void RealtimeIncomingVideoSourceGStreamer::OnFrame(const webrtc::VideoFrame& fra
 
         GstMemory * comp = gst_memory_new_wrapped(GST_MEMORY_FLAG_PHYSICALLY_CONTIGUOUS,
             (gpointer) comps[i], compsize, 0, compsize, webrtcbuffer, nullptr);
-        gst_buffer_append_memory (buffer, comp);
+        gst_buffer_append_memory (buffer.get(), comp);
     }
 
-    auto sample = gst_sample_new (buffer, m_caps.get(), NULL, NULL);
+    auto sample = gst_sample_new (buffer.get(), m_caps.get(), NULL, NULL);
     callOnMainThread([protectedThis = makeRef(*this), sample] {
         protectedThis->processNewSample(sample);
     });
