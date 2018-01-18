@@ -153,13 +153,14 @@ const RealtimeMediaSourceCapabilities& LibWebRTCVideoCaptureSource::capabilities
                 tmpMinFramerate = (int)(tmpMinFPS_n / tmpMinFPS_d);
                 tmpMaxFramerate = (int)(tmpMaxFPS_n / tmpMaxFPS_d);
             } else {
-                GValueArray* array;
+                const GValue* frameRates(gst_structure_get_value(str, "framerate"));
                 tmpMinFramerate = G_MAXINT;
                 tmpMaxFramerate = 0;
 
-                g_assert(gst_structure_get_list(str, "framerate", &array));
-                for (guint i = 0; i < array->n_values; i++) {
-                    GValue* val = &array->values[i];
+                guint frameRatesLength = static_cast<guint>(gst_value_list_get_size(frameRates)) - 1;
+
+                for (guint i = 0; i < frameRatesLength; i++) {
+                    const GValue* val = gst_value_list_get_value(frameRates, i);
 
                     g_assert(G_VALUE_TYPE(val) == GST_TYPE_FRACTION);
                     gint framerate = (int)(gst_value_get_fraction_numerator(val) / gst_value_get_fraction_denominator(val));
