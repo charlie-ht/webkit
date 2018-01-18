@@ -106,6 +106,11 @@ CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::videoCaptureDeviceMana
     return GStreamerVideoCaptureDeviceManager::singleton();
 }
 
+CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::displayCaptureDeviceManager()
+{
+    return GStreamerDisplayCaptureDeviceManager::singleton();
+}
+
 } // namespace WebCore
 
 #endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)

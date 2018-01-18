@@ -34,7 +34,7 @@
 
 #include "RealtimeIncomingVideoSource.h"
 #include "GRefPtrGStreamer.h"
-#include "GStreamerMediaSample.h"
+#include "MediaSampleGStreamer.h"
 
 namespace WebCore {
 

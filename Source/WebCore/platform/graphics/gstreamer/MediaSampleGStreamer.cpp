@@ -52,7 +52,7 @@ MediaSampleGStreamer::MediaSampleGStreamer(GRefPtr<GstSample>&& sample, const Fl
         m_duration = createMediaTime(GST_BUFFER_DURATION(buffer));
 
     m_size = gst_buffer_get_size(buffer);
-    m_sample = adoptGRef(sample);
+    m_sample = sample;
 
     if (GST_BUFFER_FLAG_IS_SET(buffer, GST_BUFFER_FLAG_DELTA_UNIT))
         m_flags = MediaSample::None;
@@ -123,7 +123,7 @@ Ref<MediaSample> MediaSampleGStreamer::createNonDisplayingCopy() const
     return adoptRef(*new MediaSampleGStreamer(sample.get(), m_presentationSize, m_trackId));
 }
 
-GstVideoInfo GStreamerMediaSample::videoInfo()
+GstVideoInfo MediaSampleGStreamer::videoInfo()
 {
     GRefPtr<GstCaps> caps = gst_sample_get_caps (m_sample.get());
     g_assert (gst_caps_is_fixed (caps.get()));

@@ -24,7 +24,7 @@
 #include "gstreamer/GStreamerAudioData.h"
 #include <gst/app/gstappsink.h>
 
-#include "GStreamerMediaSample.h"
+#include "MediaSampleGStreamer.h"
 #include "ImageGStreamer.h"
 
 #include "GraphicsContext.h"
@@ -322,7 +322,7 @@ void MediaPlayerPrivateLibWebRTC::trackMutedChanged(MediaStreamTrackPrivate& tra
 
 void MediaPlayerPrivateLibWebRTC::sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample& sample)
 {
-    auto gstsample = static_cast<GStreamerMediaSample*>(&sample)->sample();
+    auto gstsample = static_cast<MediaSampleGStreamer*>(&sample)->platformSample().sample.gstSample;
     gst_app_src_push_sample(GST_APP_SRC(m_videoSrc.get()), gstsample);
 }
 }

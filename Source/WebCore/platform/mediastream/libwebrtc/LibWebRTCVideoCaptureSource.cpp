@@ -29,7 +29,7 @@
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
 
-#include "GStreamerMediaSample.h"
+#include "MediaSampleGStreamer.h"
 #include <gst/app/gstappsink.h>
 
 #include "LibWebRTCProviderGlib.h"
@@ -93,7 +93,7 @@ void LibWebRTCVideoCaptureSource::startProducingData()
 
 GstFlowReturn LibWebRTCVideoCaptureSource::newSampleCallback(GstElement* sink, LibWebRTCVideoCaptureSource* source)
 {
-    auto sample = GStreamerMediaSample::create(gst_app_sink_pull_sample(GST_APP_SINK(sink)), WebCore::FloatSize(), String());
+    auto sample = MediaSampleGStreamer::create(gst_app_sink_pull_sample(GST_APP_SINK(sink)), WebCore::FloatSize(), String());
 
     // FIXME - Check how presentationSize is supposed to be used here.
     callOnMainThread([protectedThis = makeRef(*source), sample = WTFMove(sample)] {

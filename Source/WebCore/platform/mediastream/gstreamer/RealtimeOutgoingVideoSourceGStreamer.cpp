@@ -28,7 +28,7 @@
 
 #if USE(LIBWEBRTC) && USE(GSTREAMER)
 
-#include "GStreamerMediaSample.h"
+#include "MediaSampleGStreamer.h"
 #include <webrtc/api/video/i420_buffer.h>
 #include <webrtc/base/callback.h>
 #include <webrtc/common_video/include/video_frame_buffer.h>
@@ -82,12 +82,13 @@ void RealtimeOutgoingVideoSourceGStreamer::sampleBufferUpdated(MediaStreamTrackP
 
     // FIXME - ASSERT(sample.platformSample().type == PlatformSample::GStreamerMediaSample);
     GstVideoFrame frame;
-    auto& mediaSample = static_cast<GStreamerMediaSample&>(sample);
+    auto& mediaSample = static_cast<MediaSampleGStreamer&>(sample);
     GstVideoInfo info = mediaSample.videoInfo();
     auto pixelFormatType = GST_VIDEO_INFO_FORMAT(&info);
 
     // TODO - Check the liftime of `sample`.
-    GstBuffer* buf = gst_sample_get_buffer(mediaSample.sample());
+    ASSERT(mediaSample->platformSample().type == PlatformSample::GStreamerSampleType);
+    GstBuffer* buf = gst_sample_get_buffer(mediaSample.platformSample().sample.gstSample);
     gst_video_frame_map(&frame, &info, buf, GST_MAP_READ);
 
     ASSERT(m_width);

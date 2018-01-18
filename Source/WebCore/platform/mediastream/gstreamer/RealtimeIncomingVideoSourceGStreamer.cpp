@@ -32,7 +32,6 @@
 
 #include "RealtimeIncomingVideoSourceGStreamer.h"
 #include "Logging.h"
-#include "GStreamerMediaSample.h"
 #include <gst/video/video.h>
 
 namespace WebCore {
@@ -100,7 +99,7 @@ void RealtimeIncomingVideoSourceGStreamer::processNewSample(GstSample *sample)
     //     settingsDidChange();
     // }
 
-    videoSampleAvailable(GStreamerMediaSample::create(sample, WebCore::FloatSize(), String()));
+    videoSampleAvailable(MediaSampleGStreamer::create(sample, WebCore::FloatSize(), String()));
 }
 
 } // namespace WebCore

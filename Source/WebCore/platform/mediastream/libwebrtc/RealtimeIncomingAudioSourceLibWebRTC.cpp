@@ -29,7 +29,7 @@
 #include "LibWebRTCAudioFormat.h"
 #include "config.h"
 
-#include "GStreamerMediaSample.h"
+#include "MediaSampleGStreamer.h"
 
 #include "gstreamer/GStreamerAudioData.h"
 #include "gstreamer/GStreamerAudioStreamDescription.h"

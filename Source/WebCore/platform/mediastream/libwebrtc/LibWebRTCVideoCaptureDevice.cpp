@@ -37,7 +37,7 @@ std::optional<LibWebRTCVideoCaptureDevice> LibWebRTCVideoCaptureDevice::create(c
 }
 
 LibWebRTCVideoCaptureDevice::LibWebRTCVideoCaptureDevice(const String& persistentId, const String& label)
-    : CaptureDevice(persistentId, CaptureDevice::DeviceType::Video, label)
+    : CaptureDevice(persistentId, CaptureDevice::DeviceType::Camera, label)
 {
 }
 
