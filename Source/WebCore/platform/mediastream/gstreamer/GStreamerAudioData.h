@@ -28,29 +28,29 @@
 namespace WebCore {
 class GStreamerAudioData : public PlatformAudioData {
 public:
-    GStreamerAudioData(GstSample* sample, GstAudioInfo info)
+    GStreamerAudioData(GRefPtr<GstSample>&& sample, GstAudioInfo info)
+        : m_sample(WTFMove(sample))
+        , m_audioInfo(info)
     {
-        m_AudioInfo = info;
-        m_sample = adoptGRef(sample);
     }
 
-    GStreamerAudioData(GstSample* sample)
+    GStreamerAudioData(GRefPtr<GstSample>&& sample)
+        : m_sample(WTFMove(sample))
     {
-
-        gst_audio_info_from_caps(&m_AudioInfo,
-            gst_sample_get_caps(sample));
-
-        m_sample = adoptGRef(sample);
+        gst_audio_info_from_caps(&m_audioInfo, gst_sample_get_caps(m_sample.get()));
     }
+
     GstSample* getSample() { return m_sample.get(); }
-
-    GstAudioInfo m_AudioInfo;
+    GstAudioInfo getAudioInfo() {return m_audioInfo; }
 
 private:
     Kind kind() const { return Kind::LibWebRTCAudioData; }
     GRefPtr<GstSample> m_sample;
     GRefPtr<GstCaps> m_caps;
+
+    GstAudioInfo m_audioInfo;
 };
+
 } // namespace WebCore
 
 #endif // USE(LIBWEBRTC)

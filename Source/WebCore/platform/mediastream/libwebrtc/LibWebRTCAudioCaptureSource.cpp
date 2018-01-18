@@ -100,16 +100,16 @@ void LibWebRTCAudioCaptureSource::startProducingData()
 
 GstFlowReturn LibWebRTCAudioCaptureSource::newSampleCallback(GstElement* sink, LibWebRTCAudioCaptureSource* source)
 {
-    GRefPtr<GstSample> sample = adoptGRef(gst_app_sink_pull_sample(GST_APP_SINK(sink)));
+    auto sample = adoptGRef(gst_app_sink_pull_sample(GST_APP_SINK(sink)));
 
     // FIXME - figure out a way to avoid copying (on write) the data.
     GstBuffer *buf = gst_sample_get_buffer (sample.get());
-    auto frames = new GStreamerAudioData(sample.get());
-    auto streamDesc = new GStreamerAudioStreamDescription((GstAudioInfo) frames->m_AudioInfo);
+    auto frames(std::unique_ptr<GStreamerAudioData>(new GStreamerAudioData(WTFMove(sample))));
+    auto streamDesc(std::unique_ptr<GStreamerAudioStreamDescription>(new GStreamerAudioStreamDescription(frames->getAudioInfo())));
 
     source->audioSamplesAvailable(
         MediaTime(GST_TIME_AS_USECONDS (GST_BUFFER_PTS (buf)), G_USEC_PER_SEC),
-        *frames, *streamDesc, gst_buffer_get_size (buf) / frames->m_AudioInfo.bpf);
+        *frames, *streamDesc, gst_buffer_get_size (buf) / frames->getAudioInfo().bpf);
 
     return GST_FLOW_OK;
 }
