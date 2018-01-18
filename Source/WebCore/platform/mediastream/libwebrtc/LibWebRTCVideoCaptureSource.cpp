@@ -77,8 +77,6 @@ LibWebRTCVideoCaptureSource::LibWebRTCVideoCaptureSource(GStreamerCaptureDevice 
 
 LibWebRTCVideoCaptureSource::~LibWebRTCVideoCaptureSource()
 {
-    // if (m_videoTrack)
-    //     m_videoTrack->RemoveSink(this);
 }
 
 void LibWebRTCVideoCaptureSource::startProducingData()

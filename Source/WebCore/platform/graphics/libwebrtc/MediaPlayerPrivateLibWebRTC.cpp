@@ -219,6 +219,11 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
 
             gst_bin_add_many(GST_BIN(m_pipeline.get()), m_videoSrc.get(), sink, nullptr);
             gst_element_link(m_videoSrc.get(), sink);
+
+            if (stream.hasCaptureVideoSource()) {
+                LibWebRTCVideoCaptureSource& source = static_cast<LibWebRTCVideoCaptureSource&>(m_videoTrack->source());
+                source.addObserver(*this);
+            }
         } else {
             GST_INFO("Unsuported track type: %d", track->type());
 
@@ -259,6 +264,12 @@ void MediaPlayerPrivateLibWebRTC::cancelLoad()
 
 void MediaPlayerPrivateLibWebRTC::prepareToPlay()
 {
+}
+
+void MediaPlayerPrivateLibWebRTC::sourceStopping()
+{
+    gst_element_send_event (m_videoSrc.get(), gst_event_new_flush_start());
+    gst_element_send_event (m_videoSrc.get(), gst_event_new_flush_stop(false));
 }
 
 void MediaPlayerPrivateLibWebRTC::loadingFailed(MediaPlayer::NetworkState error)

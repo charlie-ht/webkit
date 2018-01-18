@@ -27,10 +27,7 @@
 #include "MediaSampleLibWebRTC.h"
 #include "MediaStreamPrivate.h"
 #include "MediaStreamTrackPrivate.h"
-
-#include "webrtc/api/mediastreaminterface.h"
-#include "webrtc/media/base/videosinkinterface.h"
-#include "webrtc/media/engine/webrtcvideocapturer.h"
+#include "RealtimeMediaSource.h"
 
 #include "MediaPlayerPrivateGStreamerBase.h"
 
@@ -39,7 +36,7 @@
 
 namespace WebCore {
 
-class MediaPlayerPrivateLibWebRTC : public MediaPlayerPrivateGStreamerBase, private MediaStreamTrackPrivate::Observer {
+class MediaPlayerPrivateLibWebRTC : public MediaPlayerPrivateGStreamerBase, private MediaStreamTrackPrivate::Observer, RealtimeMediaSource::Observer {
 public:
     explicit MediaPlayerPrivateLibWebRTC(MediaPlayer*);
     ~MediaPlayerPrivateLibWebRTC();
@@ -96,6 +93,7 @@ private:
 
     bool canLoadPoster() const final { return false; }
     void setPoster(const String&) final {}
+    void sourceStopping() final;
 
     // MediaStreamPrivateTrack::Observer
     void trackStarted(MediaStreamTrackPrivate&) final{};

@@ -70,6 +70,7 @@ public:
 
         // Source state changes.
         virtual void sourceStarted() { }
+        virtual void sourceStopping() { }
         virtual void sourceStopped() { }
         virtual void sourceMutedChanged() { }
         virtual void sourceSettingsChanged() { }
