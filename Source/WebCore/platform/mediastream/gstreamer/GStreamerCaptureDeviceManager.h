@@ -67,7 +67,7 @@ class GStreamerDisplayCaptureDeviceManager final : public GStreamerCaptureDevice
     friend class NeverDestroyed<GStreamerDisplayCaptureDeviceManager>;
 public:
     static GStreamerDisplayCaptureDeviceManager& singleton();
-    CaptureDevice::DeviceType deviceType() final { return CaptureDevice::DeviceType::Unknown; }
+    CaptureDevice::DeviceType deviceType() final { return CaptureDevice::DeviceType::Screen; }
 private:
     GStreamerDisplayCaptureDeviceManager() = default;
     ~GStreamerDisplayCaptureDeviceManager() = default;
