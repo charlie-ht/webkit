@@ -69,18 +69,18 @@ void RealtimeOutgoingAudioSourceLibWebRTC::audioSamplesAvailable(const MediaTime
     auto data = static_cast<const GStreamerAudioData&>(audioData);
     auto desc = static_cast<const GStreamerAudioStreamDescription&>(streamDescription);
 
-    if (m_sampleConverter && !gst_audio_info_is_equal (&m_inputStreamDescription.m_Info, &desc.m_Info)) {
+    if (m_sampleConverter && !gst_audio_info_is_equal (m_inputStreamDescription.getInfo(), desc.getInfo())) {
         GST_ERROR_OBJECT(this, "FIXME - Audio format renegotiation is not possible yet!");
         g_clear_pointer (&m_sampleConverter, gst_audio_converter_free);
     }
 
     if (!m_sampleConverter) {
-        m_inputStreamDescription = *new GStreamerAudioStreamDescription(&desc.m_Info);
+        m_inputStreamDescription = *new GStreamerAudioStreamDescription(desc.getInfo());
         m_outputStreamDescription = libwebrtcAudioFormat(LibWebRTCAudioFormat::sampleRate, streamDescription.numberOfChannels());
 
         m_sampleConverter = gst_audio_converter_new (GST_AUDIO_CONVERTER_FLAG_IN_WRITABLE,
-            &m_inputStreamDescription.m_Info,
-            &m_inputStreamDescription.m_Info,
+            m_inputStreamDescription.getInfo(),
+            m_inputStreamDescription.getInfo(),
             NULL);
     }
 
@@ -102,7 +102,7 @@ void RealtimeOutgoingAudioSourceLibWebRTC::sendSilence()
         GstMapInfo outmap;
 
         size_t outChunkSampleCount = m_outputStreamDescription.sampleRate() / 100;
-        size_t outBufferSize = outChunkSampleCount * m_outputStreamDescription.m_Info.bpf;
+        size_t outBufferSize = outChunkSampleCount * m_outputStreamDescription.getInfo()->bpf;
 
         if (!outBufferSize)
             return;
@@ -110,7 +110,7 @@ void RealtimeOutgoingAudioSourceLibWebRTC::sendSilence()
         GstBuffer *outbuf = gst_buffer_new_allocate(NULL, outBufferSize, 0);
 
         gst_buffer_map(outbuf, &outmap, (GstMapFlags)GST_MAP_WRITE);
-        gst_audio_format_fill_silence(m_outputStreamDescription.m_Info.finfo,
+        gst_audio_format_fill_silence(m_outputStreamDescription.getInfo()->finfo,
             outmap.data, outBufferSize);
 
         for (auto sink : m_sinks)
@@ -129,10 +129,10 @@ void RealtimeOutgoingAudioSourceLibWebRTC::pullAudioData()
 {
     // libwebrtc expects 10 ms chunks.
     size_t inChunkSampleCount = m_inputStreamDescription.sampleRate() / 100;
-    size_t inBufferSize = inChunkSampleCount * m_inputStreamDescription.m_Info.bpf;
+    size_t inBufferSize = inChunkSampleCount * m_inputStreamDescription.getInfo()->bpf;
 
     size_t outChunkSampleCount = m_outputStreamDescription.sampleRate() / 100;
-    size_t outBufferSize = outChunkSampleCount * m_outputStreamDescription.m_Info.bpf;
+    size_t outBufferSize = outChunkSampleCount * m_outputStreamDescription.getInfo()->bpf;
 
     WTF::GMutexLocker<GMutex> lock(m_adapterMutex);
     GstBuffer *inbuf = gst_adapter_take_buffer (m_Adapter.get(), inBufferSize);

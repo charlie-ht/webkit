@@ -30,54 +30,56 @@ namespace WebCore {
 
 class GStreamerAudioStreamDescription final: public AudioStreamDescription {
 public:
-    WEBCORE_EXPORT GStreamerAudioStreamDescription(GstAudioInfo info):
-        m_Info(info) {
-        m_Caps = gst_audio_info_to_caps (&m_Info);
-
+    GStreamerAudioStreamDescription(GstAudioInfo info)
+        : m_info(info)
+        , m_caps(adoptGRef(gst_audio_info_to_caps (&m_info)))
+    {
     }
 
-    WEBCORE_EXPORT GStreamerAudioStreamDescription(GstAudioInfo *info):
-        m_Info(*info) {
-        m_Caps = gst_audio_info_to_caps (&m_Info);
+    GStreamerAudioStreamDescription(GstAudioInfo *info)
+        : m_info(*info)
+        , m_caps(adoptGRef(gst_audio_info_to_caps (&m_info)))
+    {
     }
 
-    WEBCORE_EXPORT GStreamerAudioStreamDescription() {
-        gst_audio_info_init (&m_Info);
-        m_Caps = nullptr;
+    GStreamerAudioStreamDescription()
+    {
+        gst_audio_info_init (&m_info);
     }
 
     WEBCORE_EXPORT ~GStreamerAudioStreamDescription() {};
 
     const PlatformDescription& platformDescription() const {
-        m_platformDescription = { PlatformDescription::GStreamerAudioStreamDescription, (AudioStreamBasicDescription*) &m_Info};
+        m_platformDescription = { PlatformDescription::GStreamerAudioStreamDescription, (AudioStreamBasicDescription*) &m_info};
 
         return m_platformDescription;
     }
 
     WEBCORE_EXPORT PCMFormat format() const final { return Int16; } // FIXME
-    double sampleRate() const final { return GST_AUDIO_INFO_RATE (&m_Info); }
+    double sampleRate() const final { return GST_AUDIO_INFO_RATE (&m_info); }
     bool isPCM() const final { return true; }
-    bool isInterleaved() const final { return GST_AUDIO_INFO_LAYOUT (&m_Info) == GST_AUDIO_LAYOUT_INTERLEAVED; }
-    bool isSignedInteger() const final { return GST_AUDIO_INFO_IS_INTEGER (&m_Info); }
-    bool isNativeEndian() const final { return GST_AUDIO_INFO_ENDIANNESS (&m_Info) == G_BYTE_ORDER; }
-    bool isFloat() const final { return GST_AUDIO_INFO_IS_FLOAT (&m_Info); }
+    bool isInterleaved() const final { return GST_AUDIO_INFO_LAYOUT (&m_info) == GST_AUDIO_LAYOUT_INTERLEAVED; }
+    bool isSignedInteger() const final { return GST_AUDIO_INFO_IS_INTEGER (&m_info); }
+    bool isNativeEndian() const final { return GST_AUDIO_INFO_ENDIANNESS (&m_info) == G_BYTE_ORDER; }
+    bool isFloat() const final { return GST_AUDIO_INFO_IS_FLOAT (&m_info); }
 
-    uint32_t numberOfInterleavedChannels() const final { return isInterleaved() ? GST_AUDIO_INFO_CHANNELS (&m_Info) : TRUE; }
-    uint32_t numberOfChannelStreams() const final { return GST_AUDIO_INFO_CHANNELS (&m_Info); }
-    uint32_t numberOfChannels() const final { return GST_AUDIO_INFO_CHANNELS (&m_Info); }
-    uint32_t sampleWordSize() const final { return GST_AUDIO_INFO_BPS (&m_Info); }
+    uint32_t numberOfInterleavedChannels() const final { return isInterleaved() ? GST_AUDIO_INFO_CHANNELS (&m_info) : TRUE; }
+    uint32_t numberOfChannelStreams() const final { return GST_AUDIO_INFO_CHANNELS (&m_info); }
+    uint32_t numberOfChannels() const final { return GST_AUDIO_INFO_CHANNELS (&m_info); }
+    uint32_t sampleWordSize() const final { return GST_AUDIO_INFO_BPS (&m_info); }
 
-    bool operator==(const GStreamerAudioStreamDescription& other) { return gst_audio_info_is_equal (&m_Info, &other.m_Info); }
+    bool operator==(const GStreamerAudioStreamDescription& other) { return gst_audio_info_is_equal (&m_info, &other.m_info); }
     bool operator!=(const GStreamerAudioStreamDescription& other) { return !operator == (other); }
 
-    GstCaps *getCaps() {return m_Caps.get(); }
+    GstCaps* getCaps() { return m_caps.get(); }
+    GstAudioInfo* getInfo() { return &m_info; }
 
-    GstAudioInfo m_Info;
 private:
-    GRefPtr<GstCaps> m_Caps;
+    GstAudioInfo m_info;
+    GRefPtr<GstCaps> m_caps;
     mutable PlatformDescription m_platformDescription;
 };
 
-} // WebCore 
+} // WebCore
 
 #endif // USE(LIBWEBRTC)
