@@ -41,6 +41,12 @@
 
 namespace WebKit {
 
+#if PLATFORM(COCOA)
+using NetworkRTCResolverPlatform = NetworkRTCResolverCocoa;
+#else
+using NetworkRTCResolverPlatform = NetworkRTCResolver;
+#endif
+
 static inline std::unique_ptr<rtc::Thread> createThread()
 {
     auto thread = rtc::Thread::CreateWithSocketServer();
@@ -163,14 +169,15 @@ void NetworkRTCProvider::didReceiveNetworkRTCSocketMessage(IPC::Connection& conn
 
 void NetworkRTCProvider::createResolver(uint64_t identifier, const String& address)
 {
-    auto resolver = std::make_unique<Resolver>(identifier, *this, adoptCF(CFHostCreateWithName(kCFAllocatorDefault, address.createCFString().get())));
-
-    CFHostClientContext context = { 0, resolver.get(), nullptr, nullptr, nullptr };
-    CFHostSetClient(resolver->host.get(), NetworkRTCProvider::resolvedName, &context);
-    CFHostScheduleWithRunLoop(resolver->host.get(), CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
-    Boolean result = CFHostStartInfoResolution(resolver->host.get(), kCFHostAddresses, nullptr);
-    ASSERT_UNUSED(result, result);
-
+    auto resolver = std::make_unique<NetworkRTCResolverPlatform>([this, identifier](NetworkRTCResolver::AddressesOrError&& result) mutable {
+        if (!result.has_value()) {
+            if (result.error() != NetworkRTCResolver::Error::Cancelled)
+                m_connection->connection().send(Messages::WebRTCResolver::ResolvedAddressError(1), identifier);
+            return;
+        }
+        m_connection->connection().send(Messages::WebRTCResolver::SetResolvedAddress(result.value()), identifier);
+    });
+    resolver->start(address);
     m_resolvers.add(identifier, WTFMove(resolver));
 }
 

@@ -316,10 +316,9 @@ MediaPlayerPrivateGStreamerBase::~MediaPlayerPrivateGStreamerBase()
     if (m_videoSink) {
         g_signal_handlers_disconnect_matched(m_videoSink.get(), G_SIGNAL_MATCH_DATA, 0, 0, nullptr, nullptr, this);
 #if USE(GSTREAMER_GL)
-        if (GST_IS_BIN(m_videoSink.get())) {
-            GRefPtr<GstElement> appsink = adoptGRef(gst_bin_get_by_name(GST_BIN_CAST(m_videoSink.get()), "webkit-gl-video-sink"));
+        GRefPtr<GstElement> appsink = adoptGRef(gst_bin_get_by_name(GST_BIN_CAST(m_videoSink.get()), "webkit-gl-video-sink"));
+        if (appsink.get())
             g_signal_handlers_disconnect_by_data(appsink.get(), this);
-        }
 #endif
     }
 
@@ -522,6 +521,7 @@ GstContext* MediaPlayerPrivateGStreamerBase::requestGLContext(const gchar* conte
 
 bool MediaPlayerPrivateGStreamerBase::ensureGstGLContext()
 {
+    GST_INFO_OBJECT (m_pipeline.get(), "Ensuring GL Context");
     if (m_glContext)
         return true;
 
@@ -1247,8 +1247,19 @@ GstElement* MediaPlayerPrivateGStreamerBase::createVideoSink()
     if (!m_videoSink) {
         m_usingFallbackVideoSink = true;
         m_videoSink = webkitVideoSinkNew();
+
+        auto sinkbin = gst_bin_new (nullptr);
+        auto convert = gst_element_factory_make ("videoconvert", nullptr);
+
+        gst_bin_add_many (GST_BIN (sinkbin), convert, m_videoSink.get(), NULL);
+        gst_element_link (convert, m_videoSink.get());
+        gst_element_add_pad (GST_ELEMENT (sinkbin), gst_ghost_pad_new ("sink",
+            gst_element_get_static_pad (convert, "sink")));
+
         m_repaintRequestedHandler = g_signal_connect_swapped(m_videoSink.get(), "repaint-requested", G_CALLBACK(repaintCallback), this);
         m_repaintCancelledHandler = g_signal_connect_swapped(m_videoSink.get(), "repaint-cancelled", G_CALLBACK(repaintCancelledCallback), this);
+
+        m_videoSink = GST_ELEMENT (sinkbin);
     }
 
     GstElement* videoSink = nullptr;

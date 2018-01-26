@@ -36,6 +36,10 @@
 #include "MediaStreamEvent.h"
 #include "NotImplemented.h"
 #include "PlatformStrategies.h"
+#include "RealtimeIncomingAudioSource.h"
+#include "RealtimeIncomingVideoSource.h"
+#include "RealtimeOutgoingAudioSource.h"
+#include "RealtimeOutgoingVideoSource.h"
 #include "RTCDataChannel.h"
 #include "RTCDataChannelEvent.h"
 #include "RTCOfferOptions.h"
@@ -43,8 +47,6 @@
 #include "RTCSessionDescription.h"
 #include "RTCStatsReport.h"
 #include "RTCTrackEvent.h"
-#include "RealtimeIncomingAudioSource.h"
-#include "RealtimeIncomingVideoSource.h"
 #include "RuntimeEnabledFeatures.h"
 #include <webrtc/base/physicalsocketserver.h>
 #include <webrtc/p2p/base/basicpacketsocketfactory.h>

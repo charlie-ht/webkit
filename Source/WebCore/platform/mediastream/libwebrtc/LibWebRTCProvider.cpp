@@ -26,11 +26,15 @@
 #include "config.h"
 #include "LibWebRTCProvider.h"
 
+#if PLATFORM(COCOA)
+#include "LibWebRTCProviderCocoa.h"
+#endif
+
+#include "LibWebRTCProviderGlib.h"
+
 #if USE(LIBWEBRTC)
 #include "LibWebRTCAudioModule.h"
 #include "Logging.h"
-#include "VideoToolBoxDecoderFactory.h"
-#include "VideoToolBoxEncoderFactory.h"
 #include <dlfcn.h>
 #include <webrtc/api/peerconnectionfactoryproxy.h>
 #include <webrtc/base/physicalsocketserver.h>
@@ -42,6 +46,19 @@
 #endif
 
 namespace WebCore {
+
+UniqueRef<LibWebRTCProvider> LibWebRTCProvider::create()
+{
+#if USE(LIBWEBRTC)
+#if PLATFORM(COCOA)
+    return makeUniqueRef<LibWebRTCProviderCocoa>();
+#elif PLATFORM(GTK) || PLATFORM(WPE)
+    return makeUniqueRef<LibWebRTCProviderGlib>();
+#endif
+#else
+    return makeUniqueRef<LibWebRTCProvider>();
+#endif // USE(LIBWEBRTC)
+}
 
 #if USE(LIBWEBRTC)
 struct PeerConnectionFactoryAndThreads : public rtc::MessageHandler {

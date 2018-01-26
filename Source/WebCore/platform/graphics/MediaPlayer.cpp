@@ -51,6 +51,10 @@
 #include "MediaStreamPrivate.h"
 #endif
 
+#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#include "MediaPlayerPrivateLibWebRTC.h"
+#endif
+
 #if USE(GSTREAMER)
 #include "MediaPlayerPrivateGStreamer.h"
 #if ENABLE(MEDIA_STREAM) && USE(OPENWEBRTC)
@@ -276,9 +280,9 @@ static void buildMediaEnginesVector()
         PlatformMediaEngineClassName::registerMediaEngine(addMediaEngine);
 #endif
 
-#if ENABLE(MEDIA_STREAM) && USE(GSTREAMER) && USE(OPENWEBRTC)
+#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
     if (Settings::isGStreamerEnabled())
-        MediaPlayerPrivateGStreamerOwr::registerMediaEngine(addMediaEngine);
+        MediaPlayerPrivateLibWebRTC::registerMediaEngine(addMediaEngine);
 #endif
 
 #if ENABLE(VIDEO) && USE(GSTREAMER) && ENABLE(MEDIA_SOURCE) && ENABLE(VIDEO_TRACK)

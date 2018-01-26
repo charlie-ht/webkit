@@ -59,7 +59,6 @@ RealtimeMediaSourceCenter& RealtimeMediaSourceCenter::singleton()
     RealtimeMediaSourceCenter* override = mediaStreamCenterOverride();
     if (override)
         return *override;
-    
     return RealtimeMediaSourceCenter::platformCenter();
 }
 
