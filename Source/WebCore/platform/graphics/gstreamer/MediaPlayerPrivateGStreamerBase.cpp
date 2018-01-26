@@ -970,6 +970,12 @@ void MediaPlayerPrivateGStreamerBase::setSize(const IntSize& size)
     if (size == m_size)
         return;
 
+#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+    GST_ERROR ("LIBWEBRTC IS ON!");
+#else
+    GST_ERROR ("LIBWEBRTC IS OFF!");
+#endif
+
     GST_INFO("Setting size to %dx%d", size.width(), size.height());
     m_size = size;
 

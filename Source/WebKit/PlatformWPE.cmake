@@ -73,6 +73,12 @@ list(APPEND WebKit_SOURCES
     NetworkProcess/soup/NetworkProcessSoup.cpp
     NetworkProcess/soup/NetworkSessionSoup.cpp
     NetworkProcess/soup/RemoteNetworkingContextSoup.cpp
+    NetworkProcess/webrtc/NetworkRTCProvider.cpp
+    NetworkProcess/webrtc/NetworkRTCSocket.cpp
+    NetworkProcess/webrtc/NetworkRTCMonitor.cpp
+    NetworkProcess/webrtc/LibWebRTCSocketClient.cpp
+
+    NetworkProcess/webrtc/NetworkRTCResolver.cpp
 
     Platform/IPC/glib/GSocketMonitor.cpp
 
@@ -355,6 +361,12 @@ set(WPE_API_INSTALLED_HEADERS
     ${WEBKIT_DIR}/UIProcess/API/wpe/WebKitWindowProperties.h
     ${WEBKIT_DIR}/UIProcess/API/wpe/webkit.h
 )
+
+if (USE_LIBWEBRTC)
+list(APPEND WebKit_SYSTEM_INCLUDE_DIRECTORIES
+    "${THIRDPARTY_DIR}/libwebrtc/Source/"
+)
+endif ()
 
 # To generate WebKitEnumTypes.h we want to use all installed headers, except WebKitEnumTypes.h itself.
 set(WPE_ENUM_GENERATION_HEADERS ${WPE_API_INSTALLED_HEADERS})

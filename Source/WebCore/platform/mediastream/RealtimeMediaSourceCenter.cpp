@@ -36,7 +36,7 @@
 #if ENABLE(MEDIA_STREAM)
 
 // FIXME: GTK to implement its own RealtimeMediaSourceCenter.
-#if PLATFORM(GTK)
+#if PLATFORM(GTK) || PLATFORM(WPE)
 #include "MockRealtimeMediaSourceCenter.h"
 #endif
 
