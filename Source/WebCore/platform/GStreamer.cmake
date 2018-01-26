@@ -25,6 +25,7 @@ if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
         platform/graphics/gstreamer/mse/AppendPipeline.cpp
         platform/graphics/gstreamer/mse/GStreamerMediaDescription.cpp
         platform/graphics/gstreamer/mse/GStreamerMediaSample.cpp
+        platform/graphics/gstreamer/MediaSampleGStreamer.cpp
         platform/graphics/gstreamer/mse/MediaPlayerPrivateGStreamerMSE.cpp
         platform/graphics/gstreamer/mse/MediaSourceClientGStreamerMSE.cpp
         platform/graphics/gstreamer/mse/MediaSourceGStreamer.cpp

@@ -97,6 +97,8 @@ list(APPEND WebCore_SOURCES
     platform/graphics/opentype/OpenTypeVerticalData.cpp
 
     platform/graphics/wpe/PlatformDisplayWPE.cpp
+    platform/graphics/libwebrtc/MediaSampleLibWebRTC.cpp
+    platform/graphics/libwebrtc/MediaPlayerPrivateLibWebRTC.cpp
 
     platform/image-encoders/JPEGImageEncoder.cpp
 
@@ -153,6 +155,34 @@ list(APPEND WebCorePlatformWPE_SOURCES
     platform/wpe/ScrollbarThemeWPE.cpp
     platform/wpe/ThemeWPE.cpp
     platform/wpe/WidgetWPE.cpp
+
+
+    platform/mediastream/CaptureDeviceManager.cpp
+    platform/mediastream/MediaConstraints.cpp
+    platform/mediastream/MediaEndpointConfiguration.cpp
+    platform/mediastream/MediaStreamPrivate.cpp
+    platform/mediastream/MediaStreamTrackPrivate.cpp
+    platform/mediastream/RealtimeMediaSourceSupportedConstraints.cpp
+    platform/mediastream/RTCIceCandidateDescriptor.cpp
+    platform/mediastream/RTCSessionDescriptionDescriptor.cpp
+    platform/mediastream/RealtimeIncomingAudioSource.cpp
+    platform/mediastream/RealtimeIncomingVideoSource.cpp
+    platform/mediastream/RealtimeMediaSource.cpp
+    platform/mediastream/RealtimeMediaSourceCenter.cpp
+    platform/mediastream/RealtimeMediaSourceSettings.cpp
+    platform/mediastream/RealtimeOutgoingAudioSource.cpp
+    platform/mediastream/RealtimeOutgoingVideoSource.cpp
+
+    platform/mediastream/libwebrtc/LibWebRTCAudioCaptureSource.cpp
+    platform/mediastream/libwebrtc/LibWebRTCAudioModule.cpp
+    platform/mediastream/libwebrtc/LibWebRTCProvider.cpp
+    platform/mediastream/libwebrtc/LibWebRTCProviderGlib.cpp
+    platform/mediastream/libwebrtc/LibWebRTCRealtimeMediaSourceCenter.cpp
+    platform/mediastream/libwebrtc/LibWebRTCVideoCaptureDevice.cpp
+    platform/mediastream/libwebrtc/LibWebRTCVideoCaptureDeviceManager.cpp
+    platform/mediastream/libwebrtc/LibWebRTCVideoCaptureSource.cpp
+    platform/mediastream/libwebrtc/RealtimeOutgoingAudioSourceLibWebRTC.cpp
+    platform/mediastream/libwebrtc/RealtimeIncomingAudioSourceLibWebRTC.cpp
 )
 
 list(APPEND WebCore_USER_AGENT_STYLE_SHEETS
