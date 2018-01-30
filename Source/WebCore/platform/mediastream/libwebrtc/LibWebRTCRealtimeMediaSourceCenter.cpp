@@ -36,6 +36,7 @@
 #include "gstreamer/GStreamerCaptureDeviceManager.h"
 #include "gstreamer/GStreamerCaptureDevice.h"
 #include "LibWebRTCVideoCaptureSource.h"
+#include "LibWebRTCAudioCaptureSource.h"
 #include "LibWebRTCRealtimeMediaSourceCenter.h"
 #include "LibWebRTCVideoCaptureDeviceManager.h"
 #include <wtf/MainThread.h>
@@ -45,9 +46,9 @@ namespace WebCore {
 class VideoCaptureSourceFactoryLibWebRTC final : public RealtimeMediaSource::VideoCaptureFactory
 {
 public:
-    CaptureSourceOrError createVideoCaptureSource(const CaptureDevice& device, const MediaConstraints* constraints) final
+    CaptureSourceOrError createVideoCaptureSource(const String& device, const MediaConstraints* constraints) final
     {
-        return LibWebRTCVideoCaptureSource::create(device.persistentId(), constraints);
+        return LibWebRTCVideoCaptureSource::create(device, constraints);
     }
 };
 
@@ -55,6 +56,16 @@ RealtimeMediaSource::VideoCaptureFactory& LibWebRTCRealtimeMediaSourceCenter::vi
 {
     static NeverDestroyed<VideoCaptureSourceFactoryLibWebRTC> factory;
     return factory.get();
+}
+
+RealtimeMediaSource::AudioCaptureFactory& LibWebRTCRealtimeMediaSourceCenter::defaultAudioFactory()
+{
+    return audioCaptureSourceFactory();
+}
+
+RealtimeMediaSource::VideoCaptureFactory& LibWebRTCRealtimeMediaSourceCenter::defaultVideoFactory() 
+{
+    return videoCaptureSourceFactory();
 }
 
 RealtimeMediaSource::AudioCaptureFactory& LibWebRTCRealtimeMediaSourceCenter::audioCaptureSourceFactory()
@@ -96,9 +107,19 @@ RealtimeMediaSource::VideoCaptureFactory& LibWebRTCRealtimeMediaSourceCenter::vi
     return videoCaptureSourceFactory();
 }
 
+CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::defaultAudioCaptureDeviceManager()
+{
+    return GStreamerAudioCaptureDeviceManager::singleton();
+}
+
 CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::audioCaptureDeviceManager()
 {
     return GStreamerAudioCaptureDeviceManager::singleton();
+}
+
+CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::defaultVideoCaptureDeviceManager()
+{
+    return GStreamerVideoCaptureDeviceManager::singleton();
 }
 
 CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::videoCaptureDeviceManager()
@@ -106,7 +127,6 @@ CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::videoCaptureDeviceMana
     return GStreamerVideoCaptureDeviceManager::singleton();
 }
 
-// Disabled while backporting.
 #if 0
 CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::displayCaptureDeviceManager()
 {

@@ -46,6 +46,8 @@
 #include "webrtc/media/engine/webrtcvideocapturerfactory.h"
 #include "webrtc/modules/video_capture/video_capture_defines.h"
 
+#include "gstreamer/GStreamerCaptureDeviceManager.h"
+
 namespace WebCore {
 
 const static int defaultWidth = 640;
