@@ -28,6 +28,7 @@
 #if USE(LIBWEBRTC)
 
 #include "RTCNetwork.h"
+#include <wtf/Expected.h>
 #include <wtf/CompletionHandler.h>
 #include <wtf/text/WTFString.h>
 
