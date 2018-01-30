@@ -53,6 +53,13 @@ public:
     static RealtimeMediaSource::VideoCaptureFactory& videoCaptureSourceFactory();
     static RealtimeMediaSource::AudioCaptureFactory& audioCaptureSourceFactory();
 
+
+    RealtimeMediaSource::AudioCaptureFactory& defaultAudioFactory() final;
+    RealtimeMediaSource::VideoCaptureFactory& defaultVideoFactory() final;
+
+    CaptureDeviceManager& defaultAudioCaptureDeviceManager() final;
+    CaptureDeviceManager& defaultVideoCaptureDeviceManager() final;
+
 private:
     friend class NeverDestroyed<LibWebRTCRealtimeMediaSourceCenter>;
     LibWebRTCRealtimeMediaSourceCenter();

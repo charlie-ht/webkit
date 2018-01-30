@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include "config.h"
+
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
 
 #include "CaptureDevice.h"
