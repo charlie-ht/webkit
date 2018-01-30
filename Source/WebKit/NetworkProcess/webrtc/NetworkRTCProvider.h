@@ -30,7 +30,6 @@
 #include "LibWebRTCSocketClient.h"
 #include "NetworkRTCMonitor.h"
 #include "RTCNetwork.h"
-// #include <CFNetwork/CFHost.h>
 #include <WebCore/LibWebRTCMacros.h>
 #include <webrtc/base/sigslot.h>
 #include <webrtc/p2p/base/basicpacketsocketfactory.h>
@@ -45,7 +44,6 @@ class Decoder;
 }
 
 namespace WebKit {
-
 class NetworkConnectionToWebProcess;
 class NetworkRTCResolver;
 class NetworkRTCSocket;
