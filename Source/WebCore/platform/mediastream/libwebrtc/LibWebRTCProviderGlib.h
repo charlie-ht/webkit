@@ -29,8 +29,6 @@
 
 #if USE(LIBWEBRTC)
 
-#include "TCProvider.h"
-
 namespace WebCore {
 
 class WEBCORE_EXPORT LibWebRTCProviderGlib : public LibWebRTCProvider {

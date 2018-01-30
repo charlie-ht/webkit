@@ -155,13 +155,21 @@ webrtc::PeerConnectionFactoryInterface* LibWebRTCProvider::factory()
 
     auto& factoryAndThreads = getStaticFactoryAndThreads(m_useNetworkThreadWithSocketServer);
 
+#warning "Deactivate VideoToolboxVideoDecoderFactory"
+#if 0
     auto decoderFactory = std::make_unique<VideoToolboxVideoDecoderFactory>();
     auto encoderFactory = std::make_unique<VideoToolboxVideoEncoderFactory>();
 
     m_decoderFactory = decoderFactory.get();
     m_encoderFactory = encoderFactory.get();
+#endif
 
-    m_factory = webrtc::CreatePeerConnectionFactory(factoryAndThreads.networkThread.get(), factoryAndThreads.networkThread.get(), factoryAndThreads.signalingThread.get(), factoryAndThreads.audioDeviceModule.get(), encoderFactory.release(), decoderFactory.release());
+    m_factory = webrtc::CreatePeerConnectionFactory(factoryAndThreads.networkThread.get(),
+        factoryAndThreads.networkThread.get(),
+        factoryAndThreads.signalingThread.get(),
+        factoryAndThreads.audioDeviceModule.get(),
+        nullptr, nullptr);
+    // m_factory = webrtc::CreatePeerConnectionFactory(encoderFactory.release(), decoderFactory.release());
 
     return m_factory;
 }
@@ -208,10 +216,13 @@ rtc::scoped_refptr<webrtc::PeerConnectionInterface> LibWebRTCProvider::createPee
 void LibWebRTCProvider::setActive(bool value)
 {
 #if USE(LIBWEBRTC)
+#warning "Deactivate VideoToolboxVideoDecoderFactory"
+#if 0
     if (m_decoderFactory)
         m_decoderFactory->setActive(value);
     if (m_encoderFactory)
         m_encoderFactory->setActive(value);
+#endif
 #else
     UNUSED_PARAM(value);
 #endif

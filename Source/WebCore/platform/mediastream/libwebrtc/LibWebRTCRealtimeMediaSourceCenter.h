@@ -66,7 +66,7 @@ private:
 
     CaptureDeviceManager& audioCaptureDeviceManager() final;
     CaptureDeviceManager& videoCaptureDeviceManager() final;
-    CaptureDeviceManager& displayCaptureDeviceManager() final;
+    // CaptureDeviceManager& displayCaptureDeviceManager() final;
 
     RealtimeMediaSource::AudioCaptureFactory* m_audioFactoryOverride { nullptr };
     UniqueRef<LibWebRTCProvider> m_libWebRTCProvider;

@@ -106,10 +106,13 @@ CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::videoCaptureDeviceMana
     return GStreamerVideoCaptureDeviceManager::singleton();
 }
 
+// Disabled while backporting.
+#if 0
 CaptureDeviceManager& LibWebRTCRealtimeMediaSourceCenter::displayCaptureDeviceManager()
 {
     return GStreamerDisplayCaptureDeviceManager::singleton();
 }
+#endif
 
 } // namespace WebCore
 

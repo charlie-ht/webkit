@@ -35,6 +35,11 @@
 
 #if ENABLE(WEB_RTC)
 
+// FIXME - What is happening here?
+
+#define FALLTHROUGH
+
+#include "wtf/Compiler.h"
 #include "ActiveDOMObject.h"
 #include "EventTarget.h"
 #include "MediaStream.h"

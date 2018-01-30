@@ -33,6 +33,9 @@
 
 #include <webrtc/api/peerconnectioninterface.h>
 #include <webrtc/base/scoped_ref_ptr.h>
+#include "LibWebRTCAudioModule.h"
+#include "webrtc/media/engine/webrtcvideoencoderfactory.h"
+#include "webrtc/media/engine/webrtcvideodecoderfactory.h"
 
 namespace rtc {
 class NetworkManager;
@@ -46,8 +49,11 @@ class PeerConnectionFactoryInterface;
 
 namespace WebCore {
 
+#warning "Deactivate VideoToolboxVideoDecoderFactory"
+#if 0
 class VideoToolboxVideoDecoderFactory;
 class VideoToolboxVideoEncoderFactory;
+#endif
 
 class WEBCORE_EXPORT LibWebRTCProvider {
 public:
@@ -87,8 +93,12 @@ protected:
     bool m_useNetworkThreadWithSocketServer { false };
 
     rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> m_factory;
+
+#warning "Deactivate VideoToolboxVideoDecoderFactory"
+#if 0
     VideoToolboxVideoDecoderFactory* m_decoderFactory { nullptr };
     VideoToolboxVideoEncoderFactory* m_encoderFactory { nullptr };
+#endif
 #endif
 };
 
