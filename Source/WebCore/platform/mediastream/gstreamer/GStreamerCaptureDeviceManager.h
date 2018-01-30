@@ -46,7 +46,7 @@ class GStreamerAudioCaptureDeviceManager final : public GStreamerCaptureDeviceMa
     friend class NeverDestroyed<GStreamerAudioCaptureDeviceManager>;
 public:
     static GStreamerAudioCaptureDeviceManager& singleton();
-    CaptureDevice::DeviceType deviceType() final { return CaptureDevice::DeviceType::Microphone; }
+    CaptureDevice::DeviceType deviceType() final { return CaptureDevice::DeviceType::Audio; }
 private:
     GStreamerAudioCaptureDeviceManager() = default;
     ~GStreamerAudioCaptureDeviceManager() = default;
@@ -57,12 +57,14 @@ class GStreamerVideoCaptureDeviceManager final : public GStreamerCaptureDeviceMa
 public:
     static GStreamerVideoCaptureDeviceManager& singleton();
     static RealtimeMediaSource::VideoCaptureFactory& videoFactory();
-    CaptureDevice::DeviceType deviceType() final { return CaptureDevice::DeviceType::Camera; }
+    CaptureDevice::DeviceType deviceType() final { return CaptureDevice::DeviceType::Video; }
 private:
     GStreamerVideoCaptureDeviceManager() = default;
     ~GStreamerVideoCaptureDeviceManager() = default;
 };
 
+// Disabled while backporting.
+#if 0
 class GStreamerDisplayCaptureDeviceManager final : public GStreamerCaptureDeviceManager {
     friend class NeverDestroyed<GStreamerDisplayCaptureDeviceManager>;
 public:
@@ -72,6 +74,7 @@ private:
     GStreamerDisplayCaptureDeviceManager() = default;
     ~GStreamerDisplayCaptureDeviceManager() = default;
 };
+#endif
 
 }
 

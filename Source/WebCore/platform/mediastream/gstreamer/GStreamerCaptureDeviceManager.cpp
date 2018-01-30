@@ -38,11 +38,12 @@ GStreamerVideoCaptureDeviceManager& GStreamerVideoCaptureDeviceManager::singleto
     return manager;
 }
 
-GStreamerDisplayCaptureDeviceManager& GStreamerDisplayCaptureDeviceManager::singleton()
-{
-    static NeverDestroyed<GStreamerDisplayCaptureDeviceManager> manager;
-    return manager;
-}
+// Disabled while backporting.
+// GStreamerDisplayCaptureDeviceManager& GStreamerDisplayCaptureDeviceManager::singleton()
+// {
+//     static NeverDestroyed<GStreamerDisplayCaptureDeviceManager> manager;
+//     return manager;
+// }
 
 std::optional<GStreamerCaptureDevice> GStreamerCaptureDeviceManager::gstreamerDeviceWithUID(const String& deviceID)
 {
@@ -80,9 +81,9 @@ void GStreamerCaptureDeviceManager::deviceAdded(GstDevice* device)
     CaptureDevice::DeviceType type = deviceType();
     GUniquePtr<gchar> deviceClassChar(gst_device_get_device_class(device));
     String deviceClass(String(deviceClassChar.get()));
-    if (type == CaptureDevice::DeviceType::Microphone && !deviceClass.startsWith("Audio"))
+    if (type == CaptureDevice::DeviceType::Audio && !deviceClass.startsWith("Audio"))
         return;
-    if (type == CaptureDevice::DeviceType::Camera && !deviceClass.startsWith("Video"))
+    if (type == CaptureDevice::DeviceType::Video && !deviceClass.startsWith("Video"))
         return;
 
     // FIXME: This isn't really a UID but should be good enough (libwebrtc itself does that
@@ -104,12 +105,12 @@ void GStreamerCaptureDeviceManager::refreshCaptureDevices()
         m_deviceMonitor = adoptGRef(gst_device_monitor_new());
 
         CaptureDevice::DeviceType type = deviceType();
-        if (type == CaptureDevice::DeviceType::Camera) {
+        if (type == CaptureDevice::DeviceType::Video) {
             GRefPtr<GstCaps> caps = adoptGRef(gst_caps_new_empty_simple("video/x-raw"));
             gst_device_monitor_add_filter(m_deviceMonitor.get(), "Video/Source", caps.get());
             GRefPtr<GstCaps> compressedCaps = adoptGRef(gst_caps_new_empty_simple("video/x-h264"));
             gst_device_monitor_add_filter(m_deviceMonitor.get(), "Video/Source", compressedCaps.get());
-        } else if (type == CaptureDevice::DeviceType::Microphone) {
+        } else if (type == CaptureDevice::DeviceType::Audio) {
             GRefPtr<GstCaps> caps = adoptGRef(gst_caps_new_empty_simple("audio/x-raw"));
             gst_device_monitor_add_filter(m_deviceMonitor.get(), "Audio/Source", caps.get());
         }
