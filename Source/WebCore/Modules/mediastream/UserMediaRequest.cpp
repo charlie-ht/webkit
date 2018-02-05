@@ -104,9 +104,11 @@ static bool canCallGetUserMedia(Document& document, String& errorMessage)
 {
     bool requiresSecureConnection = document.settings().mediaCaptureRequiresSecureConnection();
     auto& documentLoader = *document.loader();
+    if (0) {
     if (requiresSecureConnection && !isSecure(documentLoader) && !SecurityOrigin::isLocalHostOrLoopbackIPAddress(documentLoader.response().url())) {
         errorMessage = "Trying to call getUserMedia from an insecure document.";
         return false;
+    }
     }
 
     auto& topDocument = document.topDocument();
