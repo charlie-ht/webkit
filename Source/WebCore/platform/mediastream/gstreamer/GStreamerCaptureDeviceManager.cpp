@@ -118,7 +118,12 @@ void GStreamerCaptureDeviceManager::refreshCaptureDevices()
         // TODO: Monitor for added/removed messages on the bus.
     }
 
-    gst_device_monitor_start(m_deviceMonitor.get());
+    if (!gst_device_monitor_start(m_deviceMonitor.get())) {
+        GST_WARNING_OBJECT (m_deviceMonitor.get(), "Could not start device monitor");
+        m_deviceMonitor = nullptr;
+
+        return;
+    }
 
     GList* devices = gst_device_monitor_get_devices(m_deviceMonitor.get());
     if (devices != NULL) {
