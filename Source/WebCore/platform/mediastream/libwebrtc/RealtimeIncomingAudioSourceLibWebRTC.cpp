@@ -55,7 +55,9 @@ RealtimeIncomingAudioSourceLibWebRTC::RealtimeIncomingAudioSourceLibWebRTC(rtc::
 {
 }
 
-void RealtimeIncomingAudioSourceLibWebRTC::OnData(const void* audioData, int, int sampleRate, size_t numberOfChannels, size_t numberOfFrames)
+void RealtimeIncomingAudioSourceLibWebRTC::OnData(const void* audioData, int,
+    int sampleRate, size_t numberOfChannels,
+    size_t numberOfFrames)
 {
     GstAudioInfo info;
     GstAudioFormat format = gst_audio_format_build_integer(
@@ -66,11 +68,14 @@ void RealtimeIncomingAudioSourceLibWebRTC::OnData(const void* audioData, int, in
 
     gst_audio_info_set_format(&info, format, sampleRate, numberOfChannels, NULL);
 
-
     auto buffer = adoptGRef(gst_buffer_new_wrapped(
         g_memdup(audioData, GST_AUDIO_INFO_BPF(&info) * numberOfFrames),
         GST_AUDIO_INFO_BPF(&info) * numberOfFrames));
     GRefPtr<GstCaps> caps = adoptGRef(gst_audio_info_to_caps (&info));
+
+    GST_BUFFER_PTS (buffer.get()) = (GST_SECOND / sampleRate) * m_numberOfFrames;
+    GST_BUFFER_DURATION (buffer.get()) = numberOfFrames * (GST_SECOND / sampleRate);
+
     auto sample = adoptGRef(gst_sample_new(buffer.get(), caps.get(), nullptr, nullptr));
     auto data(std::unique_ptr<GStreamerAudioData>(new GStreamerAudioData(WTFMove(sample), info)));
 
