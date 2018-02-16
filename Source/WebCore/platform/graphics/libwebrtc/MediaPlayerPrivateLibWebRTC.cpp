@@ -47,6 +47,7 @@
 #endif
 
 GST_DEBUG_CATEGORY(webkit_webrtc_debug);
+GST_DEBUG_CATEGORY(webkit_libwebrtc_debug);
 #define GST_CAT_DEFAULT webkit_webrtc_debug
 
 namespace WebCore {
@@ -111,6 +112,15 @@ bool MediaPlayerPrivateLibWebRTC::initializeGStreamerAndGStreamerDebugging()
     static std::once_flag debugRegisteredFlag;
     std::call_once(debugRegisteredFlag, [] {
         GST_DEBUG_CATEGORY_INIT(webkit_webrtc_debug, "webkitlibwebrtcplayer", 0, "WebKit WebRTC player");
+    });
+
+    static std::once_flag debugRegisteredLibwebrtcFlag;
+    std::call_once(debugRegisteredLibwebrtcFlag, [] {
+        GST_DEBUG_CATEGORY_INIT(webkit_libwebrtc_debug, "webkitlibwebrtc", 0, "libwebrtc debug logging");
+
+        auto threshold = gst_debug_category_get_threshold (webkit_libwebrtc_debug);
+        rtc::LogMessage::LogToDebug(((rtc::LoggingSeverity) (5 - threshold)));
+
     });
 
     return true;
