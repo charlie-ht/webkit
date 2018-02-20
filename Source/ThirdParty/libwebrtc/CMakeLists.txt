@@ -2052,19 +2052,19 @@ set(WebrtcModulesAudio_DeviceAudio_Device_SOURCES ${LIBWEBRTC_INPUT_DIR}/webrtc/
     ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/fine_audio_buffer.cc
     ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/audio_device_data_observer.cc
     ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/audio_device_impl.cc
-    ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/linux/alsasymboltable_linux.cc
-    ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/linux/audio_device_alsa_linux.cc
-    ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/linux/audio_mixer_manager_alsa_linux.cc
+    # ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/linux/alsasymboltable_linux.cc
+    # ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/linux/audio_device_alsa_linux.cc
+    # ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/linux/audio_mixer_manager_alsa_linux.cc
     ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/linux/latebindingsymboltable_linux.cc
-    ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/linux/audio_device_pulse_linux.cc
-    ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/linux/audio_mixer_manager_pulse_linux.cc
-    ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/linux/pulseaudiosymboltable_linux.cc
+    # ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/linux/audio_device_pulse_linux.cc
+    # ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/linux/audio_mixer_manager_pulse_linux.cc
+    # ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/linux/pulseaudiosymboltable_linux.cc
     ${LIBWEBRTC_INPUT_DIR}/webrtc/modules/audio_device/dummy/file_audio_device_factory.cc)
 add_library(WebrtcModulesAudio_DeviceAudio_Device STATIC ${WebrtcModulesAudio_DeviceAudio_Device_SOURCES})
 target_compile_options(WebrtcModulesAudio_DeviceAudio_Device PRIVATE "-fno-strict-aliasing" "--param=ssp-buffer-size=4" "-fstack-protector" "-Wno-builtin-macro-redefined" "-D__DATE__=" "-D__TIME__=" "-D__TIMESTAMP__=" "-funwind-tables" "-fPIC" "-pipe" "-B../third_party/binutils/Linux_x64/Release/bin" "-pthread"  "-march=armv7" "-Wno-unused-local-typedefs" "-Wno-missing-field-initializers" "-Wno-unused-parameter" "-O0" "-fno-omit-frame-pointer" "-g2" "-gsplit-dwarf" "-fvisibility=hidden" "-Wno-unused-parameter" "-Wno-missing-field-initializers" "-Wno-strict-overflow" "$<$<COMPILE_LANGUAGE:CXX>:-std=gnu++11>" "$<$<COMPILE_LANGUAGE:CXX>:-Wno-narrowing>" "$<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>" "$<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>" "$<$<COMPILE_LANGUAGE:CXX>:-fvisibility-inlines-hidden>" "$<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor>" "$<$<COMPILE_LANGUAGE:CXX>:-Woverloaded-virtual>" "-UHAVE_CONFIG_H")
 target_compile_definitions(WebrtcModulesAudio_DeviceAudio_Device PRIVATE
-    LINUX_ALSA
-    LINUX_PULSE
+    # LINUX_ALSA
+    # LINUX_PULSE
     USE_UDEV USE_AURA=1 USE_PANGO=1 USE_CAIRO=1 USE_GLIB=1 USE_NSS_CERTS=1
     # USE_X11=1
     FULL_SAFE_BROWSING SAFE_BROWSING_CSD SAFE_BROWSING_DB_LOCAL CHROMIUM_BUILD FIELDTRIAL_TESTING_ENABLED _FILE_OFFSET_BITS=64 _LARGEFILE_SOURCE _LARGEFILE64_SOURCE __STDC_CONSTANT_MACROS __STDC_FORMAT_MACROS _DEBUG DYNAMIC_ANNOTATIONS_ENABLED=1 WTF_USE_DYNAMIC_ANNOTATIONS=1 WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE EXPAT_RELATIVE_PATH HAVE_SCTP WEBRTC_POSIX WEBRTC_LINUX WEBRTC_BUILD_LIBEVENT)
