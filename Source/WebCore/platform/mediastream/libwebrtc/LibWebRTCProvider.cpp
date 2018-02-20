@@ -167,7 +167,8 @@ webrtc::PeerConnectionFactoryInterface* LibWebRTCProvider::factory()
     m_factory = webrtc::CreatePeerConnectionFactory(factoryAndThreads.networkThread.get(),
         factoryAndThreads.networkThread.get(),
         factoryAndThreads.signalingThread.get(),
-        nullptr,  nullptr, nullptr);
+        factoryAndThreads.audioDeviceModule.get(),
+        nullptr, nullptr);
     // m_factory = webrtc::CreatePeerConnectionFactory(encoderFactory.release(), decoderFactory.release());
 
     return m_factory;
