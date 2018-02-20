@@ -206,7 +206,8 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
 
             m_audioTrack = track;
 
-            auto sink = gst_parse_bin_from_description("audioconvert ! audioresample ! volume name=v ! autoaudiosink",
+            // FIXME - Check why we are required to force channels/rate to avoid pipeline reconfiguration.
+            auto sink = gst_parse_bin_from_description("audioconvert ! audioresample ! volume name=v ! audio/x-raw,channels=2,rate=48000 ! autoaudiosink",
                 TRUE, NULL);
             m_audioSrc = gst_element_factory_make("appsrc", "WebRTCMediaPlayerPrivate-audiosrc");
             g_object_set(m_audioSrc.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
