@@ -127,8 +127,8 @@ public:
     const FrequentedBlock& notTaken() const;
     FrequentedBlock& notTaken();
     // This is only valid for Branch and Switch.
-    const FrequentedBlock& fallThrough() const;
-    FrequentedBlock& fallThrough();
+    const FrequentedBlock& fallThrough() const { return m_successors.last(); }
+    FrequentedBlock& fallThrough() { return m_successors.last(); }
 
     unsigned numPredecessors() const { return m_predecessors.size(); }
     BasicBlock* predecessor(unsigned index) const { return m_predecessors[index]; }

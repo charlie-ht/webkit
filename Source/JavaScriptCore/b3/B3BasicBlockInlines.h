@@ -81,17 +81,6 @@ inline FrequentedBlock& BasicBlock::notTaken()
     return m_successors[1];
 }
 
-inline const FrequentedBlock& BasicBlock::fallThrough() const
-{
-    ASSERT(last()->opcode() == Branch || last()->opcode() == Switch);
-    return m_successors.last();
-}
-
-inline FrequentedBlock& BasicBlock::fallThrough()
-{
-    ASSERT(last()->opcode() == Branch || last()->opcode() == Switch);
-    return m_successors.last();
-}
 
 } } // namespace JSC::B3
 
