@@ -28,6 +28,7 @@
 #include "GStreamerCapturer.h"
 #include <gst/app/gstappsink.h>
 #include "GStreamerUtilities.h"
+#include "GStreamerUtils.h"
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 
@@ -47,50 +48,9 @@ GStreamerCapturer::GStreamerCapturer(GStreamerCaptureDevice device,
     });
 }
 
-static void busMessageCallback(GstBus*, GstMessage* message, GstBin *pipeline)
-{
-    switch (GST_MESSAGE_TYPE(message)) {
-    case GST_MESSAGE_ERROR:
-        GST_ERROR_OBJECT (pipeline, "Got: %" GST_PTR_FORMAT, message);
-
-        GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS (pipeline, GST_DEBUG_GRAPH_SHOW_ALL,
-            "error");
-        break;
-    case GST_MESSAGE_STATE_CHANGED:
-        if (GST_MESSAGE_SRC(message) == GST_OBJECT(pipeline)) {
-            GstState oldstate, newstate, pending;
-            gchar* dump_name;
-
-            gst_message_parse_state_changed(message, &oldstate, &newstate,
-                &pending);
-
-            GST_INFO_OBJECT (pipeline, "State changed (old: %s, new: %s, pending: %s)",
-                gst_element_state_get_name(oldstate),
-                gst_element_state_get_name(newstate),
-                gst_element_state_get_name(pending));
-
-            dump_name = g_strdup_printf("%s_%s_%s",
-                GST_OBJECT_NAME(pipeline),
-                gst_element_state_get_name(oldstate),
-                gst_element_state_get_name(newstate));
-
-            GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(pipeline),
-                GST_DEBUG_GRAPH_SHOW_ALL, dump_name);
-
-            g_free(dump_name);
-        }
-        break;
-    default:
-        break;
-    }
-
-}
-
 void GStreamerCapturer::setupPipeline()
 {
-    GRefPtr<GstBus> bus = adoptGRef(gst_pipeline_get_bus(GST_PIPELINE(m_pipeline.get())));
-    gst_bus_add_signal_watch_full(bus.get(), RunLoopSourcePriority::RunLoopDispatcher);
-    g_signal_connect(bus.get(), "message", G_CALLBACK(busMessageCallback), this->m_pipeline.get());
+    GStreamer::connectSimpleBusMessageCallback(m_pipeline.get());
 }
 
 void GStreamerCapturer::play() {
