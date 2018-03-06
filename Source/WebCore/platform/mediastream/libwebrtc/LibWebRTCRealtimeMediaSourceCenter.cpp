@@ -86,7 +86,7 @@ RealtimeMediaSourceCenter& RealtimeMediaSourceCenter::platformCenter()
 }
 
 LibWebRTCRealtimeMediaSourceCenter::LibWebRTCRealtimeMediaSourceCenter()
-    : m_libWebRTCProvider(makeUniqueRef<LibWebRTCProvider>())
+    : m_libWebRTCProvider(LibWebRTCProvider::create())
 {
 }
 

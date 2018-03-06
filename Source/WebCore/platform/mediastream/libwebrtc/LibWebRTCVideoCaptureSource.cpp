@@ -30,6 +30,7 @@
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
 
 #include "MediaSampleGStreamer.h"
+#include "gstreamer/GStreamerCaptureDeviceManager.h"
 #include <gst/app/gstappsink.h>
 
 #include "LibWebRTCProviderGlib.h"
