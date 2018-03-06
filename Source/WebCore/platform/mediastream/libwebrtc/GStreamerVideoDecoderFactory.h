@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Igalia S.L. All rights reserved.
+ * Copyright (C) 2018 Igalia S.L. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,30 +25,26 @@
 
 #pragma once
 
-#include "LibWebRTCProvider.h"
-#include "GStreamerVideoEncoderFactory.h"
-#include "GStreamerVideoDecoderFactory.h"
+#include "config.h"
+#include <gst/gst.h>
 
-#if USE(LIBWEBRTC)
+#if USE(LIBWEBRTC) && USE(GSTREAMER)
+
+#include "LibWebRTCMacros.h"
+#include "webrtc/media/engine/webrtcvideodecoderfactory.h"
+#include "webrtc/media/engine/webrtcvideoencoderfactory.h"
+#include <wtf/Vector.h>
 
 namespace WebCore {
 
-class WEBCORE_EXPORT LibWebRTCProviderGlib : public LibWebRTCProvider {
+class GStreamerVideoDecoderFactory final : public cricket::WebRtcVideoDecoderFactory {
 public:
-    LibWebRTCProviderGlib() = default;
-
-    webrtc::PeerConnectionFactoryInterface* factory() final;
-
-#if USE(GSTREAMER)
-    std::unique_ptr<cricket::WebRtcVideoEncoderFactory> createEncoderFactory() final;
-    std::unique_ptr<cricket::WebRtcVideoDecoderFactory> createDecoderFactory() final;
-#endif
+    GStreamerVideoDecoderFactory();
 
 private:
-    GStreamerVideoEncoderFactory* m_encoderFactory { nullptr };
-    GStreamerVideoDecoderFactory* m_decoderFactory { nullptr };
+    webrtc::VideoDecoder* CreateVideoDecoder(webrtc::VideoCodecType type) final;
+    void DestroyVideoDecoder(webrtc::VideoDecoder* decoder) override;
 };
-
-} // namespace WebCore
+}
 
 #endif

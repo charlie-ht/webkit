@@ -57,6 +57,26 @@ webrtc::PeerConnectionFactoryInterface* LibWebRTCProviderGlib::factory()
     m_factory = LibWebRTCRealtimeMediaSourceCenter::singleton().factory();
     return m_factory;
 }
+
+#if USE(GSTREAMER)
+std::unique_ptr<cricket::WebRtcVideoDecoderFactory> LibWebRTCProviderGlib::createDecoderFactory()
+{
+    ASSERT(!m_decoderFactory);
+    auto decoderFactory = std::make_unique<GStreamerVideoDecoderFactory>();
+    m_decoderFactory = decoderFactory.get();
+
+    return WTFMove(decoderFactory);
+}
+
+std::unique_ptr<cricket::WebRtcVideoEncoderFactory> LibWebRTCProviderGlib::createEncoderFactory()
+{
+    ASSERT(!m_encoderFactory);
+    auto encoderFactory = std::make_unique<GStreamerVideoEncoderFactory>();
+    m_encoderFactory = encoderFactory.get();
+
+    return WTFMove(encoderFactory);
+}
+#endif // USE(GSTREAMER)
 #endif // USE(LIBWEBRTC)
 
 } // namespace WebCore
