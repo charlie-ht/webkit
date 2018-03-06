@@ -32,13 +32,22 @@
 
 namespace WebCore {
 
-webrtc::PeerConnectionFactoryInterface* LibWebRTCProviderGlib::factory()
+std::unique_ptr<cricket::WebRtcVideoDecoderFactory> LibWebRTCProviderGlib::createDecoderFactory()
 {
-    if (m_factory)
-        return m_factory.get();
+    ASSERT(!m_decoderFactory);
+    auto decoderFactory = std::make_unique<GStreamerVideoDecoderFactory>();
+    m_decoderFactory = decoderFactory.get();
 
-    m_factory = LibWebRTCRealtimeMediaSourceCenter::singleton().factory();
-    return m_factory;
+    return WTFMove(decoderFactory);
+}
+
+std::unique_ptr<cricket::WebRtcVideoEncoderFactory> LibWebRTCProviderGlib::createEncoderFactory()
+{
+    ASSERT(!m_encoderFactory);
+    auto encoderFactory = std::make_unique<GStreamerVideoEncoderFactory>();
+    m_encoderFactory = encoderFactory.get();
+
+    return WTFMove(encoderFactory);
 }
 
 } // namespace WebCore
