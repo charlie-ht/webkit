@@ -29,6 +29,7 @@
 #if USE(LIBWEBRTC) && USE(GSTREAMER)
 
 #include "MediaSampleGStreamer.h"
+#include "GStreamerUtils.h"
 #include <webrtc/api/video/i420_buffer.h>
 #include <webrtc/base/callback.h>
 #include <webrtc/common_video/include/video_frame_buffer.h>
@@ -81,52 +82,12 @@ void RealtimeOutgoingVideoSourceGStreamer::sampleBufferUpdated(MediaStreamTrackP
     }
 
     // FIXME - ASSERT(sample.platformSample().type == PlatformSample::GStreamerMediaSample);
-    GstVideoFrame frame;
     auto& mediaSample = static_cast<MediaSampleGStreamer&>(sample);
-    GstVideoInfo info = mediaSample.videoInfo();
-    auto pixelFormatType = GST_VIDEO_INFO_FORMAT(&info);
+    rtc::scoped_refptr<webrtc::VideoFrameBuffer> framebuf(
+        GStreamer::VideoFrame::Create(gst_sample_ref(mediaSample.platformSample().sample.gstSample))
+    );
 
-    // TODO - Check the liftime of `sample`.
-    ASSERT(mediaSample.platformSample().type == PlatformSample::GStreamerSampleType);
-    GstBuffer* buf = gst_sample_get_buffer(mediaSample.platformSample().sample.gstSample);
-    gst_video_frame_map(&frame, &info, buf, GST_MAP_READ);
-
-    ASSERT(m_width);
-    ASSERT(m_height);
-
-    auto newBuffer = m_bufferPool.CreateBuffer(GST_VIDEO_FRAME_WIDTH(&frame), GST_VIDEO_FRAME_HEIGHT(&frame));
-    ASSERT(newBuffer);
-    if (!newBuffer) {
-        gst_video_frame_unmap(&frame);
-        GST_INFO("RealtimeOutgoingVideoSourceGStreamer::videoSampleAvailable unable to allocate buffer for conversion to YUV");
-        return;
-    }
-
-    webrtc::VideoType sformat;
-    switch (pixelFormatType) {
-    case GST_VIDEO_FORMAT_BGRA:
-    case GST_VIDEO_FORMAT_BGRx:
-        sformat = webrtc::VideoType::kBGRA;
-        break;
-    case GST_VIDEO_FORMAT_ARGB:
-    case GST_VIDEO_FORMAT_xRGB:
-        sformat = webrtc::VideoType::kARGB;
-        break;
-    case GST_VIDEO_FORMAT_I420:
-        sformat = webrtc::VideoType::kI420;
-        break;
-    case GST_VIDEO_FORMAT_YUY2:
-        sformat = webrtc::VideoType::kYUY2;
-        break;
-    default:
-        g_assert_not_reached();
-    }
-    webrtc::ConvertToI420(sformat, (const uint8_t*)frame.data[0], 0, 0, m_width, m_height, 0, m_currentRotation, newBuffer);
-
-    gst_video_frame_unmap(&frame);
-    if (m_shouldApplyRotation && m_currentRotation != webrtc::kVideoRotation_0)
-        newBuffer = webrtc::I420Buffer::Rotate(*newBuffer, m_currentRotation);
-    sendFrame(WTFMove(newBuffer));
+    sendFrame(WTFMove(framebuf));
 }
 
 } // namespace WebCore
