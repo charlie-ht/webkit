@@ -30,6 +30,7 @@
 
 #if USE(LIBWEBRTC) && USE(GSTREAMER)
 
+#include "GStreamerUtils.h"
 #include "RealtimeIncomingVideoSourceGStreamer.h"
 #include "Logging.h"
 #include <gst/video/video.h>
@@ -56,35 +57,10 @@ RealtimeIncomingVideoSourceGStreamer::RealtimeIncomingVideoSourceGStreamer(rtc::
 
 void RealtimeIncomingVideoSourceGStreamer::OnFrame(const webrtc::VideoFrame& frame)
 {
-
     if (!isProducingData())
         return;
 
-    GstVideoInfo info;
-    gst_video_info_set_format (&info, GST_VIDEO_FORMAT_I420, frame.width(),
-        frame.height());
-
-    if (!gst_video_info_is_equal (&info, &m_info)) {
-        m_info = info;
-        m_caps = gst_video_info_to_caps (&m_info);
-    }
-
-    auto webrtcbuffer = frame.video_frame_buffer().get();
-    auto buffer = adoptGRef(gst_buffer_new());
-
-    // FIXME - Check lifetime of those buffers.
-    const uint8_t *comps[3] = {webrtcbuffer->DataY(), webrtcbuffer->DataU(), webrtcbuffer->DataV()};
-
-    for (gint i = 0; i < 3; i++) {
-        gsize compsize = GST_VIDEO_INFO_COMP_STRIDE (&m_info, i) *
-            GST_VIDEO_INFO_COMP_HEIGHT (&m_info, i); 
-
-        GstMemory * comp = gst_memory_new_wrapped(GST_MEMORY_FLAG_PHYSICALLY_CONTIGUOUS,
-            (gpointer) comps[i], compsize, 0, compsize, webrtcbuffer, nullptr);
-        gst_buffer_append_memory (buffer.get(), comp);
-    }
-
-    auto sample = gst_sample_new (buffer.get(), m_caps.get(), NULL, NULL);
+    auto sample = GStreamer::SampleFromVideoFrame(frame);
     callOnMainThread([protectedThis = makeRef(*this), sample] {
         protectedThis->processNewSample(sample);
     });

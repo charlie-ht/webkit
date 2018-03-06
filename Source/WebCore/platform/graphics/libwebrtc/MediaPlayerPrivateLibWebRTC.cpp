@@ -37,6 +37,7 @@
 
 #include <gst/app/gstappsrc.h>
 
+#include "GStreamerUtils.h"
 #include "GStreamerUtilities.h"
 #include <wtf/glib/RunLoopSourcePriority.h>
 
@@ -57,44 +58,6 @@ MediaPlayerPrivateLibWebRTC::MediaPlayerPrivateLibWebRTC(MediaPlayer* player)
     initializeGStreamerAndGStreamerDebugging();
 }
 
-static void busMessageCallback(GstBus*, GstMessage* message, GstBin* pipeline)
-{
-    switch (GST_MESSAGE_TYPE(message)) {
-    case GST_MESSAGE_ERROR:
-        GST_ERROR("Got message: %" GST_PTR_FORMAT, message);
-
-        GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(pipeline, GST_DEBUG_GRAPH_SHOW_ALL,
-            "error");
-        break;
-    case GST_MESSAGE_STATE_CHANGED:
-        if (GST_MESSAGE_SRC(message) == GST_OBJECT(pipeline)) {
-            GstState oldstate, newstate, pending;
-            gchar* dump_name;
-
-            gst_message_parse_state_changed(message, &oldstate, &newstate,
-                &pending);
-
-            GST_INFO_OBJECT(pipeline, "State changed (old: %s, new: %s, pending: %s)",
-                gst_element_state_get_name(oldstate),
-                gst_element_state_get_name(newstate),
-                gst_element_state_get_name(pending));
-
-            dump_name = g_strdup_printf("%s_%s_%s",
-                GST_OBJECT_NAME(pipeline),
-                gst_element_state_get_name(oldstate),
-                gst_element_state_get_name(newstate));
-
-            GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(pipeline),
-                GST_DEBUG_GRAPH_SHOW_ALL, dump_name);
-
-            g_free(dump_name);
-        }
-        break;
-    default:
-        break;
-    }
-}
-
 MediaPlayerPrivateLibWebRTC::~MediaPlayerPrivateLibWebRTC()
 {
     m_streamPrivate->stopProducingData();
@@ -112,6 +75,7 @@ bool MediaPlayerPrivateLibWebRTC::initializeGStreamerAndGStreamerDebugging()
     std::call_once(debugRegisteredFlag, [] {
         GST_DEBUG_CATEGORY_INIT(webkit_webrtc_debug, "webkitlibwebrtcplayer", 0, "WebKit WebRTC player");
     });
+    rtc::LogMessage::LogToDebug(rtc::LS_INFO);
 
     return true;
 }
@@ -232,9 +196,7 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
         track->addObserver(*this);
     }
 
-    GRefPtr<GstBus> bus = adoptGRef(gst_pipeline_get_bus(GST_PIPELINE(m_pipeline.get())));
-    gst_bus_add_signal_watch_full(bus.get(), RunLoopSourcePriority::RunLoopDispatcher);
-    g_signal_connect(bus.get(), "message", G_CALLBACK(busMessageCallback), this->m_pipeline.get());
+    GStreamer::connectSimpleBusMessageCallback(m_pipeline.get());
 
     m_readyState = MediaPlayer::HaveEnoughData;
     m_player->readyStateChanged();
