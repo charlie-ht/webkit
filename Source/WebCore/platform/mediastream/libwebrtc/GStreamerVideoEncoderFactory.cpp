@@ -212,6 +212,11 @@ public:
         auto profile = GST_ENCODING_PROFILE(gst_encoding_video_profile_new(adoptGRef(gst_caps_from_string(Caps())).get(),
             ProfileName(), nullptr, 1));
         auto encodebin = makeElement("encodebin");
+
+        if (!encodebin) {
+            GST_ERROR ("No encodebin present... can't use GStreamer based encoders");
+            return nullptr;
+        }
         g_object_set(encodebin, "profile", profile, nullptr);
 
         for (GList* tmp = GST_BIN_CHILDREN(encodebin); tmp; tmp = tmp->next) {
