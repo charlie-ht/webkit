@@ -183,6 +183,9 @@ list(APPEND WebCorePlatformWPE_SOURCES
     platform/mediastream/libwebrtc/LibWebRTCVideoCaptureSource.cpp
     platform/mediastream/libwebrtc/RealtimeOutgoingAudioSourceLibWebRTC.cpp
     platform/mediastream/libwebrtc/RealtimeIncomingAudioSourceLibWebRTC.cpp
+    platform/mediastream/libwebrtc/GStreamerUtils.cpp
+    platform/mediastream/libwebrtc/GStreamerVideoEncoderFactory.cpp
+    platform/mediastream/libwebrtc/GStreamerVideoDecoderFactory.cpp
 )
 
 list(APPEND WebCore_USER_AGENT_STYLE_SHEETS

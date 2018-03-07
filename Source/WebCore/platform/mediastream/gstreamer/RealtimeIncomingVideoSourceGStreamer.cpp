@@ -66,7 +66,7 @@ void RealtimeIncomingVideoSourceGStreamer::OnFrame(const webrtc::VideoFrame& fra
     });
 }
 
-void RealtimeIncomingVideoSourceGStreamer::processNewSample(MediaSampleGStreamer& sample)
+void RealtimeIncomingVideoSourceGStreamer::processNewSample(GstSample *sample)
 {
     // FIXME - handle setting changes!
     // if (width != m_currentSettings.width() || height != m_currentSettings.height()) {
@@ -75,7 +75,7 @@ void RealtimeIncomingVideoSourceGStreamer::processNewSample(MediaSampleGStreamer
     //     settingsDidChange();
     // }
 
-    videoSampleAvailable(sample);
+    videoSampleAvailable(MediaSampleGStreamer::create(sample, WebCore::FloatSize(), String()));
 }
 
 } // namespace WebCore

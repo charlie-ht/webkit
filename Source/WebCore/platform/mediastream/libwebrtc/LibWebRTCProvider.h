@@ -28,8 +28,14 @@
 #include "LibWebRTCMacros.h"
 #include <wtf/Forward.h>
 #include <wtf/UniqueRef.h>
+#include <gst/gst.h>
 
 #if USE(LIBWEBRTC)
+
+#if USE(GSTREAMER)
+#include "GStreamerVideoEncoderFactory.h"
+#include "GStreamerVideoDecoderFactory.h"
+#endif
 
 #include <webrtc/api/peerconnectioninterface.h>
 #include <webrtc/base/scoped_ref_ptr.h>
@@ -49,8 +55,7 @@ class PeerConnectionFactoryInterface;
 
 namespace WebCore {
 
-#warning "Deactivate VideoToolboxVideoDecoderFactory"
-#if 0
+#if PLATFORM(COCOA)
 class VideoToolboxVideoDecoderFactory;
 class VideoToolboxVideoEncoderFactory;
 #endif
@@ -94,8 +99,7 @@ protected:
 
     rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> m_factory;
 
-#warning "Deactivate VideoToolboxVideoDecoderFactory"
-#if 0
+#if PLATFORM(COCOA)
     VideoToolboxVideoDecoderFactory* m_decoderFactory { nullptr };
     VideoToolboxVideoEncoderFactory* m_encoderFactory { nullptr };
 #endif
