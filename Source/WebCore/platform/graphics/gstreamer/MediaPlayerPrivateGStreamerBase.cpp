@@ -745,18 +745,14 @@ void MediaPlayerPrivateGStreamerBase::pushTextureToCompositor()
 
     LockHolder holder(m_platformLayerProxy->lock());
 
-    if (!m_platformLayerProxy->isActive()) {
-        GST_ERROR_OBJECT (m_pipeline.get(), "Erg... not active. this is ugly I think.");
+    if (!m_platformLayerProxy->isActive())
         return;
-    }
 
 
 #if USE(GSTREAMER_GL)
     std::unique_ptr<GstVideoFrameHolder> frameHolder = std::make_unique<GstVideoFrameHolder>(m_sample.get(), texMapFlagFromOrientation(m_videoSourceOrientation));
-    if (UNLIKELY(!frameHolder->isValid())) {
-        GST_ERROR ("Frame is not valid!");
+    if (UNLIKELY(!frameHolder->isValid()))
         return;
-    }
 
     std::unique_ptr<TextureMapperPlatformLayerBuffer> layerBuffer = std::make_unique<TextureMapperPlatformLayerBuffer>(frameHolder->textureID(), frameHolder->size(), frameHolder->flags(), GraphicsContext3D::RGBA);
     layerBuffer->setUnmanagedBufferDataHolder(WTFMove(frameHolder));
@@ -776,11 +772,9 @@ void MediaPlayerPrivateGStreamerBase::pushTextureToCompositor()
         texture->reset(size, GST_VIDEO_INFO_HAS_ALPHA(&videoInfo) ? BitmapTexture::SupportsAlpha : BitmapTexture::NoFlag);
         buffer = std::make_unique<TextureMapperPlatformLayerBuffer>(WTFMove(texture));
     }
-    GST_ERROR_OBJECT (m_pipeline.get(), "Still going");
     updateTexture(buffer->textureGL(), videoInfo);
     buffer->setExtraFlags(texMapFlagFromOrientation(m_videoSourceOrientation) | (GST_VIDEO_INFO_HAS_ALPHA(&videoInfo) ? TextureMapperGL::ShouldBlend : 0));
     m_platformLayerProxy->pushNextBuffer(WTFMove(buffer));
-    GST_ERROR_OBJECT (m_pipeline.get(), "All done!");
 #endif // USE(GSTREAMER_GL)
 }
 #endif // USE(TEXTURE_MAPPER_GL)
