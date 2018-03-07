@@ -206,15 +206,14 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
 
             m_audioTrack = track;
 
-            // FIXME - Check why we are required to force channels/rate to avoid pipeline reconfiguration.
-            auto sink = gst_parse_bin_from_description("audioconvert ! audioresample ! volume name=v ! audio/x-raw,channels=2,rate=48000 ! autoaudiosink",
-                TRUE, NULL);
-            m_audioSrc = gst_element_factory_make("appsrc", "WebRTCMediaPlayerPrivate-audiosrc");
+            // FIXME - REBASED - Check why we are required to force channels/rate to avoid pipeline reconfiguration.
+            auto sink = gst_element_factory_make("playsink", "webrtcplayer_audiosink");
+            m_audioSrc = gst_element_factory_make("appsrc", "webrtcplayer_audiosrc");
             g_object_set(m_audioSrc.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
 
             gst_bin_add_many(GST_BIN(m_pipeline.get()), m_audioSrc.get(), sink, nullptr);
-            setStreamVolumeElement(GST_STREAM_VOLUME(gst_bin_get_by_name(GST_BIN(sink), "v")));
-            g_assert(gst_element_link_pads(m_audioSrc.get(), "src", sink, "sink"));
+            setStreamVolumeElement(GST_STREAM_VOLUME(sink));
+            g_assert(gst_element_link_pads(m_audioSrc.get(), "src", sink, "audio_sink"));
 
             setMuted(m_player->muted());
         } else if (track->type() == RealtimeMediaSource::Type::Video) {
@@ -225,7 +224,7 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
 
             m_videoTrack = track;
             GstElement* sink = createVideoSink();
-            m_videoSrc = gst_element_factory_make("appsrc", "WebRTCMediaPlayerPrivate-videosrc");
+            m_videoSrc = gst_element_factory_make("appsrc", "webrtcplayer_videosrc");
             g_object_set(m_videoSrc.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
 
             gst_bin_add_many(GST_BIN(m_pipeline.get()), m_videoSrc.get(), sink, nullptr);
