@@ -451,6 +451,12 @@ WEBKIT_API void
 webkit_settings_set_allow_universal_access_from_file_urls      (WebKitSettings *settings,
                                                                 gboolean        allowed);
 
+WEBKIT_API void
+webkit_settings_set_media_capture_requires_secure_connection   (WebKitSettings* settings,
+                                                                gboolean requires);
+WEBKIT_API bool
+webkit_settings_get_media_capture_requires_secure_connection   (WebKitSettings* settings);
+
 WEBKIT_API WebKitHardwareAccelerationPolicy
 webkit_settings_get_hardware_acceleration_policy               (WebKitSettings *settings);
 

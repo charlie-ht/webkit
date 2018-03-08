@@ -155,6 +155,7 @@ enum {
     PROP_ENABLE_ENCRYPTED_MEDIA,
     PROP_ALLOW_FILE_ACCESS_FROM_FILE_URLS,
     PROP_ALLOW_UNIVERSAL_ACCESS_FROM_FILE_URLS,
+    PROP_MEDIA_CAPTURE_REQUIRES_SECURE_CONNECTION,
 #if PLATFORM(GTK)
     PROP_HARDWARE_ACCELERATION_POLICY,
 #endif
@@ -358,6 +359,9 @@ static void webKitSettingsSetProperty(GObject* object, guint propId, const GValu
     case PROP_ALLOW_UNIVERSAL_ACCESS_FROM_FILE_URLS:
         webkit_settings_set_allow_universal_access_from_file_urls(settings, g_value_get_boolean(value));
         break;
+    case PROP_MEDIA_CAPTURE_REQUIRES_SECURE_CONNECTION:
+        webkit_settings_set_media_capture_requires_secure_connection(settings, g_value_get_boolean(value));
+        break;
 #if PLATFORM(GTK)
     case PROP_HARDWARE_ACCELERATION_POLICY:
         webkit_settings_set_hardware_acceleration_policy(settings, static_cast<WebKitHardwareAccelerationPolicy>(g_value_get_enum(value)));
@@ -528,6 +532,9 @@ static void webKitSettingsGetProperty(GObject* object, guint propId, GValue* val
         break;
     case PROP_ALLOW_UNIVERSAL_ACCESS_FROM_FILE_URLS:
         g_value_set_boolean(value, webkit_settings_get_allow_universal_access_from_file_urls(settings));
+        break;
+    case PROP_MEDIA_CAPTURE_REQUIRES_SECURE_CONNECTION:
+        g_value_set_boolean(value, webkit_settings_get_media_capture_requires_secure_connection(settings));
         break;
 #if PLATFORM(GTK)
     case PROP_HARDWARE_ACCELERATION_POLICY:
@@ -1347,6 +1354,22 @@ static void webkit_settings_class_init(WebKitSettingsClass* klass)
         g_param_spec_boolean("allow-universal-access-from-file-urls",
             _("Allow universal access from the context of file scheme URLs"),
             _("Whether or not universal access is allowed from the context of file scheme URLs"),
+            FALSE,
+            readWriteConstructParamFlags));
+
+    /**
+     * WebKitSettings:media-capture-requires-secure-connections:
+     *
+     * Whether MediaCapture requires a secure connection, meaning website over SSL and no
+     * local files.
+     *
+     * Since: 2.XX
+     */
+    g_object_class_install_property(gObjectClass,
+        PROP_MEDIA_CAPTURE_REQUIRES_SECURE_CONNECTION,
+        g_param_spec_boolean("media-capture-requires-secure-connection",
+            _("Allow access to MediaCapture on insecure connection or not."),
+            _("Whether MediaCapture requires a secure connection to be usable"),
             FALSE,
             readWriteConstructParamFlags));
 
@@ -3281,6 +3304,45 @@ void webkit_settings_set_allow_universal_access_from_file_urls(WebKitSettings* s
 
     priv->preferences->setAllowUniversalAccessFromFileURLs(allowed);
     g_object_notify(G_OBJECT(settings), "allow-universal-access-from-file-urls");
+}
+
+/**
+ * webkit_settings_set_media_capture_requires_secure_connection:
+ * @settings: a #WebKitSettings
+ * @allowed: Value to be set
+ *
+ * Set the #WebKitSettings:allow-media-access-from-unsecure-connection property.
+ *
+ * Since: 2.XX
+ */
+void webkit_settings_set_media_capture_requires_secure_connection(WebKitSettings* settings,
+    gboolean requires)
+{
+    g_return_if_fail(WEBKIT_IS_SETTINGS(settings));
+
+    WebKitSettingsPrivate* priv = settings->priv;
+    if (priv->preferences->mediaCaptureRequiresSecureConnection() == requires)
+        return;
+
+    priv->preferences->setMediaCaptureRequiresSecureConnection(requires);
+    g_object_notify(G_OBJECT(settings), "media-capture-requires-secure-connection");
+}
+
+/**
+ * webkit_settings_get_media_capture_requires_secure_connection:
+ * @settings: a #WebKitSettings
+ * @allowed: Value to be set
+ *
+ * Get the #WebKitSettings:media-capture-requires-secure-connection property.
+ *
+ * Since: 2.XX
+ */
+bool webkit_settings_get_media_capture_requires_secure_connection(WebKitSettings* settings)
+{
+    g_return_val_if_fail(WEBKIT_IS_SETTINGS(settings), false);
+
+    WebKitSettingsPrivate* priv = settings->priv;
+    return priv->preferences->mediaCaptureRequiresSecureConnection();
 }
 
 #if PLATFORM(GTK)
