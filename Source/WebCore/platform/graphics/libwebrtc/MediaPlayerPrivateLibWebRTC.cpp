@@ -76,16 +76,7 @@ bool MediaPlayerPrivateLibWebRTC::initializeGStreamerAndGStreamerDebugging()
     std::call_once(debugRegisteredFlag, [] {
         GST_DEBUG_CATEGORY_INIT(webkit_webrtc_debug, "webkitlibwebrtcplayer", 0, "WebKit WebRTC player");
     });
-    rtc::LogMessage::LogToDebug(rtc::LS_INFO);
-
-    static std::once_flag debugRegisteredLibwebrtcFlag;
-    std::call_once(debugRegisteredLibwebrtcFlag, [] {
-        GST_DEBUG_CATEGORY_INIT(webkit_libwebrtc_debug, "webkitlibwebrtc", 0, "libwebrtc debug logging");
-
-        auto threshold = gst_debug_category_get_threshold (webkit_libwebrtc_debug);
-        rtc::LogMessage::LogToDebug(((rtc::LoggingSeverity) (5 - threshold)));
-
-    });
+    rtc::LogMessage::LogToDebug(rtc::LS_WARNING);
 
     return true;
 }

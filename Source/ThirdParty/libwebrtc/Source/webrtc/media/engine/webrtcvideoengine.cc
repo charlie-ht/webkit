@@ -562,7 +562,7 @@ static std::vector<VideoCodec> GetSupportedCodecs(
                << CodecVectorToString(internal_codecs);
 
   std::vector<VideoCodec> unified_codecs;
-  AppendVideoCodecs(internal_codecs, &unified_codecs);
+  // AppendVideoCodecs(internal_codecs, &unified_codecs);
 
   if (external_encoder_factory != nullptr) {
     const std::vector<VideoCodec>& external_codecs =
