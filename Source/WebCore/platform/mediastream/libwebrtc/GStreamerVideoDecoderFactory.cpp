@@ -61,6 +61,7 @@ public:
     GStreamerVideoDecoder()
         : m_pictureId(0)
         , m_firstBufferPts(GST_CLOCK_TIME_NONE)
+        , m_firstBufferDts(GST_CLOCK_TIME_NONE)
     {
     }
 
@@ -134,20 +135,21 @@ public:
     {
         if (!GST_CLOCK_TIME_IS_VALID(m_firstBufferPts)) {
             GRefPtr<GstPad> srcpad = adoptGRef(gst_element_get_static_pad(m_src, "src"));
-            m_firstBufferPts = render_time_ms * GST_MSECOND;
+            m_firstBufferPts = ((guint64) render_time_ms) * GST_MSECOND;
+            m_firstBufferDts = ((guint64) input_image._timeStamp) * GST_MSECOND;
         }
 
         // FIXME- Use a GstBufferPool.
         auto buffer = gst_buffer_new_wrapped(g_memdup(input_image._buffer, input_image._size),
             input_image._size);
-        GST_BUFFER_DTS(buffer) = input_image._timeStamp;
-        GST_BUFFER_PTS(buffer) = render_time_ms - m_firstBufferPts;
+        GST_BUFFER_DTS(buffer) = (((guint64) input_image._timeStamp) * GST_MSECOND) - m_firstBufferDts;
+        GST_BUFFER_PTS(buffer) = ((guint64)(render_time_ms) * GST_MSECOND) - m_firstBufferPts;
         m_dts_pts_map[GST_BUFFER_PTS(buffer)] = input_image._timeStamp;
 
         GST_LOG_OBJECT(m_pipeline.get(), "%ld Decoding: %" GST_PTR_FORMAT,
             render_time_ms, buffer);
         switch (gst_app_src_push_sample(GST_APP_SRC(m_src),
-            gst_sample_new(buffer, adoptGRef(gst_caps_from_string(Caps())).get(), nullptr, nullptr))) {
+            gst_sample_new(buffer, GetCapsForFrame(input_image), nullptr, nullptr))) {
         case GST_FLOW_OK:
             return WEBRTC_VIDEO_CODEC_OK;
         case GST_FLOW_FLUSHING:
@@ -155,6 +157,14 @@ public:
         default:
             return WEBRTC_VIDEO_CODEC_ERROR;
         }
+    }
+
+    GstCaps * GetCapsForFrame(const webrtc::EncodedImage&)
+    {
+        if (!m_caps)
+            m_caps = adoptGRef(gst_caps_new_empty_simple (Caps()));
+
+        return m_caps.get();
     }
 
     GstFlowReturn newSampleCallback(GstElement* sink)
@@ -180,9 +190,9 @@ public:
     virtual webrtc::VideoCodecType CodecType() = 0;
     const char* ImplementationName() const { return "GStreamer"; }
     virtual const gchar* Name() = 0;
-    GRefPtr<GstCaps> m_caps = nullptr;
 
 protected:
+    GRefPtr<GstCaps> m_caps;
     gint m_pictureId;
 
 private:
@@ -197,12 +207,12 @@ private:
     GstElement* m_capsfilter;
     GstElement* m_sink;
 
-    GRefPtr<GstCaps> m_input_caps;
     GstVideoInfo m_info;
     webrtc::DecodedImageCallback* m_image_ready_cb;
 
     std::map<GstClockTime, GstClockTime> m_dts_pts_map;
     GstClockTime m_firstBufferPts;
+    GstClockTime m_firstBufferDts;
 };
 
 class H264Decoder : public GStreamerVideoDecoder {
@@ -219,6 +229,17 @@ public:
     const gchar* Caps() final { return "video/x-vp8"; }
     const gchar* Name() final { return cricket::kVp8CodecName; }
     webrtc::VideoCodecType CodecType() final { return webrtc::kVideoCodecVP8; }
+
+    GstCaps * GetCapsForFrame(const webrtc::EncodedImage& image)
+    {
+        if (!m_caps)
+            m_caps = adoptGRef(gst_caps_new_simple (Caps(),
+                "width", G_TYPE_INT, image._encodedWidth,
+                "height", G_TYPE_INT, image._encodedHeight,
+                nullptr));
+
+        return m_caps.get();
+    }
 };
 
 webrtc::VideoDecoder* GStreamerVideoDecoderFactory::CreateVideoDecoder(
