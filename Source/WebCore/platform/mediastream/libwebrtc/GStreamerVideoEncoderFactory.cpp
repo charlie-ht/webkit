@@ -204,13 +204,14 @@ public:
 
         return GST_FLOW_OK;
     }
-
+    virtual GstCaps * RestrictionCaps() { return nullptr; }
     GstElement* CreateEncoder(GstElement** encoder)
     {
         GstElement* enc = NULL;
 
+        auto restrictions = adoptGRef(RestrictionCaps());
         auto profile = GST_ENCODING_PROFILE(gst_encoding_video_profile_new(adoptGRef(gst_caps_from_string(Caps())).get(),
-            ProfileName(), nullptr, 1));
+            ProfileName(), restrictions.get(), 1));
         auto encodebin = makeElement("encodebin");
 
         if (!encodebin) {
@@ -418,6 +419,12 @@ public:
     const gchar* Name() final { return cricket::kH264CodecName; }
     GstH264NalParser* m_parser;
     webrtc::VideoCodecType CodecType() final { return webrtc::kVideoCodecH264; }
+
+    virtual GstCaps * RestrictionCaps() {
+        return gst_caps_new_simple ("video/x-raw",
+            "format", G_TYPE_STRING, "I420",
+            nullptr);
+    }
 
     void PopulateCodecSpecific(webrtc::CodecSpecificInfo* codec_specific, GstBuffer*) final
     {
