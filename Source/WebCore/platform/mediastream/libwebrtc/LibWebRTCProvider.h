@@ -103,6 +103,8 @@ protected:
     VideoToolboxVideoDecoderFactory* m_decoderFactory { nullptr };
     VideoToolboxVideoEncoderFactory* m_encoderFactory { nullptr };
 #endif
+    GStreamerVideoDecoderFactory* m_decoderFactory { nullptr };
+    GStreamerVideoEncoderFactory* m_encoderFactory { nullptr };
 #endif
 };
 

@@ -485,6 +485,8 @@ GStreamerVideoEncoderFactory::GStreamerVideoEncoderFactory()
 
 const std::vector<cricket::VideoCodec>& GStreamerVideoEncoderFactory::supported_codecs() const
 {
+    m_SupportedCodecs.clear();
+
     VP8Encoder().AddCodecIfSupported(m_SupportedCodecs);
     H264Encoder().AddCodecIfSupported(m_SupportedCodecs);
 

@@ -164,13 +164,16 @@ webrtc::PeerConnectionFactoryInterface* LibWebRTCProvider::factory()
 #else
     auto encoderFactory = std::make_unique<GStreamerVideoEncoderFactory>();
     auto decoderFactory = std::make_unique<GStreamerVideoDecoderFactory>();
+
+    m_decoderFactory = decoderFactory.get();
+    m_encoderFactory = encoderFactory.get();
 #endif
 
     m_factory = webrtc::CreatePeerConnectionFactory(factoryAndThreads.networkThread.get(),
         factoryAndThreads.networkThread.get(),
         factoryAndThreads.signalingThread.get(),
         factoryAndThreads.audioDeviceModule.get(),
-        encoderFactory.get(), decoderFactory.get());
+        encoderFactory.release(), decoderFactory.release());
 
     return m_factory;
 }
