@@ -76,7 +76,7 @@ void RealtimeIncomingVideoSourceGStreamer::processNewSample(GstSample *sample)
     // }
 
     videoSampleAvailable(MediaSampleGStreamer::create(sample, WebCore::FloatSize(), String()));
-}
+    gst_sample_unref (sample);}
 
 } // namespace WebCore
 

@@ -176,12 +176,12 @@ public:
         // as it is required by the VideoDecoder baseclass.
         GST_BUFFER_DTS(buffer) = m_dts_pts_map[GST_BUFFER_PTS(buffer)];
         m_dts_pts_map.erase(GST_BUFFER_PTS(buffer));
-        auto frame = *GStreamer::VideoFrameFromBuffer(sample, webrtc::kVideoRotation_0);
+        std::unique_ptr<webrtc::VideoFrame> frame( GStreamer::VideoFrameFromBuffer(sample, webrtc::kVideoRotation_0));
         GST_BUFFER_DTS(buffer) = GST_CLOCK_TIME_NONE;
         GST_LOG_OBJECT(m_pipeline.get(), "Output decoded frame! %ld -> %" GST_PTR_FORMAT,
-            frame.timestamp(), buffer);
+            frame->timestamp(), buffer);
 
-        m_image_ready_cb->Decoded(frame, rtc::Optional<int32_t>(), rtc::Optional<uint8_t>());
+        m_image_ready_cb->Decoded(*frame.get(), rtc::Optional<int32_t>(), rtc::Optional<uint8_t>());
 
         return GST_FLOW_OK;
     }
