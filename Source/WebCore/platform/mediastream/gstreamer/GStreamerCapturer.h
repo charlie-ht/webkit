@@ -46,10 +46,12 @@ public:
     virtual void setupPipeline();
     virtual void play();
     virtual void stop();
+    void addSink(GstElement *sink);
     GstElement * makeElement(const gchar *factory_name);
     virtual const gchar* Name() = 0;
 
     GRefPtr<GstElement> m_sink;
+    GRefPtr<GstElement> m_tee;
     GRefPtr<GstElement> m_capsfilter;
     GStreamerCaptureDevice m_device;
     GRefPtr<GstCaps> m_caps;

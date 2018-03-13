@@ -52,8 +52,10 @@ namespace WebCore {
 class LibWebRTCAudioCaptureSource final : public RealtimeMediaSource {
 public:
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
-
     WEBCORE_EXPORT static AudioCaptureFactory& factory();
+
+    void addSink(GstElement *sink) { m_capturer.addSink(sink); }
+    GstElement *Pipeline() { return m_capturer.m_pipeline.get(); }
 
 private:
     LibWebRTCAudioCaptureSource(GStreamerCaptureDevice device);

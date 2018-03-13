@@ -62,6 +62,27 @@ GstElement * GStreamerCapturer::makeElement(const gchar *factory_name) {
     return elem;
 }
 
+void GStreamerCapturer::addSink(GstElement *sink)
+{
+    g_return_if_fail(m_pipeline.get());
+    g_return_if_fail(m_tee.get());
+
+    auto queue = makeElement("queue");
+    gst_bin_add_many (GST_BIN (m_pipeline.get()), queue, sink, nullptr);
+    gst_element_sync_state_with_parent (queue);
+    gst_element_sync_state_with_parent (sink);
+    gst_element_link_pads (m_tee.get(), "src_%u", queue, "sink");
+    gst_element_link (queue, sink);
+
+    GST_INFO_OBJECT(m_pipeline.get(), "Adding sink: %" GST_PTR_FORMAT, sink);
+    gchar* dump_name;
+    dump_name = g_strdup_printf("%s_sink_%s_added", GST_OBJECT_NAME(m_pipeline.get()),
+        GST_OBJECT_NAME (sink));
+    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN (m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL,
+        dump_name);
+    g_free (dump_name);
+}
+
 void GStreamerCapturer::play() {
     g_assert(m_pipeline.get());
 
