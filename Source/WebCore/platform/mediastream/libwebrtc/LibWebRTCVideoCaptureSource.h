@@ -54,6 +54,8 @@ namespace WebCore {
 class LibWebRTCVideoCaptureSource final : public RealtimeMediaSource {
 public:
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
+    void addSink(GstElement *sink) { m_capturer.addSink(sink); }
+    GstElement *Pipeline() { return m_capturer.m_pipeline.get(); }
 
 private:
     LibWebRTCVideoCaptureSource(GStreamerCaptureDevice device);
