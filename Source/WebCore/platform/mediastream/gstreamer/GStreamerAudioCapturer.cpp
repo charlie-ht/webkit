@@ -44,7 +44,7 @@ GStreamerAudioCapturer::GStreamerAudioCapturer(GStreamerCaptureDevice device)
 void GStreamerAudioCapturer::setupPipeline()
 {
     auto name = g_strdup_printf ("AudioCapturer_%p", this);
-    m_pipeline = gst_element_factory_make("pipeline", name);
+    m_pipeline = makeElement("pipeline");
     g_free (name);
 
     name = g_strdup_printf ("audiosource_%p", this);
@@ -52,8 +52,8 @@ void GStreamerAudioCapturer::setupPipeline()
     g_free(name);
     GRefPtr<GstElement> converter = gst_parse_bin_from_description("audioconvert ! audioresample",
         TRUE, NULL); // FIXME Handle errors.
-    GRefPtr<GstElement> m_capsfilter = gst_element_factory_make("capsfilter", nullptr);
-    m_sink = gst_element_factory_make("appsink", NULL);
+    GRefPtr<GstElement> m_capsfilter = makeElement("capsfilter");
+    m_sink = makeElement("appsink");
 
     gst_app_sink_set_emit_signals(GST_APP_SINK(m_sink.get()), TRUE);
     g_object_set(m_capsfilter.get(), "caps", m_caps.get(), nullptr);

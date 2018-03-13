@@ -40,6 +40,7 @@ public:
     bool setSize(int width, int height);
     bool setFrameRate(double);
     GstVideoInfo GetBestFormat();
+    virtual const gchar* Name() { return "Video"; }
 };
 
 } // namespace WebCore
