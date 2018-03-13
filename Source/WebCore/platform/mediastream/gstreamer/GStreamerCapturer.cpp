@@ -53,6 +53,15 @@ void GStreamerCapturer::setupPipeline()
     GStreamer::connectSimpleBusMessageCallback(m_pipeline.get());
 }
 
+GstElement * GStreamerCapturer::makeElement(const gchar *factory_name) {
+    auto elem = gst_element_factory_make(factory_name, nullptr);
+    gchar* name = g_strdup_printf("%s_capturer_%s_%p", Name(), GST_OBJECT_NAME (elem), this);
+    gst_object_set_name (GST_OBJECT (elem), name);
+    g_free(name);
+
+    return elem;
+}
+
 void GStreamerCapturer::play() {
     g_assert(m_pipeline.get());
 
