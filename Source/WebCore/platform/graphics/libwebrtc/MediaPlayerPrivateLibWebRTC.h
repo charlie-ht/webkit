@@ -109,6 +109,8 @@ private:
 
     void loadingFailed(MediaPlayer::NetworkState error);
 
+    void handleExternalPipelineBusMessagesSync(GstElement *pipeline);
+
     RefPtr<MediaStreamTrackPrivate> m_videoTrack;
     RefPtr<MediaStreamTrackPrivate> m_audioTrack;
     RefPtr<MediaStreamPrivate> m_streamPrivate;

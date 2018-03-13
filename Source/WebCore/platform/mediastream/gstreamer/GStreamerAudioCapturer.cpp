@@ -53,14 +53,16 @@ void GStreamerAudioCapturer::setupPipeline()
     GRefPtr<GstElement> converter = gst_parse_bin_from_description("audioconvert ! audioresample",
         TRUE, NULL); // FIXME Handle errors.
     GRefPtr<GstElement> m_capsfilter = makeElement("capsfilter");
+    m_tee = makeElement("tee");
     m_sink = makeElement("appsink");
 
     gst_app_sink_set_emit_signals(GST_APP_SINK(m_sink.get()), TRUE);
     g_object_set(m_capsfilter.get(), "caps", m_caps.get(), nullptr);
 
     gst_bin_add_many(GST_BIN(m_pipeline.get()), source.get(), converter.get(),
-        m_capsfilter.get(), m_sink.get(), NULL);
-    gst_element_link_many(source.get(), converter.get(), m_capsfilter.get(), m_sink.get(), NULL);
+        m_capsfilter.get(), m_tee.get(), NULL);
+    gst_element_link_many(source.get(), converter.get(), m_capsfilter.get(), m_tee.get(), NULL);
+    addSink(m_sink.get());
 
     GStreamerCapturer::setupPipeline();
 }

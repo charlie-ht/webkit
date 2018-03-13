@@ -129,6 +129,22 @@ FloatSize MediaPlayerPrivateLibWebRTC::naturalSize() const
     return MediaPlayerPrivateGStreamerBase::naturalSize();
 }
 
+void MediaPlayerPrivateLibWebRTC::handleExternalPipelineBusMessagesSync(GstElement *pipeline)
+{
+    GRefPtr<GstBus> bus = adoptGRef(gst_pipeline_get_bus(GST_PIPELINE(pipeline)));
+    gst_bus_set_sync_handler(bus.get(), [](GstBus*, GstMessage* message, gpointer userData) {
+        auto& player = *static_cast<MediaPlayerPrivateGStreamerBase*>(userData);
+
+        if (player.handleSyncMessage(message)) {
+            gst_message_unref(message);
+            return GST_BUS_DROP;
+        }
+
+        return GST_BUS_PASS;
+    }, this, nullptr);
+
+}
+
 void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
 {
     m_streamPrivate = &stream;
@@ -147,6 +163,7 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
     m_player->readyStateChanged();
     for (auto& track : m_streamPrivate->tracks()) {
 
+        auto observe = true;
         if (!track->enabled()) {
             GST_DEBUG("Track %s disabled", track->label().ascii().data());
             continue;
@@ -161,12 +178,19 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
             m_audioTrack = track;
 
             auto sink = gst_element_factory_make("playsink", "webrtcplayer_audiosink");
-            m_audioSrc = gst_element_factory_make("appsrc", "webrtcplayer_audiosrc");
-            g_object_set(m_audioSrc.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
+            if (stream.hasCaptureVideoSource()) {
+                LibWebRTCAudioCaptureSource& source = static_cast<LibWebRTCAudioCaptureSource&>(m_audioTrack->source());
 
-            gst_bin_add_many(GST_BIN(m_pipeline.get()), m_audioSrc.get(), sink, nullptr);
-            setStreamVolumeElement(GST_STREAM_VOLUME(sink));
-            g_assert(gst_element_link_pads(m_audioSrc.get(), "src", sink, "audio_sink"));
+                handleExternalPipelineBusMessagesSync(source.Pipeline());
+                source.addSink(sink);
+                observe = false;
+            } else {
+                m_audioSrc = gst_element_factory_make("appsrc", "webrtcplayer_audiosrc");
+                g_object_set(m_audioSrc.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
+
+                gst_bin_add_many(GST_BIN(m_pipeline.get()), m_audioSrc.get(), sink, nullptr);
+                g_assert(gst_element_link_pads(m_audioSrc.get(), "src", sink, "audio_sink"));
+            }
 
             setMuted(m_player->muted());
         } else if (track->type() == RealtimeMediaSource::Type::Video) {
@@ -177,18 +201,28 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
 
             m_videoTrack = track;
             GstElement* sink = createVideoSink();
-            m_videoSrc = gst_element_factory_make("appsrc", "webrtcplayer_videosrc");
-            g_object_set(m_videoSrc.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
 
-            gst_bin_add_many(GST_BIN(m_pipeline.get()), m_videoSrc.get(), sink, nullptr);
-            gst_element_link(m_videoSrc.get(), sink);
+            if (stream.hasCaptureVideoSource()) {
+                LibWebRTCVideoCaptureSource& source = static_cast<LibWebRTCVideoCaptureSource&>(m_videoTrack->source());
+
+                handleExternalPipelineBusMessagesSync(source.Pipeline());
+                source.addSink(sink);
+                observe = false;
+            } else {
+                m_videoSrc = gst_element_factory_make("appsrc", "webrtcplayer_videosrc");
+                g_object_set(m_videoSrc.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
+
+                gst_bin_add_many(GST_BIN(m_pipeline.get()), m_videoSrc.get(), sink, nullptr);
+                gst_element_link(m_videoSrc.get(), sink);
+            }
         } else {
             GST_INFO("Unsuported track type: %d", track->type());
 
             continue;
         }
 
-        track->addObserver(*this);
+        if (observe)
+            track->addObserver(*this);
     }
 
     GStreamer::connectSimpleBusMessageCallback(m_pipeline.get());

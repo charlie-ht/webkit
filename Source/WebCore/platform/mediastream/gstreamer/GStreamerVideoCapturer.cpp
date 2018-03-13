@@ -47,15 +47,17 @@ void GStreamerVideoCapturer::setupPipeline() {
     GRefPtr<GstElement> converter = gst_parse_bin_from_description ("videoscale ! videoconvert",
         TRUE, NULL); // FIXME Handle errors.
     GRefPtr<GstElement> m_capsfilter = makeElement ("capsfilter");
-    auto queue = makeElement ("queue");
+    m_tee = makeElement ("tee");
     m_sink = makeElement ("appsink");
 
     gst_app_sink_set_emit_signals(GST_APP_SINK (m_sink.get()), TRUE);
 
     gst_bin_add_many (GST_BIN (m_pipeline.get()), source.get(), converter.get(),
-        m_capsfilter.get(), m_sink.get(), NULL);
-    gst_element_link_many (source.get(), converter.get(), m_capsfilter.get(), m_sink.get(), NULL);
+        m_capsfilter.get(), m_tee.get(), NULL);
+    gst_element_link_many (source.get(), converter.get(), m_capsfilter.get(), m_tee.get(), NULL);
     g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
+
+    addSink(m_sink.get());
 
     GStreamerCapturer::setupPipeline();
 }
