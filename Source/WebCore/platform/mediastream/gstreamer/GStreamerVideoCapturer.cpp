@@ -38,18 +38,17 @@ GStreamerVideoCapturer::GStreamerVideoCapturer(GStreamerCaptureDevice device)
 }
 
 void GStreamerVideoCapturer::setupPipeline() {
-    auto name = g_strdup_printf ("VideoCapturer_%p", this);
-    m_pipeline = gst_element_factory_make ("pipeline", name);
-    g_free (name);
+    m_pipeline = makeElement ("pipeline");
 
-    name = g_strdup_printf ("videosource_%p", this);
+    auto name = g_strdup_printf ("videosource_%p", this);
     GRefPtr<GstElement> source = m_device.gstSourceElement(name);
     g_free (name);
 
     GRefPtr<GstElement> converter = gst_parse_bin_from_description ("videoscale ! videoconvert",
         TRUE, NULL); // FIXME Handle errors.
-    GRefPtr<GstElement> m_capsfilter = gst_element_factory_make ("capsfilter", nullptr);
-    m_sink = gst_element_factory_make ("appsink", NULL);
+    GRefPtr<GstElement> m_capsfilter = makeElement ("capsfilter");
+    auto queue = makeElement ("queue");
+    m_sink = makeElement ("appsink");
 
     gst_app_sink_set_emit_signals(GST_APP_SINK (m_sink.get()), TRUE);
 
