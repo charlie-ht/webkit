@@ -26,6 +26,8 @@
 #include "config.h"
 
 #if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#include <wtf/text/WTFString.h>
+
 #include "GRefPtrGStreamer.h"
 #include "GStreamerUtils.h"
 #include "GStreamerVideoDecoderFactory.h"
@@ -94,9 +96,14 @@ public:
         auto sinkpad = gst_element_get_static_pad(m_capsfilter, "sink");
         g_signal_connect(m_decoder, "pad-added", G_CALLBACK(decodebin_pad_added_cb), sinkpad);
 
-        m_sink = makeElement("appsink");
-        gst_app_sink_set_emit_signals(GST_APP_SINK(m_sink), TRUE);
-        g_signal_connect(m_sink, "new-sample", G_CALLBACK(newSampleCallbackTramp), this);
+        m_sink = GStreamerVideoDecoderFactory::requestSink (String::fromUTF8(m_stream_id.c_str()),
+                m_pipeline.get());
+
+        if (!m_sink) {
+            m_sink = makeElement("appsink");
+            gst_app_sink_set_emit_signals(GST_APP_SINK(m_sink), TRUE);
+            g_signal_connect(m_sink, "new-sample", G_CALLBACK(newSampleCallbackTramp), this);
+        }
 
         gst_bin_add_many(GST_BIN(m_pipeline.get()), m_src, m_decoder, m_capsfilter, m_sink, nullptr);
         g_assert(gst_element_link_many(m_src, m_decoder, nullptr));
@@ -190,6 +197,7 @@ public:
     virtual webrtc::VideoCodecType CodecType() = 0;
     const char* ImplementationName() const { return "GStreamer"; }
     virtual const gchar* Name() = 0;
+    std::string m_stream_id;
 
 protected:
     GRefPtr<GstCaps> m_caps;
@@ -242,6 +250,38 @@ public:
     }
 };
 
+// FIME- Make MT safe!
+Vector<GStreamerVideoDecoderFactory::Observer*> OBSERVERS;
+
+GstElement * GStreamerVideoDecoderFactory::requestSink (String track_id, GstElement *pipeline) {
+    for (Observer* observer : OBSERVERS) {
+        auto sink = observer->requestSink(track_id, pipeline);
+        if (sink)
+            return sink;
+    }
+    return nullptr;
+}
+
+void GStreamerVideoDecoderFactory::addObserver(Observer& observer) {
+    OBSERVERS.append(&observer);
+}
+
+void GStreamerVideoDecoderFactory::removeObserver(Observer& observer) {
+    size_t pos = OBSERVERS.find(&observer);
+    if (pos != notFound)
+        OBSERVERS.remove(pos);
+}
+
+webrtc::VideoDecoder* GStreamerVideoDecoderFactory::CreateVideoDecoderWithParams(webrtc::VideoCodecType type, cricket::VideoDecoderParams params)
+{
+    auto res = static_cast<GStreamerVideoDecoder*>(CreateVideoDecoder(type));
+    if (res) {
+        res->m_stream_id = params.receive_stream_id;
+    }
+
+    return res;
+}
+
 webrtc::VideoDecoder* GStreamerVideoDecoderFactory::CreateVideoDecoder(
     webrtc::VideoCodecType type)
 {
@@ -251,11 +291,12 @@ webrtc::VideoDecoder* GStreamerVideoDecoderFactory::CreateVideoDecoder(
     case webrtc::kVideoCodecVP8:
         return new VP8Decoder();
     default:
-        // GST_ERROR ("Could not create decoder for %d", type);
+        GST_ERROR ("Could not create decoder for %d", type);
         return nullptr;
     }
 }
 
+// FIXME - Find a way to avoid having it global
 void GStreamerVideoDecoderFactory::DestroyVideoDecoder(webrtc::VideoDecoder* decoder)
 {
     delete decoder;
@@ -265,7 +306,6 @@ GStreamerVideoDecoderFactory::GStreamerVideoDecoderFactory()
 {
     static std::once_flag debugRegisteredFlag;
 
-    // gst_plugin_feature_set_rank(gst_registry_lookup_feature (gst_registry_get (), "h264parse"), 0);
     std::call_once(debugRegisteredFlag, [] {
         GST_DEBUG_CATEGORY_INIT(webkit_webrtcdec_debug, "webkitlibwebrtcvideodecoder", 0, "WebKit WebRTC video decoder");
     });

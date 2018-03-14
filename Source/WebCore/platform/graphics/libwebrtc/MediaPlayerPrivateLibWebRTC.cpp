@@ -64,6 +64,7 @@ MediaPlayerPrivateLibWebRTC::~MediaPlayerPrivateLibWebRTC()
     for (auto& track : m_streamPrivate->tracks()) {
         track->removeObserver(*this);
     }
+    GStreamerVideoDecoderFactory::removeObserver(*this);
 }
 
 bool MediaPlayerPrivateLibWebRTC::initializeGStreamerAndGStreamerDebugging()
@@ -75,7 +76,7 @@ bool MediaPlayerPrivateLibWebRTC::initializeGStreamerAndGStreamerDebugging()
     std::call_once(debugRegisteredFlag, [] {
         GST_DEBUG_CATEGORY_INIT(webkit_webrtc_debug, "webkitlibwebrtcplayer", 0, "WebKit WebRTC player");
     });
-    rtc::LogMessage::LogToDebug(rtc::LS_INFO);
+    rtc::LogMessage::LogToDebug(rtc::LS_WARNING);
 
     return true;
 }
@@ -200,20 +201,23 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
             }
 
             m_videoTrack = track;
-            GstElement* sink = createVideoSink();
+            auto id = track->id();
+            m_sink = createVideoSink();
 
+            LibWebRTCVideoCaptureSource& source = static_cast<LibWebRTCVideoCaptureSource&>(m_videoTrack->source());
             if (stream.hasCaptureVideoSource()) {
-                LibWebRTCVideoCaptureSource& source = static_cast<LibWebRTCVideoCaptureSource&>(m_videoTrack->source());
-
                 handleExternalPipelineBusMessagesSync(source.Pipeline());
-                source.addSink(sink);
+                source.addSink(m_sink.get());
+                observe = false;
+            } else if (source.persistentID().length()) {
+                GStreamerVideoDecoderFactory::addObserver(*this);
                 observe = false;
             } else {
                 m_videoSrc = gst_element_factory_make("appsrc", "webrtcplayer_videosrc");
                 g_object_set(m_videoSrc.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
 
-                gst_bin_add_many(GST_BIN(m_pipeline.get()), m_videoSrc.get(), sink, nullptr);
-                gst_element_link(m_videoSrc.get(), sink);
+                gst_bin_add_many(GST_BIN(m_pipeline.get()), m_videoSrc.get(), m_sink.get(), nullptr);
+                gst_element_link(m_videoSrc.get(), m_sink.get());
             }
         } else {
             GST_INFO("Unsuported track type: %d", track->type());
@@ -315,5 +319,21 @@ void MediaPlayerPrivateLibWebRTC::sampleBufferUpdated(MediaStreamTrackPrivate&, 
     auto gstsample = static_cast<MediaSampleGStreamer*>(&sample)->platformSample().sample.gstSample;
     gst_app_src_push_sample(GST_APP_SRC(m_videoSrc.get()), gstsample);
 }
+
+GstElement* MediaPlayerPrivateLibWebRTC::requestSink (String track_id, GstElement *pipeline) {
+    String current_track_id = m_videoTrack->source().persistentID();
+    if (track_id == current_track_id) {
+        GST_ERROR ("YAY requesting sink!");
+
+        handleExternalPipelineBusMessagesSync(pipeline);
+        return m_sink.get();
+    }
+
+    GST_INFO_OBJECT (m_pipeline.get(), "Not our track: %s != %s", track_id.utf8().data(),
+        current_track_id.utf8().data());
+
+    return nullptr;
+}
+
 }
 #endif // ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
