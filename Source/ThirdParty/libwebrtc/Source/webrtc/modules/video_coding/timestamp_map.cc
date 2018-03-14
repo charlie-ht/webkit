@@ -33,7 +33,6 @@ void VCMTimestampMap::Add(uint32_t timestamp, VCMFrameInformation* data) {
   if (next_add_idx_ == next_pop_idx_) {
     // Circular list full; forget oldest entry.
     next_pop_idx_ = (next_pop_idx_ + 1) % capacity_;
-    LOG(LS_WARNING) << "Too many timestamp .... poping oldest" << ring_buffer_[next_add_idx_].timestamp;
   }
 }
 
