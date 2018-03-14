@@ -27,10 +27,8 @@
 #include "MediaSampleLibWebRTC.h"
 #include "MediaStreamPrivate.h"
 #include "MediaStreamTrackPrivate.h"
-
-#include "webrtc/api/mediastreaminterface.h"
-#include "webrtc/api/videosinkinterface.h"
-#include "webrtc/media/engine/webrtcvideocapturer.h"
+#include "RealtimeMediaSource.h"
+#include "GStreamerVideoDecoderFactory.h"
 
 #include "MediaPlayerPrivateGStreamerBase.h"
 
@@ -39,7 +37,11 @@
 
 namespace WebCore {
 
-class MediaPlayerPrivateLibWebRTC : public MediaPlayerPrivateGStreamerBase, private MediaStreamTrackPrivate::Observer {
+class MediaPlayerPrivateLibWebRTC
+    : public MediaPlayerPrivateGStreamerBase
+    , private MediaStreamTrackPrivate::Observer
+    , RealtimeMediaSource::Observer
+    , GStreamerVideoDecoderFactory::Observer {
 public:
     explicit MediaPlayerPrivateLibWebRTC(MediaPlayer*);
     ~MediaPlayerPrivateLibWebRTC();
@@ -109,6 +111,10 @@ private:
 
     void loadingFailed(MediaPlayer::NetworkState error);
 
+
+    // GStreamerVideoDecoderFactory::Observer implementation.
+    virtual GstElement* requestSink (String track_id, GstElement *pipeline);
+
     void handleExternalPipelineBusMessagesSync(GstElement *pipeline);
 
     RefPtr<MediaStreamTrackPrivate> m_videoTrack;
@@ -116,6 +122,7 @@ private:
     RefPtr<MediaStreamPrivate> m_streamPrivate;
     GRefPtr<GstElement> m_audioSrc;
     GRefPtr<GstElement> m_videoSrc;
+    GRefPtr<GstElement> m_sink;
 };
 }
 

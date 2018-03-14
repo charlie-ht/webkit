@@ -32,17 +32,26 @@
 
 #include "LibWebRTCMacros.h"
 #include "webrtc/media/engine/webrtcvideodecoderfactory.h"
-#include "webrtc/media/engine/webrtcvideoencoderfactory.h"
-#include <wtf/Vector.h>
 
 namespace WebCore {
 
-class GStreamerVideoDecoderFactory final : public cricket::WebRtcVideoDecoderFactory {
+
+class GStreamerVideoDecoderFactory : public cricket::WebRtcVideoDecoderFactory {
 public:
+    class Observer {
+    public:
+        virtual ~Observer() = default;
+        virtual GstElement* requestSink (String track_id, GstElement *pipeline) = 0;
+    };
+
     GStreamerVideoDecoderFactory();
+    static void addObserver(Observer&);
+    static void removeObserver(Observer&);
+    static GstElement * requestSink (String track_id, GstElement *pipeline);
 
 private:
     webrtc::VideoDecoder* CreateVideoDecoder(webrtc::VideoCodecType type) final;
+    webrtc::VideoDecoder* CreateVideoDecoderWithParams(webrtc::VideoCodecType type, cricket::VideoDecoderParams params) final;
     void DestroyVideoDecoder(webrtc::VideoDecoder* decoder) override;
 };
 }
