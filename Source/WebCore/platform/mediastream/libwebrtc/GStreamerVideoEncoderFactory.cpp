@@ -65,11 +65,13 @@ public:
     GStreamerVideoEncoder(const cricket::VideoCodec&)
         : m_pictureId(0)
         , m_firstFramePts(GST_CLOCK_TIME_NONE)
+        , m_restrictionCaps(adoptGRef(gst_caps_new_empty_simple ("video/x-raw")))
     {
     }
     GStreamerVideoEncoder()
         : m_pictureId(0)
         , m_firstFramePts(GST_CLOCK_TIME_NONE)
+        , m_restrictionCaps(adoptGRef(gst_caps_new_empty_simple ("video/x-raw")))
     {
     }
 
@@ -78,6 +80,11 @@ public:
         // FIXME- What should we do here?
         GST_INFO_OBJECT(m_pipeline.get(), "New bitrate: %d - framerate is %d",
             new_bitrate_kbit, frame_rate);
+
+        auto caps = gst_caps_make_writable (m_restrictionCaps.get());
+        gst_caps_set_simple (caps, "framerate", GST_TYPE_FRACTION, frame_rate, 1, nullptr);
+
+        SetRestrictionCaps (caps);
 
         return 0;
     }
@@ -209,15 +216,18 @@ public:
     {
         GstElement* enc = NULL;
 
-        auto profile = GST_ENCODING_PROFILE(gst_encoding_video_profile_new(adoptGRef(gst_caps_from_string(Caps())).get(),
-            ProfileName(), nullptr, 1));
+        m_profile = GST_ENCODING_PROFILE(gst_encoding_video_profile_new(
+            adoptGRef(gst_caps_from_string(Caps())).get(),
+            ProfileName(),
+            gst_caps_ref (m_restrictionCaps.get()),
+            1));
         auto encodebin = makeElement("encodebin");
 
         if (!encodebin) {
             GST_ERROR ("No encodebin present... can't use GStreamer based encoders");
             return nullptr;
         }
-        g_object_set(encodebin, "profile", profile, nullptr);
+        g_object_set(encodebin, "profile", m_profile.get(), nullptr);
 
         for (GList* tmp = GST_BIN_CHILDREN(encodebin); tmp; tmp = tmp->next) {
             GstElement* elem = GST_ELEMENT(tmp->data);
@@ -299,6 +309,15 @@ public:
 
     virtual const gchar* Name() = 0;
 
+    void SetRestrictionCaps(GstCaps *caps)
+    {
+        if (caps && m_profile.get()) {
+            GST_ERROR ("Num refs: %ld", GST_MINI_OBJECT_REFCOUNT (caps));
+            g_object_set (m_profile.get(), "restriction-caps", caps, nullptr);
+        }
+        m_restrictionCaps = caps;
+    }
+
 protected:
     gint m_pictureId;
 
@@ -316,6 +335,8 @@ private:
 
     webrtc::EncodedImageCallback* m_image_ready_cb;
     GstClockTime m_firstFramePts;
+    GRefPtr<GstCaps> m_restrictionCaps;
+    GRefPtr<GstEncodingProfile> m_profile;
 };
 
 class H264Encoder : public GStreamerVideoEncoder {
@@ -444,6 +465,7 @@ public:
         codec_specific->codecType = webrtc::kVideoCodecVP8;
         codec_specific->codec_name = ImplementationName();
         webrtc::CodecSpecificInfoVP8* vp8_info = &(codec_specific->codecSpecific.VP8);
+        vp8_info->temporalIdx = 0;
         vp8_info->pictureId = m_pictureId;
         vp8_info->simulcastIdx = 0; // TODO(thiblahute) populate this
         vp8_info->keyIdx = webrtc::kNoKeyIdx; // TODO(thiblahute) populate this
