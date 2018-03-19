@@ -179,6 +179,8 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
             m_audioTrack = track;
 
             auto sink = gst_element_factory_make("playsink", "webrtcplayer_audiosink");
+            setStreamVolumeElement(GST_STREAM_VOLUME (sink));
+            setMuted(m_player->muted());
             if (stream.hasCaptureVideoSource()) {
                 LibWebRTCAudioCaptureSource& source = static_cast<LibWebRTCAudioCaptureSource&>(m_audioTrack->source());
 
@@ -193,7 +195,6 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
                 g_assert(gst_element_link_pads(m_audioSrc.get(), "src", sink, "audio_sink"));
             }
 
-            setMuted(m_player->muted());
         } else if (track->type() == RealtimeMediaSource::Type::Video) {
             if (m_videoTrack) {
                 GST_FIXME("Support multiple track of the same type.");
