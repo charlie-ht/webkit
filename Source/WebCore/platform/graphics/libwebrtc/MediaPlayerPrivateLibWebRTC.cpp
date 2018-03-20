@@ -274,6 +274,27 @@ void MediaPlayerPrivateLibWebRTC::loadingFailed(MediaPlayer::NetworkState error)
     }
 }
 
+void MediaPlayerPrivateLibWebRTC::setState(GstState state)
+{
+    gst_element_set_state(pipeline(), state);
+
+    GstElement* sinks[2] = { audioSink(), videoSink() };
+    for (auto i = 0; i < 2; i++) {
+        GstElement *sink = sinks[i];
+
+        if (!sink)
+            continue;
+
+        GstElement *parent = GST_ELEMENT (gst_object_get_parent (GST_OBJECT (sink)));
+
+        if (parent != pipeline()) {
+            GST_INFO_OBJECT (pipeline(), "%" GST_PTR_FORMAT
+                " not inside us, setting its state separately.", sink);
+            gst_element_set_state(sink, state);
+        }
+    }
+}
+
 void MediaPlayerPrivateLibWebRTC::play()
 {
     GST_DEBUG("Play");
@@ -286,11 +307,12 @@ void MediaPlayerPrivateLibWebRTC::play()
 
     GST_DEBUG("Connecting to live stream, descriptor: %p", m_streamPrivate.get());
 
-    gst_element_set_state(pipeline(), GST_STATE_PLAYING);
+    setState(GST_STATE_PLAYING);
 }
 
 void MediaPlayerPrivateLibWebRTC::pause()
 {
+    setState(GST_STATE_PAUSED);
 }
 
 void MediaPlayerPrivateLibWebRTC::audioSamplesAvailable(MediaStreamTrackPrivate&,

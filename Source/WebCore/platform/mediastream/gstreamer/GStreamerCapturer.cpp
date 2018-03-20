@@ -74,6 +74,13 @@ void GStreamerCapturer::addSink(GstElement *sink)
     gst_element_link_pads (m_tee.get(), "src_%u", queue, "sink");
     gst_element_link (queue, sink);
 
+    if (sink == m_sink.get()) {
+        GST_INFO_OBJECT (m_pipeline.get(), "Setting queue as leaky upstream",
+            " so that the player can set the sink as to PAUSED without "
+            " setting the whole capturer to PAUSED");
+        g_object_set (queue, "leaky", 2 /* upstream */, nullptr);
+    }
+
     GST_INFO_OBJECT(m_pipeline.get(), "Adding sink: %" GST_PTR_FORMAT, sink);
     gchar* dump_name;
     dump_name = g_strdup_printf("%s_sink_%s_added", GST_OBJECT_NAME(m_pipeline.get()),

@@ -110,6 +110,7 @@ private:
     void readyStateChanged(MediaStreamTrackPrivate&) final{};
 
     void loadingFailed(MediaPlayer::NetworkState error);
+    void setState(GstState state);
 
 
     // GStreamerVideoDecoderFactory::Observer implementation.
