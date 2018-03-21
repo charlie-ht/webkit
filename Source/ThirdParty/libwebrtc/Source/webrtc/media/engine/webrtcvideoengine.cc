@@ -2169,8 +2169,12 @@ void WebRtcVideoChannel::WebRtcVideoReceiveStream::ConfigureCodecs(
 
     if (!new_decoder && decoder_factory_) {
       decoder_factory_->SetReceiveStreamId(stream_params_.id);
+      std::map<std::string, std::string> params;
+
+      params = recv_codec.codec.params;
+      params["receive-stream-id"] = stream_params_.id;
       new_decoder = decoder_factory_->CreateVideoDecoder(webrtc::SdpVideoFormat(
-          recv_codec.codec.name, recv_codec.codec.params));
+          recv_codec.codec.name, params));
     }
 
     // If we still have no valid decoder, we have to create a "Null" decoder
