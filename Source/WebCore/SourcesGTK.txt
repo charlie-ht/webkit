@@ -93,6 +93,10 @@ platform/mediastream/libwebrtc/LibWebRTCVideoCaptureDeviceManager.cpp
 platform/mediastream/libwebrtc/LibWebRTCVideoCaptureSource.cpp
 platform/mediastream/libwebrtc/RealtimeOutgoingAudioSourceLibWebRTC.cpp
 platform/mediastream/libwebrtc/RealtimeIncomingAudioSourceLibWebRTC.cpp
+platform/mediastream/libwebrtc/LibWebRTCProvider.cpp
+platform/mediastream/libwebrtc/GStreamerUtils.cpp
+platform/mediastream/libwebrtc/GStreamerVideoEncoderFactory.cpp
+platform/mediastream/libwebrtc/GStreamerVideoDecoderFactory.cpp
 
 platform/text/Hyphenation.cpp
 platform/text/LocaleICU.cpp

@@ -31,21 +31,24 @@
 #if USE(LIBWEBRTC) && USE(GSTREAMER)
 
 #include "LibWebRTCMacros.h"
-#include "webrtc/media/engine/webrtcvideodecoderfactory.h"
-#include "webrtc/media/engine/webrtcvideoencoderfactory.h"
+#include "api/video_codecs/video_encoder_factory.h"
 #include <wtf/Vector.h>
 
 namespace WebCore {
 
-class GStreamerVideoEncoderFactory final : public cricket::WebRtcVideoEncoderFactory {
+class GStreamerVideoEncoderFactory final : public webrtc::VideoEncoderFactory {
 public:
     GStreamerVideoEncoderFactory();
 
 private:
-    webrtc::VideoEncoder* CreateVideoEncoder(const cricket::VideoCodec&) final;
-    const std::vector<cricket::VideoCodec>& supported_codecs() const final;
-    void DestroyVideoEncoder(webrtc::VideoEncoder*) final;
-    mutable std::vector<cricket::VideoCodec> m_SupportedCodecs;
+    std::vector<webrtc::SdpVideoFormat> GetSupportedFormats() const override;
+    std::unique_ptr<webrtc::VideoEncoder> CreateVideoEncoder(const webrtc::SdpVideoFormat&) final;
+    CodecInfo QueryVideoEncoder(const webrtc::SdpVideoFormat&) const
+     {
+        GST_FIXME ("Detect wether the decoder is HW accelerated");
+
+        return { false, false };
+    }
 };
 }
 

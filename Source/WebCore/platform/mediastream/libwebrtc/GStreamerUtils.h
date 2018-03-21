@@ -34,8 +34,7 @@
 #include "webrtc/common_video/include/video_frame_buffer.h"
 #include "webrtc/api/video/video_frame.h"
 #include "webrtc/api/video/i420_buffer.h"
-#include "webrtc/base/buffer.h"
-#include <webrtc/common_video/libyuv/include/webrtc_libyuv.h>
+#include "webrtc/common_video/include/video_frame_buffer.h"
 
 #include "LibWebRTCMacros.h"
 #include <webrtc/common_video/include/i420_buffer_pool.h>
@@ -51,11 +50,11 @@ GstSample * SampleFromVideoFrame(const webrtc::VideoFrame& frame);
 webrtc::VideoFrame *VideoFrameFromBuffer(GstSample *sample, webrtc::VideoRotation rotation);
 void connectSimpleBusMessageCallback(GstElement *pipeline);
 
-class VideoFrame: public webrtc::NativeHandleBuffer {
+class VideoFrame : public webrtc::VideoFrameBuffer {
 public:
     VideoFrame(GstSample * sample, GstVideoInfo info)
-        : webrtc::NativeHandleBuffer (sample, info.width, info.height)
-        , m_sample(adoptGRef(sample)) {
+        : m_sample(adoptGRef(sample))
+        , m_info(info) {
     }
 
     static VideoFrame * Create(GstSample * sample) {
@@ -66,25 +65,31 @@ public:
         return new VideoFrame (sample, info);
     }
 
-    void* native_handle() const final;
     GstSample *GetSample();
     rtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() final;
 
     // Reference count; implementation copied from rtc::RefCountedObject.
     // FIXME- Should we rely on GStreamer Buffer refcounting here?!
-    int AddRef() const {
-        return rtc::AtomicOps::Increment(&ref_count_);
+    void AddRef() const {
+        rtc::AtomicOps::Increment(&ref_count_);
     }
 
-    int Release() const {
+    rtc::RefCountReleaseStatus Release() const {
         int count = rtc::AtomicOps::Decrement(&ref_count_);
         if (!count) {
             delete this;
+
+            return rtc::RefCountReleaseStatus::kDroppedLastRef;
         }
-        return count;
+
+        return rtc::RefCountReleaseStatus::kOtherRefsRemained;
     }
 
+    int width() const override { return GST_VIDEO_INFO_WIDTH (&m_info); }
+    int height() const override { return GST_VIDEO_INFO_HEIGHT (&m_info); }
+
 private:
+    webrtc::VideoFrameBuffer::Type type() const override;
     mutable volatile int ref_count_ = 0;
     GRefPtr<GstSample> m_sample;
     GstVideoInfo m_info;

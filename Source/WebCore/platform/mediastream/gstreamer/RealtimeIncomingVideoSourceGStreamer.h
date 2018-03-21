@@ -44,7 +44,7 @@ public:
 
 private:
     RealtimeIncomingVideoSourceGStreamer(rtc::scoped_refptr<webrtc::VideoTrackInterface>&&, String&&);
-    void processNewSample(MediaSampleGStreamer& sample);
+    void processNewSample(GstSample* sample);
 
     // rtc::VideoSinkInterface
     void OnFrame(const webrtc::VideoFrame&) final;

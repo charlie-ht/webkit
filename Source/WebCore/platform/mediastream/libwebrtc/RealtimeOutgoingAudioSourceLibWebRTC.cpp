@@ -158,7 +158,7 @@ void RealtimeOutgoingAudioSourceLibWebRTC::pullAudioData()
     gst_buffer_unref (inbuf);
     for (auto sink : m_sinks) {
         sink->OnData(outmap.data,
-            m_outputStreamDescription->sampleWordSize(),
+            LibWebRTCAudioFormat::sampleSize,
             (int) m_outputStreamDescription->sampleRate(),
             (int) m_outputStreamDescription->numberOfChannels(),
             outChunkSampleCount);

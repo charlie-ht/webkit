@@ -220,6 +220,7 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
                 gst_bin_add_many(GST_BIN(m_pipeline.get()), m_videoSrc.get(), m_sink.get(), nullptr);
                 gst_element_link(m_videoSrc.get(), m_sink.get());
             }
+            ensureGLVideoSinkContext();
         } else {
             GST_INFO("Unsuported track type: %d", track->type());
 

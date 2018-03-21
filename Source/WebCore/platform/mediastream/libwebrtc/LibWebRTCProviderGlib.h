@@ -37,11 +37,9 @@ class WEBCORE_EXPORT LibWebRTCProviderGlib : public LibWebRTCProvider {
 public:
     LibWebRTCProviderGlib() = default;
 
-    webrtc::PeerConnectionFactoryInterface* factory() final;
-
 #if USE(GSTREAMER)
-    std::unique_ptr<cricket::WebRtcVideoEncoderFactory> createEncoderFactory() final;
-    std::unique_ptr<cricket::WebRtcVideoDecoderFactory> createDecoderFactory() final;
+    std::unique_ptr<webrtc::VideoEncoderFactory> createEncoderFactory() final;
+    std::unique_ptr<webrtc::VideoDecoderFactory> createDecoderFactory() final;
 #endif
 
 private:

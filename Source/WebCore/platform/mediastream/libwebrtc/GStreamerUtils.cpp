@@ -39,14 +39,15 @@ namespace GStreamer {
 
 GstSample * SampleFromVideoFrame(const webrtc::VideoFrame& frame)
 {
-    if (frame.video_frame_buffer()->type() == webrtc::VideoFrameBuffer::Type::kNative) {
-        auto framebuffer = static_cast<GStreamer::VideoFrame*>(frame.video_frame_buffer().get());
-        auto gstsample = framebuffer->GetSample();
-        GST_INFO ("Reusing native GStreamer buffer! %p", gstsample);
-        return gstsample;
-    }
+    g_return_val_if_fail (frame.video_frame_buffer()->type() == webrtc::VideoFrameBuffer::Type::kNative, nullptr);
 
-    auto webrtcbuffer = frame.video_frame_buffer().get();
+    auto framebuffer = static_cast<GStreamer::VideoFrame*>(frame.video_frame_buffer().get());
+    auto gstsample = framebuffer->GetSample();
+    GST_INFO ("Reusing native GStreamer buffer! %p", gstsample);
+
+    return gstsample;
+
+    auto webrtcbuffer = frame.video_frame_buffer().get()->ToI420();
     auto buffer = gst_buffer_new();
     // FIXME - Check lifetime of those buffers.
     const uint8_t* comps[3] = {
@@ -133,9 +134,8 @@ void connectSimpleBusMessageCallback(GstElement *pipeline)
         pipeline);
 }
 
-void* VideoFrame::native_handle() const {
-    GST_ERROR ("Returning native handle");
-    return (void*) m_sample.get();
+webrtc::VideoFrameBuffer::Type VideoFrame::type() const {
+  return Type::kNative;
 }
 
 GstSample *VideoFrame::GetSample() {
@@ -147,7 +147,7 @@ rtc::scoped_refptr<webrtc::I420BufferInterface> VideoFrame::ToI420() {
     GstVideoFrame frame;
 
     g_assert (gst_video_info_from_caps (&info, gst_sample_get_caps (m_sample.get())));
-    auto pixelFormatType = GST_VIDEO_INFO_FORMAT(&info);
+    g_return_val_if_fail (GST_VIDEO_INFO_FORMAT(&info) == GST_VIDEO_FORMAT_I420, nullptr);
 
     GstBuffer* buf = gst_sample_get_buffer(m_sample.get());
     gst_video_frame_map(&frame, &info, buf, GST_MAP_READ);
@@ -161,27 +161,17 @@ rtc::scoped_refptr<webrtc::I420BufferInterface> VideoFrame::ToI420() {
         return nullptr;
     }
 
-    webrtc::VideoType sformat;
-    switch (pixelFormatType) {
-    case GST_VIDEO_FORMAT_BGRA:
-    case GST_VIDEO_FORMAT_BGRx:
-        sformat = webrtc::VideoType::kBGRA;
-        break;
-    case GST_VIDEO_FORMAT_ARGB:
-    case GST_VIDEO_FORMAT_xRGB:
-        sformat = webrtc::VideoType::kARGB;
-        break;
-    case GST_VIDEO_FORMAT_I420:
-        sformat = webrtc::VideoType::kI420;
-        break;
-    case GST_VIDEO_FORMAT_YUY2:
-        sformat = webrtc::VideoType::kYUY2;
-        break;
-    default:
-        g_assert_not_reached();
-    }
-    webrtc::ConvertToI420(sformat, (const uint8_t*)frame.data[0], 0, 0, GST_VIDEO_INFO_WIDTH (&info),
-        GST_VIDEO_INFO_HEIGHT (&info), 0, webrtc::kVideoRotation_0, newBuffer);
+
+    newBuffer->Copy(
+        GST_VIDEO_FRAME_WIDTH (&frame),
+        GST_VIDEO_FRAME_HEIGHT (&frame),
+        GST_VIDEO_FRAME_COMP_DATA (&frame, 0),
+        GST_VIDEO_FRAME_COMP_STRIDE(&frame, 0),
+        GST_VIDEO_FRAME_COMP_DATA (&frame, 1),
+        GST_VIDEO_FRAME_COMP_STRIDE(&frame, 1),
+        GST_VIDEO_FRAME_COMP_DATA (&frame, 2),
+        GST_VIDEO_FRAME_COMP_STRIDE(&frame, 2)
+    );
     gst_video_frame_unmap(&frame);
 
     return newBuffer;

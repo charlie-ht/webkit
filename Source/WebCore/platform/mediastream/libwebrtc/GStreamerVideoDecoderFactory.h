@@ -31,12 +31,11 @@
 #if USE(LIBWEBRTC) && USE(GSTREAMER)
 
 #include "LibWebRTCMacros.h"
-#include "webrtc/media/engine/webrtcvideodecoderfactory.h"
+#include "api/video_codecs/video_decoder_factory.h"
 
 namespace WebCore {
 
-
-class GStreamerVideoDecoderFactory : public cricket::WebRtcVideoDecoderFactory {
+class GStreamerVideoDecoderFactory : public webrtc::VideoDecoderFactory {
 public:
     class Observer {
     public:
@@ -50,9 +49,8 @@ public:
     static GstElement * requestSink (String track_id, GstElement *pipeline);
 
 private:
-    webrtc::VideoDecoder* CreateVideoDecoder(webrtc::VideoCodecType type) final;
-    webrtc::VideoDecoder* CreateVideoDecoderWithParams(webrtc::VideoCodecType type, cricket::VideoDecoderParams params) final;
-    void DestroyVideoDecoder(webrtc::VideoDecoder* decoder) override;
+    std::unique_ptr<webrtc::VideoDecoder> CreateVideoDecoder(const webrtc::SdpVideoFormat& format) final;
+    std::vector<webrtc::SdpVideoFormat> GetSupportedFormats() const final;
 };
 }
 

@@ -48,18 +48,8 @@ bool LibWebRTCProvider::webRTCAvailable()
     return true;
 }
 
-#if USE(LIBWEBRTC)
-webrtc::PeerConnectionFactoryInterface* LibWebRTCProviderGlib::factory()
-{
-    if (m_factory)
-        return m_factory.get();
-
-    m_factory = LibWebRTCRealtimeMediaSourceCenter::singleton().factory();
-    return m_factory;
-}
-
-#if USE(GSTREAMER)
-std::unique_ptr<cricket::WebRtcVideoDecoderFactory> LibWebRTCProviderGlib::createDecoderFactory()
+#if USE(LIBWEBRTC) && USE(GSTREAMER)
+std::unique_ptr<webrtc::VideoDecoderFactory> LibWebRTCProviderGlib::createDecoderFactory()
 {
     ASSERT(!m_decoderFactory);
     auto decoderFactory = std::make_unique<GStreamerVideoDecoderFactory>();
@@ -68,7 +58,7 @@ std::unique_ptr<cricket::WebRtcVideoDecoderFactory> LibWebRTCProviderGlib::creat
     return WTFMove(decoderFactory);
 }
 
-std::unique_ptr<cricket::WebRtcVideoEncoderFactory> LibWebRTCProviderGlib::createEncoderFactory()
+std::unique_ptr<webrtc::VideoEncoderFactory> LibWebRTCProviderGlib::createEncoderFactory()
 {
     ASSERT(!m_encoderFactory);
     auto encoderFactory = std::make_unique<GStreamerVideoEncoderFactory>();
@@ -76,7 +66,6 @@ std::unique_ptr<cricket::WebRtcVideoEncoderFactory> LibWebRTCProviderGlib::creat
 
     return WTFMove(encoderFactory);
 }
-#endif // USE(GSTREAMER)
-#endif // USE(LIBWEBRTC)
+#endif // USE(LIBWEBRTC) && USE(GSTREAMER)
 
 } // namespace WebCore
