@@ -60,7 +60,6 @@ MediaPlayerPrivateLibWebRTC::MediaPlayerPrivateLibWebRTC(MediaPlayer* player)
 
 MediaPlayerPrivateLibWebRTC::~MediaPlayerPrivateLibWebRTC()
 {
-    m_streamPrivate->stopProducingData();
     for (auto& track : m_streamPrivate->tracks()) {
         track->removeObserver(*this);
     }
