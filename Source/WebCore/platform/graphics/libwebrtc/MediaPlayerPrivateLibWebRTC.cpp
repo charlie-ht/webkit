@@ -276,7 +276,11 @@ void MediaPlayerPrivateLibWebRTC::loadingFailed(MediaPlayer::NetworkState error)
 
 void MediaPlayerPrivateLibWebRTC::setState(GstState state)
 {
-    gst_element_set_state(pipeline(), state);
+    // Do not set state on an empty pipeline.
+    // It will have to be set at the moment elements get added
+    // to the pipeline.
+    if (GST_BIN_CHILDREN (pipeline()))
+        gst_element_set_state(pipeline(), state);
 
     GstElement* sinks[2] = { audioSink(), videoSink() };
     for (auto i = 0; i < 2; i++) {
