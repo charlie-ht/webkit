@@ -27,11 +27,17 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import shutil
+import tempfile
+import datetime
+import time
 import subprocess
 import os
+import re
 
 
 class GDBCrashLogGenerator(object):
+
     def __init__(self, name, pid, newer_than, filesystem, path_to_driver):
         self.name = name
         self.pid = pid
@@ -49,6 +55,55 @@ class GDBCrashLogGenerator(object):
             stdout = ('ERROR: The gdb process exited with non-zero return code %s\n\n' % proc.returncode) + stdout
         return (stdout.decode('utf8', 'ignore'), errors)
 
+    def _get_trace_from_systemd(self, pid):
+        # Letting up to 5 seconds for the backtrace to be generated on the systemd side
+        for ntry in range(5):
+            if ntry != 0:
+                # Loopping, it means we conceder the logs might not be ready
+                # yet.
+                time.sleep(1)
+
+            try:
+                info = subprocess.check_output(['coredumpctl', 'info',
+                                                str(pid)],
+                                               stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError:
+                # The trace might not be ready yet
+                time.sleep(1)
+                continue
+
+            info = info.decode()
+            if self.newer_than:
+                found_newer = False
+                # Coredumpctl will use the latest core dump with the specified PID
+                # assume it is the right one.
+                for datestr in re.findall(
+                        r'Timestamp: .*(\d\d\d\d-\d+-\d+ \d\d:\d\d:\d\d)', info):
+
+                    date = time.mktime(datetime.datetime.strptime(
+                        datestr, "%Y-%m-%d %H:%M:%S").timetuple())
+                    if date > self.newer_than:
+                        found_newer = True
+                        break
+
+                if not found_newer:
+                    continue
+
+            tf = tempfile.NamedTemporaryFile()
+            try:
+                subprocess.check_output(['coredumpctl', 'dump', pid,
+                                         '--output=' + tf.name],
+                                        stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError:
+                continue
+
+            res = self._get_gdb_output(tf.name)
+            os.remove(tf.name)
+
+            return res
+
+        return '', []
+
     def generate_crash_log(self, stdout, stderr):
         pid_representation = str(self.pid or '<unknown>')
         log_directory = os.environ.get("WEBKIT_CORE_DUMPS_DIRECTORY")
@@ -62,6 +117,12 @@ class GDBCrashLogGenerator(object):
                 return filename == expected_crash_dump_filename
             return filename.find(self.name) > -1
 
+        try:
+            # Poor man which.
+            coredumpctl = subprocess.check_output(['coredumpctl', '--version'])
+        except subprocess.CalledProcessError:
+            coredumpctl = None
+
         if log_directory:
             dumps = self._filesystem.files_under(log_directory, file_filter=match_filename)
             if dumps:
@@ -69,6 +130,10 @@ class GDBCrashLogGenerator(object):
                 coredump_path = list(reversed(sorted(dumps)))[0]
                 if not self.newer_than or self._filesystem.mtime(coredump_path) > self.newer_than:
                     crash_log, errors = self._get_gdb_output(coredump_path)
+        elif coredumpctl:
+            crash_log, errors = self._get_trace_from_systemd(
+                pid_representation)
+            print(crash_log)
 
         stderr_lines = errors + str(stderr or '<empty>').decode('utf8', 'ignore').splitlines()
         errors_str = '\n'.join(('STDERR: ' + stderr_line) for stderr_line in stderr_lines)
