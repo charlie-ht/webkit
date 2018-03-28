@@ -49,7 +49,7 @@ class MediaTime;
 
 namespace WebCore {
 
-class LibWebRTCAudioCaptureSource final : public RealtimeMediaSource {
+class LibWebRTCAudioCaptureSource: public RealtimeMediaSource {
 public:
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
     WEBCORE_EXPORT static AudioCaptureFactory& factory();
@@ -57,9 +57,18 @@ public:
     void addSink(GstElement *sink) { m_capturer.addSink(sink); }
     GstElement *Pipeline() { return m_capturer.m_pipeline.get(); }
 
+protected:
+    LibWebRTCAudioCaptureSource(const String& deviceID);
+    virtual ~LibWebRTCAudioCaptureSource();
+
+    const RealtimeMediaSourceCapabilities& capabilities() const override;
+    const RealtimeMediaSourceSettings& settings() const override;
+
+    mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
+    mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
+
 private:
     LibWebRTCAudioCaptureSource(GStreamerCaptureDevice device);
-    virtual ~LibWebRTCAudioCaptureSource();
 
     friend class LibWebRTCAudioCaptureSourceFactory;
 
@@ -69,12 +78,6 @@ private:
     void stopProducingData() final;
 
     bool applyVolume(double) final { return true; }
-
-    const RealtimeMediaSourceCapabilities& capabilities() const final;
-    const RealtimeMediaSourceSettings& settings() const final;
-
-    mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
-    mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
 
     rtc::scoped_refptr<webrtc::AudioTrackInterface> m_audioTrack;
     GStreamerAudioCapturer& m_capturer;

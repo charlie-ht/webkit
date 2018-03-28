@@ -35,7 +35,14 @@
 namespace WebCore {
 
 GStreamerAudioCapturer::GStreamerAudioCapturer(GStreamerCaptureDevice device)
-    : GStreamerCapturer(device, adoptGRef(gst_caps_new_empty_simple("audio/x-raw")))
+    : GStreamerCapturer(device, gst_caps_new_empty_simple("audio/x-raw"))
+{
+    m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", "rate",
+        G_TYPE_INT, LibWebRTCAudioFormat::sampleRate, nullptr));
+}
+
+GStreamerAudioCapturer::GStreamerAudioCapturer()
+    : GStreamerCapturer("audiotestsrc", gst_caps_new_empty_simple("audio/x-raw"))
 {
     m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", "rate",
         G_TYPE_INT, LibWebRTCAudioFormat::sampleRate, nullptr));
@@ -47,9 +54,7 @@ void GStreamerAudioCapturer::setupPipeline()
     m_pipeline = makeElement("pipeline");
     g_free (name);
 
-    name = g_strdup_printf ("audiosource_%p", this);
-    GRefPtr<GstElement> source = m_device.gstSourceElement(name);
-    g_free(name);
+    GRefPtr<GstElement> source = createSource();
     GRefPtr<GstElement> converter = gst_parse_bin_from_description("audioconvert ! audioresample",
         TRUE, NULL); // FIXME Handle errors.
     GRefPtr<GstElement> m_capsfilter = makeElement("capsfilter");

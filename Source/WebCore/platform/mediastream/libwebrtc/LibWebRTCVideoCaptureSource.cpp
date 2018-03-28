@@ -52,6 +52,18 @@ const static int defaultWidth = 640;
 const static int defaultHeight = 480;
 const static int defaultFramerate = 30;
 
+GST_DEBUG_CATEGORY(webkit_video_capture_source_debug);
+#define GST_CAT_DEFAULT webkit_video_capture_source_debug
+
+static void initializeGStreamerDebug()
+{
+    static std::once_flag debugRegisteredFlag;
+    std::call_once(debugRegisteredFlag, [] {
+        GST_DEBUG_CATEGORY_INIT(webkit_video_capture_source_debug, "webkitvideocapturesource", 0,
+            "WebKit Video Capture Source.");
+    });
+}
+
 CaptureSourceOrError LibWebRTCVideoCaptureSource::create(const String& deviceID, const MediaConstraints* constraints)
 {
     auto device = GStreamerVideoCaptureDeviceManager::singleton().gstreamerDeviceWithUID(deviceID);
@@ -69,16 +81,22 @@ CaptureSourceOrError LibWebRTCVideoCaptureSource::create(const String& deviceID,
     return CaptureSourceOrError(WTFMove(source));
 }
 
+LibWebRTCVideoCaptureSource::LibWebRTCVideoCaptureSource(const String& deviceID)
+    : RealtimeMediaSource(deviceID, RealtimeMediaSource::Type::Video, deviceID)
+    , m_capturer(*new GStreamerVideoCapturer())
+{
+    initializeGStreamerDebug();
+}
+
 LibWebRTCVideoCaptureSource::LibWebRTCVideoCaptureSource(GStreamerCaptureDevice device)
     : RealtimeMediaSource(device.persistentId(), RealtimeMediaSource::Type::Video, device.persistentId())
     , m_capturer(*new GStreamerVideoCapturer(device))
 {
+    initializeGStreamerDebug();
 }
 
 LibWebRTCVideoCaptureSource::~LibWebRTCVideoCaptureSource()
 {
-    // if (m_videoTrack)
-    //     m_videoTrack->RemoveSink(this);
 }
 
 void LibWebRTCVideoCaptureSource::startProducingData()
@@ -115,8 +133,7 @@ const RealtimeMediaSourceCapabilities& LibWebRTCVideoCaptureSource::capabilities
 {
     if (!m_capabilities) {
         RealtimeMediaSourceCapabilities capabilities(settings().supportedConstraints());
-
-        GRefPtr<GstCaps> caps = m_capturer.m_device.caps();
+        GRefPtr<GstCaps> caps = adoptGRef(m_capturer.getCaps());
         capabilities.setDeviceId(id());
 
         int32_t minWidth = G_MAXINT32, minHeight = G_MAXINT32, minFramerate = G_MAXINT32;

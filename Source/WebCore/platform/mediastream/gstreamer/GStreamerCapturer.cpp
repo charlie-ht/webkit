@@ -37,15 +37,59 @@ GST_DEBUG_CATEGORY(webkit_capturer_debug);
 
 namespace WebCore {
 
-GStreamerCapturer::GStreamerCapturer(GStreamerCaptureDevice device,
-    GRefPtr<GstCaps> caps)
-    : m_device(device),
-      m_caps(caps)
+static void initializeGStreamerAndDebug()
 {
+    initializeGStreamer();
+
     static std::once_flag debugRegisteredFlag;
     std::call_once(debugRegisteredFlag, [] {
         GST_DEBUG_CATEGORY_INIT(webkit_capturer_debug, "webkitcapturer", 0, "WebKit Capturer");
     });
+}
+
+GStreamerCapturer::GStreamerCapturer(GStreamerCaptureDevice device,
+    GRefPtr<GstCaps> caps)
+    : m_device(adoptGRef(device.Device()))
+    , m_caps(caps)
+    , m_sourceFactory(nullptr)
+{
+    initializeGStreamerAndDebug();
+}
+
+GStreamerCapturer::GStreamerCapturer(const gchar *source_factory, GRefPtr<GstCaps> caps)
+    : m_device(nullptr)
+    , m_caps(caps)
+    , m_sourceFactory(source_factory)
+{
+    initializeGStreamerAndDebug();
+}
+
+GstElement * GStreamerCapturer::createSource()
+{
+    if (m_sourceFactory) {
+        auto source = makeElement(m_sourceFactory);
+        g_assert (source);
+
+        return source;
+    }
+
+    gchar* name = g_strdup_printf("%s_%p", Name(), this);
+    auto res = gst_device_create_element(m_device.get(), name);
+    g_free (name);
+
+    return res;
+}
+
+GstCaps * GStreamerCapturer::getCaps()
+{
+    if (m_sourceFactory) {
+        auto elem = adoptGRef((GstElement*) gst_object_ref_sink (makeElement(m_sourceFactory)));
+        auto pad = adoptGRef(gst_element_get_static_pad (elem.get(), "src"));
+
+        return gst_pad_query_caps (pad.get(), nullptr);
+    }
+
+    return gst_device_get_caps (m_device.get());
 }
 
 void GStreamerCapturer::setupPipeline()

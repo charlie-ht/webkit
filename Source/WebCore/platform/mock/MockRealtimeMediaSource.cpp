@@ -51,7 +51,7 @@ struct MockDeviceInfo {
     MockRealtimeMediaSource::MockDevice device;
 };
 
-static const HashMap<String, MockDeviceInfo>& deviceMap()
+const HashMap<String, MockDeviceInfo>& deviceMap()
 {
     static const auto infoMap = makeNeverDestroyed([] {
         static const MockDeviceInfo devices[] = {
@@ -87,6 +87,17 @@ std::optional<CaptureDevice> MockRealtimeMediaSource::captureDeviceWithPersisten
     }
 
     return std::nullopt;
+}
+
+MockRealtimeMediaSource::MockDevice MockRealtimeMediaSource::mockDeviceFromID(const String& id)
+{
+    ASSERT(!id.isEmpty());
+
+    auto map = deviceMap();
+    auto it = map.find(id);
+    ASSERT(it != map.end());
+
+    return it->value.device;
 }
 
 Vector<CaptureDevice>& MockRealtimeMediaSource::audioDevices()
@@ -149,11 +160,7 @@ MockRealtimeMediaSource::MockRealtimeMediaSource(const String& id, RealtimeMedia
 {
     ASSERT(type != RealtimeMediaSource::Type::None);
 
-    auto map = deviceMap();
-    auto it = map.find(id);
-    ASSERT(it != map.end());
-
-    m_device = it->value.device;
+    m_device = mockDeviceFromID(id);
     setPersistentID(String(id));
 }
 

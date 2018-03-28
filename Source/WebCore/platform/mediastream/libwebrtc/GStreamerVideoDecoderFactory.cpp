@@ -74,7 +74,8 @@ public:
         g_assert(gst_pad_link(srcpad, sinkpad) == GST_PAD_LINK_OK);
     }
 
-    GstElement * makeElement(const gchar *factory_name) {
+    GstElement* makeElement(const gchar* factory_name)
+    {
         gchar* name = g_strdup_printf("%s_dec_%s_%p", Name(), factory_name, this);
         auto elem = gst_element_factory_make(factory_name, name);
         g_free(name);
@@ -95,8 +96,8 @@ public:
         auto sinkpad = gst_element_get_static_pad(m_capsfilter, "sink");
         g_signal_connect(m_decoder, "pad-added", G_CALLBACK(decodebin_pad_added_cb), sinkpad);
 
-        m_sink = GStreamerVideoDecoderFactory::requestSink (String::fromUTF8(m_stream_id.c_str()),
-                m_pipeline.get());
+        m_sink = GStreamerVideoDecoderFactory::requestSink(String::fromUTF8(m_stream_id.c_str()),
+            m_pipeline.get());
 
         if (!m_sink) {
             m_sink = makeElement("appsink");
@@ -122,7 +123,7 @@ public:
 
     virtual GstElement* CreateFilter()
     {
-        return makeElement ("videoconvert");
+        return makeElement("videoconvert");
     }
 
     int32_t Release() final
@@ -144,15 +145,15 @@ public:
     {
         if (!GST_CLOCK_TIME_IS_VALID(m_firstBufferPts)) {
             GRefPtr<GstPad> srcpad = adoptGRef(gst_element_get_static_pad(m_src, "src"));
-            m_firstBufferPts = ((guint64) render_time_ms) * GST_MSECOND;
-            m_firstBufferDts = ((guint64) input_image._timeStamp) * GST_MSECOND;
+            m_firstBufferPts = ((guint64)render_time_ms) * GST_MSECOND;
+            m_firstBufferDts = ((guint64)input_image._timeStamp) * GST_MSECOND;
         }
 
         // FIXME- Use a GstBufferPool.
         auto buffer = gst_buffer_new_wrapped(g_memdup(input_image._buffer, input_image._size),
             input_image._size);
-        GST_BUFFER_DTS(buffer) = (((guint64) input_image._timeStamp) * GST_MSECOND) - m_firstBufferDts;
-        GST_BUFFER_PTS(buffer) = ((guint64)(render_time_ms) * GST_MSECOND) - m_firstBufferPts;
+        GST_BUFFER_DTS(buffer) = (((guint64)input_image._timeStamp) * GST_MSECOND) - m_firstBufferDts;
+        GST_BUFFER_PTS(buffer) = ((guint64)(render_time_ms)*GST_MSECOND) - m_firstBufferPts;
         m_dts_pts_map[GST_BUFFER_PTS(buffer)] = input_image._timeStamp;
 
         GST_LOG_OBJECT(m_pipeline.get(), "%ld Decoding: %" GST_PTR_FORMAT,
@@ -168,10 +169,10 @@ public:
         }
     }
 
-    GstCaps * GetCapsForFrame(const webrtc::EncodedImage&)
+    GstCaps* GetCapsForFrame(const webrtc::EncodedImage&)
     {
         if (!m_caps)
-            m_caps = adoptGRef(gst_caps_new_empty_simple (Caps()));
+            m_caps = adoptGRef(gst_caps_new_empty_simple(Caps()));
 
         return m_caps.get();
     }
@@ -190,13 +191,13 @@ public:
         return webrtc::SdpVideoFormat(Name());
     }
 
+    bool HasGstDecoder()
+    {
 
-    bool HasGstDecoder () {
-
-        auto all_decoders = gst_element_factory_list_get_elements (GST_ELEMENT_FACTORY_TYPE_DECODER,
+        auto all_decoders = gst_element_factory_list_get_elements(GST_ELEMENT_FACTORY_TYPE_DECODER,
             GST_RANK_MARGINAL);
-        auto caps = adoptGRef(gst_caps_from_string (Caps()));
-        auto decoders = gst_element_factory_list_filter (all_decoders,
+        auto caps = adoptGRef(gst_caps_from_string(Caps()));
+        auto decoders = gst_element_factory_list_filter(all_decoders,
             caps.get(), GST_PAD_SINK, FALSE);
 
         gst_plugin_feature_list_free(all_decoders);
@@ -204,7 +205,6 @@ public:
 
         return decoders != nullptr;
     }
-
 
     GstFlowReturn newSampleCallback(GstElement* sink)
     {
@@ -215,7 +215,7 @@ public:
         // as it is required by the VideoDecoder baseclass.
         GST_BUFFER_DTS(buffer) = m_dts_pts_map[GST_BUFFER_PTS(buffer)];
         m_dts_pts_map.erase(GST_BUFFER_PTS(buffer));
-        std::unique_ptr<webrtc::VideoFrame> frame( GStreamer::VideoFrameFromBuffer(sample, webrtc::kVideoRotation_0));
+        std::unique_ptr<webrtc::VideoFrame> frame(GStreamer::VideoFrameFromBuffer(sample, webrtc::kVideoRotation_0));
         GST_BUFFER_DTS(buffer) = GST_CLOCK_TIME_NONE;
         GST_LOG_OBJECT(m_pipeline.get(), "Output decoded frame! %ld -> %" GST_PTR_FORMAT,
             frame->timestamp(), buffer);
@@ -270,10 +270,10 @@ public:
     const gchar* Name() final { return cricket::kVp8CodecName; }
     webrtc::VideoCodecType CodecType() final { return webrtc::kVideoCodecVP8; }
 
-    GstCaps * GetCapsForFrame(const webrtc::EncodedImage& image)
+    GstCaps* GetCapsForFrame(const webrtc::EncodedImage& image)
     {
         if (!m_caps)
-            m_caps = adoptGRef(gst_caps_new_simple (Caps(),
+            m_caps = adoptGRef(gst_caps_new_simple(Caps(),
                 "width", G_TYPE_INT, image._encodedWidth,
                 "height", G_TYPE_INT, image._encodedHeight,
                 nullptr));
@@ -285,7 +285,8 @@ public:
 // FIME- Make MT safe!
 Vector<GStreamerVideoDecoderFactory::Observer*> OBSERVERS;
 
-GstElement * GStreamerVideoDecoderFactory::requestSink (String track_id, GstElement *pipeline) {
+GstElement* GStreamerVideoDecoderFactory::requestSink(String track_id, GstElement* pipeline)
+{
     for (Observer* observer : OBSERVERS) {
         auto sink = observer->requestSink(track_id, pipeline);
         if (sink)
@@ -294,11 +295,13 @@ GstElement * GStreamerVideoDecoderFactory::requestSink (String track_id, GstElem
     return nullptr;
 }
 
-void GStreamerVideoDecoderFactory::addObserver(Observer& observer) {
+void GStreamerVideoDecoderFactory::addObserver(Observer& observer)
+{
     OBSERVERS.append(&observer);
 }
 
-void GStreamerVideoDecoderFactory::removeObserver(Observer& observer) {
+void GStreamerVideoDecoderFactory::removeObserver(Observer& observer)
+{
     size_t pos = OBSERVERS.find(&observer);
     if (pos != notFound)
         OBSERVERS.remove(pos);
@@ -306,14 +309,14 @@ void GStreamerVideoDecoderFactory::removeObserver(Observer& observer) {
 
 std::unique_ptr<webrtc::VideoDecoder> GStreamerVideoDecoderFactory::CreateVideoDecoder(const webrtc::SdpVideoFormat& format)
 {
-    GStreamerVideoDecoder *dec;
+    GStreamerVideoDecoder* dec;
 
     if (format.name == cricket::kH264CodecName)
         dec = new H264Decoder();
     else if (format.name == cricket::kVp8CodecName)
         dec = new VP8Decoder();
-    else  {
-        GST_ERROR ("Could not create decoder for %s", format.name.c_str());
+    else {
+        GST_ERROR("Could not create decoder for %s", format.name.c_str());
 
         return nullptr;
     }
@@ -331,7 +334,7 @@ GStreamerVideoDecoderFactory::GStreamerVideoDecoderFactory()
         GST_DEBUG_CATEGORY_INIT(webkit_webrtcdec_debug, "webkitlibwebrtcvideodecoder", 0, "WebKit WebRTC video decoder");
     });
 }
-std::vector<webrtc::SdpVideoFormat> GStreamerVideoDecoderFactory::GetSupportedFormats() const 
+std::vector<webrtc::SdpVideoFormat> GStreamerVideoDecoderFactory::GetSupportedFormats() const
 {
     std::vector<webrtc::SdpVideoFormat> res;
 
@@ -340,6 +343,5 @@ std::vector<webrtc::SdpVideoFormat> GStreamerVideoDecoderFactory::GetSupportedFo
 
     return res;
 }
-
 }
 #endif

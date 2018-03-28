@@ -71,7 +71,7 @@ private:
     bool hasVideo() const final { return m_videoTrack; }
     bool hasAudio() const final { return m_audioTrack; }
 
-    float duration() const final { return 0; }
+    MediaTime durationMediaTime() const override;
 
     float currentTime() const final;
     void seekDouble(double) final {}

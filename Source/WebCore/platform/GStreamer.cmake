@@ -34,6 +34,9 @@ if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
         platform/graphics/gstreamer/mse/SourceBufferPrivateGStreamer.cpp
         platform/graphics/gstreamer/mse/WebKitMediaSourceGStreamer.cpp
 
+        platform/mediastream/gstreamer/MockLibWebRTCVideoCaptureSource.cpp
+        platform/mediastream/gstreamer/MockLibWebRTCAudioCaptureSource.cpp
+
         platform/mediastream/gstreamer/RealtimeOutgoingVideoSourceGStreamer.cpp
         platform/mediastream/gstreamer/RealtimeIncomingVideoSourceGStreamer.cpp
         platform/mediastream/gstreamer/GStreamerCapturer.cpp

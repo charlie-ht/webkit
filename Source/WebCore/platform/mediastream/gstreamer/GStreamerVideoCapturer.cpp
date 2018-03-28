@@ -34,16 +34,17 @@ namespace WebCore {
 GStreamerVideoCapturer::GStreamerVideoCapturer(GStreamerCaptureDevice device)
     : GStreamerCapturer(device, adoptGRef(gst_caps_new_empty_simple("video/x-raw")))
 {
-    m_caps = adoptGRef(gst_caps_new_empty_simple("video/x-raw"));
+}
+
+GStreamerVideoCapturer::GStreamerVideoCapturer()
+    : GStreamerCapturer("videotestsrc", adoptGRef(gst_caps_new_empty_simple("video/x-raw")))
+{
 }
 
 void GStreamerVideoCapturer::setupPipeline() {
     m_pipeline = makeElement ("pipeline");
 
-    auto name = g_strdup_printf ("videosource_%p", this);
-    GRefPtr<GstElement> source = m_device.gstSourceElement(name);
-    g_free (name);
-
+    GRefPtr<GstElement> source = createSource();
     GRefPtr<GstElement> converter = gst_parse_bin_from_description ("videoscale ! videoconvert",
         TRUE, NULL); // FIXME Handle errors.
     GRefPtr<GstElement> m_capsfilter = makeElement ("capsfilter");
@@ -64,7 +65,7 @@ void GStreamerVideoCapturer::setupPipeline() {
 
 GstVideoInfo GStreamerVideoCapturer::GetBestFormat()
 {
-    GstCaps *caps = gst_caps_fixate(m_device.caps());
+    GstCaps *caps = gst_caps_fixate(gst_device_get_caps(m_device.get()));
     GstVideoInfo info;
     gst_video_info_from_caps (&info, caps);
     gst_caps_unref (caps);
@@ -74,13 +75,15 @@ GstVideoInfo GStreamerVideoCapturer::GetBestFormat()
 
 bool GStreamerVideoCapturer::setSize(int width, int height)
 {
-    gst_caps_set_simple (m_caps.get(), "width", G_TYPE_INT, width, "height",
+    GstCaps *caps = gst_caps_copy (m_caps.get());
+    gst_caps_set_simple (caps, "width", G_TYPE_INT, width, "height",
         G_TYPE_INT, height, nullptr);
+    m_caps = adoptGRef(caps);
 
-    if (m_capsfilter.get()) {
-        g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
-        return true;
-    }
+    if (!m_capsfilter)
+        return false;
+
+    g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
 
     return false;
 }
@@ -90,12 +93,16 @@ bool GStreamerVideoCapturer::setFrameRate(double frameRate)
     int numerator, denominator;
     gst_util_double_to_fraction(frameRate, &numerator, &denominator);
 
-    gst_caps_set_simple (m_caps.get(), "framerate", GST_TYPE_FRACTION, numerator, denominator, nullptr);
+    auto caps = gst_caps_copy (m_caps.get());
+    gst_caps_set_simple (caps, "framerate",
+        GST_TYPE_FRACTION, numerator, denominator, nullptr);
+    m_caps = adoptGRef(caps);
 
     if (!m_capsfilter)
         return false;
 
     g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
+
     return true;
 }
 

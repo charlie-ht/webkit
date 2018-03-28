@@ -49,15 +49,24 @@ class MediaTime;
 
 namespace WebCore {
 
-class LibWebRTCVideoCaptureSource final : public RealtimeMediaSource {
+class LibWebRTCVideoCaptureSource : public RealtimeMediaSource {
 public:
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
     void addSink(GstElement *sink) { m_capturer.addSink(sink); }
     GstElement *Pipeline() { return m_capturer.m_pipeline.get(); }
 
+protected:
+    LibWebRTCVideoCaptureSource(const String& deviceID);
+    virtual ~LibWebRTCVideoCaptureSource();
+
+    const RealtimeMediaSourceSettings& settings() const override;
+    const RealtimeMediaSourceCapabilities& capabilities() const;
+
+    mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
+    mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
+
 private:
     LibWebRTCVideoCaptureSource(GStreamerCaptureDevice device);
-    virtual ~LibWebRTCVideoCaptureSource();
 
     friend class LibWebRTCVideoCaptureSourceFactory;
 
@@ -68,12 +77,8 @@ private:
     void stopProducingData() final;
     bool applySize(const IntSize&) final { return true; }
 
-    const RealtimeMediaSourceCapabilities& capabilities() const final;
-    const RealtimeMediaSourceSettings& settings() const final;
 
     GStreamerVideoCapturer& m_capturer;
-    mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
-    mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
     rtc::scoped_refptr<webrtc::VideoTrackInterface> m_videoTrack;
 };
 

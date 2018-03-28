@@ -35,6 +35,7 @@ namespace WebCore {
 class GStreamerAudioCapturer: public GStreamerCapturer {
 public:
     GStreamerAudioCapturer(GStreamerCaptureDevice device);
+    GStreamerAudioCapturer();
     void setupPipeline() final;
     bool setSampleRate(int sampleRate);
     virtual const gchar* Name() { return "Audio"; }

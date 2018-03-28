@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Igalia S.L. All rights reserved.
+ * Copyright (C) 2018 Igalia S.L. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -20,29 +20,30 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
  */
 
-#pragma once
+ #pragma once
 
-#include "config.h"
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 
-#include "gstreamer/GStreamerCapturer.h"
-#include <gst/video/video.h>
+#include "LibWebRTCAudioCaptureSource.h"
 
 namespace WebCore {
 
-class GStreamerVideoCapturer: public GStreamerCapturer {
+class MockLibWebRTCAudioCaptureSource final : public LibWebRTCAudioCaptureSource {
 public:
-    GStreamerVideoCapturer(GStreamerCaptureDevice device);
-    GStreamerVideoCapturer();
-    void setupPipeline() final;
-    bool setSize(int width, int height);
-    bool setFrameRate(double);
-    GstVideoInfo GetBestFormat();
-    virtual const gchar* Name() { return "Video"; }
+    MockLibWebRTCAudioCaptureSource(const String& deviceID, const String& name);
+
+private:
+    const RealtimeMediaSourceSettings& settings() const final;
+    const RealtimeMediaSourceCapabilities& capabilities() const final;
+
+    void captureFailed();
+    RealtimeMediaSource &m_mocked_source;
+
 };
 
 } // namespace WebCore
-#endif //ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+
+#endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)

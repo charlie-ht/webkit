@@ -37,6 +37,7 @@ public:
 
     GstElement* gstSourceElement(const gchar * name) const { return gst_device_create_element(m_device.get(), name); }
     GstCaps* caps() const { return gst_device_get_caps(m_device.get()); }
+    GstDevice * Device() { return GST_DEVICE (gst_object_ref (GST_OBJECT_CAST (m_device.get()))); }
 
 private:
     GRefPtr<GstDevice> m_device;

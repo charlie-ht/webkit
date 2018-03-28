@@ -31,6 +31,7 @@
 
 #include "NotImplemented.h"
 #include <wtf/NeverDestroyed.h>
+#include "MockRealtimeAudioSource.h"
 #include "gstreamer/GStreamerAudioData.h"
 #include "gstreamer/GStreamerAudioStreamDescription.h"
 #include "gstreamer/GStreamerCaptureDeviceManager.h"
@@ -38,7 +39,23 @@
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
 
+GST_DEBUG_CATEGORY(webkit_audio_capture_source_debug);
+#ifdef GST_CAT_DEFAULT
+#undef GST_CAT_DEFAULT
+#endif
+
+#define GST_CAT_DEFAULT webkit_audio_capture_source_debug
+
 namespace WebCore {
+
+static void initializeGStreamerDebug()
+{
+    static std::once_flag debugRegisteredFlag;
+    std::call_once(debugRegisteredFlag, [] {
+        GST_DEBUG_CATEGORY_INIT(webkit_audio_capture_source_debug, "webkitaudiocapturesource", 0,
+            "WebKit Audio Capture Source.");
+    });
+}
 
 class LibWebRTCAudioCaptureSourceFactory : public RealtimeMediaSource::AudioCaptureFactory {
 public:
@@ -79,6 +96,14 @@ LibWebRTCAudioCaptureSource::LibWebRTCAudioCaptureSource(GStreamerCaptureDevice 
     : RealtimeMediaSource(device.persistentId(), RealtimeMediaSource::Type::Audio, device.persistentId()),
     m_capturer(*new GStreamerAudioCapturer(device))
 {
+    initializeGStreamerDebug();
+}
+
+LibWebRTCAudioCaptureSource::LibWebRTCAudioCaptureSource(const String& deviceID)
+    : RealtimeMediaSource(deviceID, RealtimeMediaSource::Type::Audio, deviceID),
+    m_capturer(*new GStreamerAudioCapturer())
+{
+    initializeGStreamerDebug();
 }
 
 LibWebRTCAudioCaptureSource::~LibWebRTCAudioCaptureSource()
@@ -122,7 +147,7 @@ void LibWebRTCAudioCaptureSource::stopProducingData()
 const RealtimeMediaSourceCapabilities& LibWebRTCAudioCaptureSource::capabilities() const
 {
     if (!m_capabilities) {
-        GRefPtr<GstCaps> caps = m_capturer.m_device.caps();
+        GRefPtr<GstCaps> caps = m_capturer.getCaps();
         gint min_samplerate = 0, max_samplerate = 0;
         guint i;
 
@@ -173,6 +198,7 @@ const RealtimeMediaSourceSettings& LibWebRTCAudioCaptureSource::settings() const
     }
     return m_currentSettings.value();
 }
+
 } // namespace WebCore
 
 #endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)

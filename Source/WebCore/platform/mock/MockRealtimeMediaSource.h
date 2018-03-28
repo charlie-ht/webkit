@@ -46,12 +46,14 @@ public:
     static Vector<CaptureDevice>& videoDevices();
     static Vector<CaptureDevice>& displayDevices();
 
-    static std::optional<CaptureDevice> captureDeviceWithPersistentID(CaptureDevice::DeviceType, const String&);
-
     enum class MockDevice { Invalid, Microphone1, Microphone2, Camera1, Camera2, Screen1, Screen2 };
 
-protected:
+    static std::optional<CaptureDevice> captureDeviceWithPersistentID(CaptureDevice::DeviceType, const String&);
+    static MockDevice mockDeviceFromID(const String& id);
+
     MockRealtimeMediaSource(const String& id, Type, const String& name);
+
+protected:
 
     virtual void updateSettings(RealtimeMediaSourceSettings&) = 0;
     virtual void initializeCapabilities(RealtimeMediaSourceCapabilities&) = 0;

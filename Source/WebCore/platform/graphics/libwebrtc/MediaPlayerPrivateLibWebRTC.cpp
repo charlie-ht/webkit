@@ -68,16 +68,15 @@ MediaPlayerPrivateLibWebRTC::~MediaPlayerPrivateLibWebRTC()
 
 bool MediaPlayerPrivateLibWebRTC::initializeGStreamerAndGStreamerDebugging()
 {
-    if (!initializeGStreamer())
-        return false;
+    bool res = initializeGStreamer();
 
     static std::once_flag debugRegisteredFlag;
     std::call_once(debugRegisteredFlag, [] {
         GST_DEBUG_CATEGORY_INIT(webkit_webrtc_debug, "webkitlibwebrtcplayer", 0, "WebKit WebRTC player");
+        rtc::LogMessage::LogToDebug(rtc::LS_WARNING);
     });
-    rtc::LogMessage::LogToDebug(rtc::LS_WARNING);
 
-    return true;
+    return res;
 }
 
 void MediaPlayerPrivateLibWebRTC::registerMediaEngine(MediaEngineRegistrar registrar)
@@ -104,14 +103,19 @@ MediaPlayer::SupportsType MediaPlayerPrivateLibWebRTC::supportsType(const MediaE
     return MediaPlayer::IsNotSupported;
 }
 
+MediaTime MediaPlayerPrivateLibWebRTC::durationMediaTime() const
+{
+    return MediaTime::positiveInfiniteTime();
+}
+
 float MediaPlayerPrivateLibWebRTC::currentTime() const
 {
     gint64 position = GST_CLOCK_TIME_NONE;
 
-    gst_element_query_duration(m_pipeline.get(), GST_FORMAT_TIME, &position);
+    gst_element_query_position(m_pipeline.get(), GST_FORMAT_TIME, &position);
 
     float result = 0;
-    if (static_cast<GstClockTime>(position) != GST_CLOCK_TIME_NONE)
+    if (GST_CLOCK_TIME_IS_VALID (position))
         result = static_cast<double>(position) / GST_SECOND;
 
     GST_INFO("Position %" GST_TIME_FORMAT, GST_TIME_ARGS(position));
