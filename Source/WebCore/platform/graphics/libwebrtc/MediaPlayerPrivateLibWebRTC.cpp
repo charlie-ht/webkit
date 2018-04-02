@@ -41,6 +41,9 @@
 #include "GStreamerUtilities.h"
 #include <wtf/glib/RunLoopSourcePriority.h>
 
+#include "VideoTrackPrivateMediaStream.h"
+#include "AudioTrackPrivateMediaStream.h"
+
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
 #define VIDEO_FORMAT "BGRx"
 #else
@@ -198,6 +201,8 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
                 g_assert(gst_element_link_pads(m_audioSrc.get(), "src", sink, "audio_sink"));
             }
 
+            m_player->addAudioTrack(*AudioTrackPrivateMediaStream::create(*track.get()));
+
         } else if (track->type() == RealtimeMediaSource::Type::Video) {
             if (m_videoTrack) {
                 GST_FIXME("Support multiple track of the same type.");
@@ -205,7 +210,6 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
             }
 
             m_videoTrack = track;
-            auto id = track->id();
             m_sink = createVideoSink();
 
             LibWebRTCVideoCaptureSource& source = static_cast<LibWebRTCVideoCaptureSource&>(m_videoTrack->source());
@@ -224,6 +228,7 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
                 gst_element_link(m_videoSrc.get(), m_sink.get());
             }
             ensureGLVideoSinkContext();
+            m_player->addVideoTrack(*VideoTrackPrivateMediaStream::create(*track.get()));
         } else {
             GST_INFO("Unsuported track type: %d", track->type());
 

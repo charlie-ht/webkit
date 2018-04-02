@@ -40,7 +40,6 @@ namespace WebCore {
 class MediaPlayerPrivateLibWebRTC
     : public MediaPlayerPrivateGStreamerBase
     , private MediaStreamTrackPrivate::Observer
-    , RealtimeMediaSource::Observer
     , GStreamerVideoDecoderFactory::Observer {
 public:
     explicit MediaPlayerPrivateLibWebRTC(MediaPlayer*);
@@ -111,7 +110,6 @@ private:
 
     void loadingFailed(MediaPlayer::NetworkState error);
     void setState(GstState state);
-
 
     // GStreamerVideoDecoderFactory::Observer implementation.
     virtual GstElement* requestSink (String track_id, GstElement *pipeline);

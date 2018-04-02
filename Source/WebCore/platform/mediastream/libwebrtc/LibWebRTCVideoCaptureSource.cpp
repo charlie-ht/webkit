@@ -127,6 +127,10 @@ GstFlowReturn LibWebRTCVideoCaptureSource::newSampleCallback(GstElement* sink, L
 void LibWebRTCVideoCaptureSource::stopProducingData()
 {
     m_capturer.stop();
+
+    GST_INFO ("Reset height and width after stopping source");
+    setHeight(0);
+    setWidth(0);
 }
 
 const RealtimeMediaSourceCapabilities& LibWebRTCVideoCaptureSource::capabilities() const
