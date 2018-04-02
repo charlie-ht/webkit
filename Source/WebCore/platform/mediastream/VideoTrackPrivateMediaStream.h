@@ -32,7 +32,7 @@
 
 namespace WebCore {
 
-class VideoTrackPrivateMediaStream final : public VideoTrackPrivate {
+class VideoTrackPrivateMediaStream : public VideoTrackPrivate {
     WTF_MAKE_NONCOPYABLE(VideoTrackPrivateMediaStream)
 public:
     static RefPtr<VideoTrackPrivateMediaStream> create(MediaStreamTrackPrivate& streamTrack)
@@ -47,7 +47,7 @@ public:
     MediaTime timelineOffset() const { return m_timelineOffset; }
     void setTimelineOffset(const MediaTime& offset) { m_timelineOffset = offset; }
 
-private:
+protected:
     VideoTrackPrivateMediaStream(MediaStreamTrackPrivate& track)
         : m_streamTrack(track)
         , m_id(track.id())
@@ -56,6 +56,7 @@ private:
     {
     }
 
+private:
     Kind kind() const final { return Kind::Main; }
     AtomicString id() const final { return m_id; }
     AtomicString label() const final { return m_label; }
