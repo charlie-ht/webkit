@@ -143,6 +143,8 @@ void GStreamerCapturer::play() {
 }
 
 void GStreamerCapturer::stop() {
+    GRefPtr<GstBus> bus = adoptGRef(gst_pipeline_get_bus(GST_PIPELINE(m_pipeline.get())));
+    gst_bus_set_sync_handler(bus.get(), nullptr, nullptr, nullptr);
     g_assert(m_pipeline.get());
 
     GST_INFO_OBJECT ((gpointer) m_pipeline.get(), "Tearing down!");

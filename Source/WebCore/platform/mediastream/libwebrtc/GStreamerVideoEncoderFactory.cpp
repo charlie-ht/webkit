@@ -135,6 +135,9 @@ public:
 
     int32_t Release() final
     {
+        GRefPtr<GstBus> bus = adoptGRef(gst_pipeline_get_bus(GST_PIPELINE(m_pipeline.get())));
+        gst_bus_set_sync_handler(bus.get(), nullptr, nullptr, nullptr);
+
         gst_element_set_state(m_pipeline.get(), GST_STATE_NULL);
         m_pipeline = nullptr;
 
