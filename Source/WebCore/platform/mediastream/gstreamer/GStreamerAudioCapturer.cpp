@@ -57,7 +57,7 @@ void GStreamerAudioCapturer::setupPipeline()
     GRefPtr<GstElement> source = createSource();
     GRefPtr<GstElement> converter = gst_parse_bin_from_description("audioconvert ! audioresample",
         TRUE, NULL); // FIXME Handle errors.
-    GRefPtr<GstElement> m_capsfilter = makeElement("capsfilter");
+    m_capsfilter = makeElement("capsfilter");
     m_tee = makeElement("tee");
     m_sink = makeElement("appsink");
 

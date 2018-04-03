@@ -47,7 +47,7 @@ void GStreamerVideoCapturer::setupPipeline() {
     GRefPtr<GstElement> source = createSource();
     GRefPtr<GstElement> converter = gst_parse_bin_from_description ("videoscale ! videoconvert",
         TRUE, NULL); // FIXME Handle errors.
-    GRefPtr<GstElement> m_capsfilter = makeElement ("capsfilter");
+    m_capsfilter = makeElement ("capsfilter");
     m_tee = makeElement ("tee");
     m_sink = makeElement ("appsink");
 
@@ -85,7 +85,7 @@ bool GStreamerVideoCapturer::setSize(int width, int height)
 
     g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
 
-    return false;
+    return true;
 }
 
 bool GStreamerVideoCapturer::setFrameRate(double frameRate)
