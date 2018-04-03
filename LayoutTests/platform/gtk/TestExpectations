@@ -611,7 +611,9 @@ webkit.org/b/176801 fast/mediastream/MediaStreamConstructor.html [ Pass Crash ]
 
 # Canvas captureStream support is not implemented
 webkit.org/b/169811 fast/mediacapturefromelement [ Skip ]
-webkit.org/b/169811 fast/mediastream/captureStream/canvas2d-heavy-drawing.html [ Failure ]
+webkit.org/b/169811 fast/mediastream/captureStream/ [ Failure ]
+webkit.org/b/169811 fast/mediastream/captureStream/canvas2d.html [ Crash Timeout ]
+webkit.org/b/169811 fast/mediastream/captureStream/canvas3d.html [ Crash Timeout ]
 
 # Requires Resolution Media Query support
 webkit.org/b/100137 fast/media/mq-resolution.html [ Failure ]
@@ -1253,9 +1255,6 @@ webkit.org/b/153937 http/tests/misc/detach-during-notifyDone.html [ Crash Pass ]
 webkit.org/b/131546 media/track/track-in-band.html [ Crash Timeout Failure ]
 
 webkit.org/b/163782 media/video-played-ranges-1.html [ Crash Pass ]
-
-webkit.org/b/169811 fast/mediastream/captureStream/canvas2d.html [ Crash Timeout ]
-webkit.org/b/169811 fast/mediastream/captureStream/canvas3d.html [ Crash Timeout ]
 
 webkit.org/b/172281 accessibility/insert-children-assert.html [ Crash ]
 
