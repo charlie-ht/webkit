@@ -75,8 +75,9 @@ private:
     bool isCaptureSource() const final { return true; }
     void startProducingData() final;
     void stopProducingData() final;
-    bool applySize(const IntSize&) final { return true; }
-
+    bool applySize(const IntSize&) final;
+    bool applyFrameRate(double) final;
+    bool applyAspectRatio(double) final { return true; }
 
     GStreamerVideoCapturer& m_capturer;
     rtc::scoped_refptr<webrtc::VideoTrackInterface> m_videoTrack;

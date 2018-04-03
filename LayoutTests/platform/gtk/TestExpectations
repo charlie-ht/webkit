@@ -596,11 +596,7 @@ webkit.org/b/160996 fast/mediastream/MediaStream-video-element-video-tracks-disa
 webkit.org/b/172269 fast/mediastream/media-devices-enumerate-devices.html [ Failure ]
 
 # WIP - to be investigated.
-webkit.org/b/173257 fast/mediastream/captureStream/canvas2d-heavy-drawing.html [ Failure ]
-webkit.org/b/173257 fast/mediastream/apply-constraints-video.html [ Failure ]
-webkit.org/b/173257 fast/mediastream/apply-constraints-advanced.html [ Failure Crash ]
 webkit.org/b/173257 fast/mediastream/MediaStream-video-element.html [ Failure Crash ]
-webkit.org/b/173257 fast/mediastream/MediaStream-MediaElement-srcObject.html  [ Crash ]
 webkit.org/b/173257 fast/mediastream/MediaStream-video-element-displays-buffer.html [ Failure ]
 webkit.org/b/173257 fast/mediastream/MediaStream-video-element-track-stop.html [ Timeout Failure Crash ]
 webkit.org/b/173257 fast/mediastream/MediaStreamTrack-getSettings.html [ Failure ]
@@ -615,6 +611,7 @@ webkit.org/b/176801 fast/mediastream/MediaStreamConstructor.html [ Pass Crash ]
 
 # Canvas captureStream support is not implemented
 webkit.org/b/169811 fast/mediacapturefromelement [ Skip ]
+webkit.org/b/169811 fast/mediastream/captureStream/canvas2d-heavy-drawing.html [ Failure ]
 
 # Requires Resolution Media Query support
 webkit.org/b/100137 fast/media/mq-resolution.html [ Failure ]

@@ -99,14 +99,29 @@ LibWebRTCVideoCaptureSource::~LibWebRTCVideoCaptureSource()
 {
 }
 
+bool LibWebRTCVideoCaptureSource::applySize(const IntSize &size)
+{
+    m_capturer.setSize(size.width(), size.height());
+
+    return true;
+}
+
+bool LibWebRTCVideoCaptureSource::applyFrameRate(double framerate)
+{
+    m_capturer.setFrameRate(framerate);
+
+    return true;
+}
+
 void LibWebRTCVideoCaptureSource::startProducingData()
 {
+    m_capturer.setupPipeline();
+
     m_capturer.setSize(size().width(), size().height());
     m_capturer.setFrameRate(frameRate());
     m_currentSettings->setWidth(size().width());
     m_currentSettings->setHeight(size().height());
     m_currentSettings->setFrameRate(frameRate());
-    m_capturer.setupPipeline();
     g_signal_connect(m_capturer.m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
     m_capturer.play();
 }
@@ -236,6 +251,10 @@ const RealtimeMediaSourceSettings& LibWebRTCVideoCaptureSource::settings() const
 
         m_currentSettings = WTFMove(settings);
     }
+
+    m_currentSettings->setWidth(size().width());
+    m_currentSettings->setHeight(size().height());
+    m_currentSettings->setFrameRate(frameRate());
     return m_currentSettings.value();
 }
 
