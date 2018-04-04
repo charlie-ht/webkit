@@ -171,17 +171,19 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
     for (auto& track : m_streamPrivate->tracks()) {
 
         auto observe = true;
-        if (!track->enabled()) {
-            GST_DEBUG("Track %s disabled", track->label().ascii().data());
-            continue;
-        }
-
         if (track->type() == RealtimeMediaSource::Type::Audio) {
-            if (m_audioTrack) {
+            auto trackpriv = AudioTrackPrivateMediaStream::create(*track.get());
+
+            m_player->addAudioTrack(*trackpriv);
+            if (m_audioTrack ) {
                 GST_FIXME("Support multiple track of the same type.");
+                continue;
+            } else if (!track->enabled()) {
+                GST_DEBUG("Track %s disabled", track->label().utf8().data());
                 continue;
             }
 
+            trackpriv->setEnabled(!track->muted());
             m_audioTrack = track;
 
             auto sink = gst_element_factory_make("playsink", "webrtcplayer_audiosink");
@@ -200,15 +202,20 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
                 gst_bin_add_many(GST_BIN(m_pipeline.get()), m_audioSrc.get(), sink, nullptr);
                 g_assert(gst_element_link_pads(m_audioSrc.get(), "src", sink, "audio_sink"));
             }
-
-            m_player->addAudioTrack(*AudioTrackPrivateMediaStream::create(*track.get()));
-
         } else if (track->type() == RealtimeMediaSource::Type::Video) {
+            auto trackpriv = VideoTrackPrivateMediaStream::create(*track.get());
+            m_player->addVideoTrack(*trackpriv);
+
             if (m_videoTrack) {
                 GST_FIXME("Support multiple track of the same type.");
                 continue;
+            } else if (!track->enabled()) {
+                GST_DEBUG("Track %s disabled", track->label().utf8().data());
+
+                continue;
             }
 
+            trackpriv->setSelected(true);
             m_videoTrack = track;
             m_sink = createVideoSink();
 
@@ -228,7 +235,6 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
                 gst_element_link(m_videoSrc.get(), m_sink.get());
             }
             ensureGLVideoSinkContext();
-            m_player->addVideoTrack(*VideoTrackPrivateMediaStream::create(*track.get()));
         } else {
             GST_INFO("Unsuported track type: %d", track->type());
 

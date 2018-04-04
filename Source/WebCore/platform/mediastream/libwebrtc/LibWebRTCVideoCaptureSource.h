@@ -56,7 +56,7 @@ public:
     GstElement *Pipeline() { return m_capturer.m_pipeline.get(); }
 
 protected:
-    LibWebRTCVideoCaptureSource(const String& deviceID);
+    LibWebRTCVideoCaptureSource(const String& deviceID, const String& name);
     virtual ~LibWebRTCVideoCaptureSource();
 
     const RealtimeMediaSourceSettings& settings() const override;

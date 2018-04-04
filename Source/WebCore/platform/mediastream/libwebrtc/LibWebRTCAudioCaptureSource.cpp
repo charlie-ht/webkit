@@ -93,14 +93,14 @@ RealtimeMediaSource::AudioCaptureFactory& LibWebRTCAudioCaptureSource::factory()
 }
 
 LibWebRTCAudioCaptureSource::LibWebRTCAudioCaptureSource(GStreamerCaptureDevice device)
-    : RealtimeMediaSource(device.persistentId(), RealtimeMediaSource::Type::Audio, device.persistentId()),
+    : RealtimeMediaSource(device.persistentId(), RealtimeMediaSource::Type::Audio, device.label()),
     m_capturer(*new GStreamerAudioCapturer(device))
 {
     initializeGStreamerDebug();
 }
 
-LibWebRTCAudioCaptureSource::LibWebRTCAudioCaptureSource(const String& deviceID)
-    : RealtimeMediaSource(deviceID, RealtimeMediaSource::Type::Audio, deviceID),
+LibWebRTCAudioCaptureSource::LibWebRTCAudioCaptureSource(const String& deviceID, const String& name)
+    : RealtimeMediaSource(deviceID, RealtimeMediaSource::Type::Audio, name),
     m_capturer(*new GStreamerAudioCapturer())
 {
     initializeGStreamerDebug();

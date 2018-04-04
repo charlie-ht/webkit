@@ -58,7 +58,7 @@ public:
     GstElement *Pipeline() { return m_capturer.m_pipeline.get(); }
 
 protected:
-    LibWebRTCAudioCaptureSource(const String& deviceID);
+    LibWebRTCAudioCaptureSource(const String& deviceID, const String& name);
     virtual ~LibWebRTCAudioCaptureSource();
 
     const RealtimeMediaSourceCapabilities& capabilities() const override;

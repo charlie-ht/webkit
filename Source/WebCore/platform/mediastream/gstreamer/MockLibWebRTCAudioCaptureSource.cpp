@@ -52,7 +52,7 @@ CaptureSourceOrError MockRealtimeAudioSource::create(const String& deviceID,
 }
 
 MockLibWebRTCAudioCaptureSource::MockLibWebRTCAudioCaptureSource(const String& deviceID, const String& name)
-    : LibWebRTCAudioCaptureSource(deviceID)
+    : LibWebRTCAudioCaptureSource(deviceID, name)
     , m_mocked_source(*new MockLibwebrtcRealtimeAudioSource(deviceID, name))
 {
 

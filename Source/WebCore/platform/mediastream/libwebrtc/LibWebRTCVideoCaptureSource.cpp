@@ -81,15 +81,15 @@ CaptureSourceOrError LibWebRTCVideoCaptureSource::create(const String& deviceID,
     return CaptureSourceOrError(WTFMove(source));
 }
 
-LibWebRTCVideoCaptureSource::LibWebRTCVideoCaptureSource(const String& deviceID)
-    : RealtimeMediaSource(deviceID, RealtimeMediaSource::Type::Video, deviceID)
+LibWebRTCVideoCaptureSource::LibWebRTCVideoCaptureSource(const String& deviceID, const String& name)
+    : RealtimeMediaSource(deviceID, RealtimeMediaSource::Type::Video, name)
     , m_capturer(*new GStreamerVideoCapturer())
 {
     initializeGStreamerDebug();
 }
 
 LibWebRTCVideoCaptureSource::LibWebRTCVideoCaptureSource(GStreamerCaptureDevice device)
-    : RealtimeMediaSource(device.persistentId(), RealtimeMediaSource::Type::Video, device.persistentId())
+    : RealtimeMediaSource(device.persistentId(), RealtimeMediaSource::Type::Video, device.label())
     , m_capturer(*new GStreamerVideoCapturer(device))
 {
     initializeGStreamerDebug();
