@@ -249,9 +249,6 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
 
     m_readyState = MediaPlayer::HaveEnoughData;
     m_player->readyStateChanged();
-
-    // FIXME - why isn't it called even if the player is "autoplay"
-    // m_player->play();
 }
 
 void MediaPlayerPrivateLibWebRTC::load(const String&)
