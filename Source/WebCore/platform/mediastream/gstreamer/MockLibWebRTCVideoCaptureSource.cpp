@@ -27,6 +27,9 @@
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 
+#include <gst/app/gstappsrc.h>
+
+#include "MediaSampleGStreamer.h"
 #include "MockRealtimeVideoSource.h"
 #include "MockLibWebRTCVideoCaptureSource.h"
 
@@ -36,8 +39,30 @@ class MockLibwebrtcRealtimeVideoSource : public MockRealtimeVideoSource {
 public:
     MockLibwebrtcRealtimeVideoSource(const String& deviceID, const String& name)
         : MockRealtimeVideoSource(deviceID, name) {}
+    void updateSampleBuffer() {
+        auto imageBuffer = this->imageBuffer();
 
+        if (!imageBuffer)
+            return;
+
+        auto data = imageBuffer->toBGRAData();
+        auto size = data.size();
+        GST_ERROR ("Size is %d", size);
+        auto image_size = imageBuffer->internalSize();
+        auto gstsample = gst_sample_new (gst_buffer_new_wrapped((guint8*) data.releaseBuffer().get(),
+            size), adoptGRef(gst_caps_new_simple ("video/x-raw",
+                "format", G_TYPE_STRING, "BGRA",
+                "width", G_TYPE_INT, image_size.width(),
+                "height", G_TYPE_INT, image_size.height(),
+                nullptr)).get(),
+            nullptr, nullptr);
+
+        auto sample = MediaSampleGStreamer::create(WTFMove(gstsample),
+            WebCore::FloatSize(), String());
+        videoSampleAvailable(sample);
+    }
 };
+
 
 CaptureSourceOrError MockRealtimeVideoSource::create(const String& deviceID,
     const String& name, const MediaConstraints* constraints)
@@ -50,20 +75,38 @@ CaptureSourceOrError MockRealtimeVideoSource::create(const String& deviceID,
     return CaptureSourceOrError(WTFMove(source));
 }
 
+void MockLibWebRTCVideoCaptureSource::startProducingData()
+{
+    LibWebRTCVideoCaptureSource::startProducingData();
+    m_mockedSource.start();
+}
+
+void MockLibWebRTCVideoCaptureSource::videoSampleAvailable(MediaSample& sample)
+{
+    auto src = m_capturer.m_src.get();
+
+    if (src) {
+        g_object_set(src, "is-live", true, "format", GST_FORMAT_TIME, nullptr);
+        GST_ERROR ("Yay pushin sample :-)");
+        auto gstsample = static_cast<MediaSampleGStreamer*>(&sample)->platformSample().sample.gstSample;
+        gst_app_src_push_sample(GST_APP_SRC(src), gstsample);
+    }
+    GST_ERROR ("Sample avalaible!");
+}
+
 MockLibWebRTCVideoCaptureSource::MockLibWebRTCVideoCaptureSource(const String& deviceID,
         const String& name)
-    : LibWebRTCVideoCaptureSource(deviceID, name)
-    , m_mocked_source(*new MockLibwebrtcRealtimeVideoSource(deviceID, name))
-    , m_device(MockRealtimeMediaSource::mockDeviceFromID(deviceID))
+    : LibWebRTCVideoCaptureSource(deviceID, name, "appsrc")
+    , m_mockedSource(*new MockLibwebrtcRealtimeVideoSource(deviceID, name))
 {
-
+    m_mockedSource.addObserver(*this);
 }
 
 const RealtimeMediaSourceCapabilities& MockLibWebRTCVideoCaptureSource::capabilities() const
 {
-    m_capabilities = m_mocked_source.capabilities();
-    m_currentSettings = m_mocked_source.settings();
-    return m_mocked_source.capabilities();
+    m_capabilities = m_mockedSource.capabilities();
+    m_currentSettings = m_mockedSource.settings();
+    return m_mockedSource.capabilities();
 }
 
 void MockLibWebRTCVideoCaptureSource::captureFailed()

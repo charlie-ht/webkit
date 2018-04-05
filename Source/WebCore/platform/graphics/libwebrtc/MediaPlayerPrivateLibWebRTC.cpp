@@ -251,7 +251,7 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
     m_player->readyStateChanged();
 
     // FIXME - why isn't it called even if the player is "autoplay"
-    m_player->play();
+    // m_player->play();
 }
 
 void MediaPlayerPrivateLibWebRTC::load(const String&)
@@ -316,7 +316,7 @@ void MediaPlayerPrivateLibWebRTC::setState(GstState state)
 
 void MediaPlayerPrivateLibWebRTC::play()
 {
-    GST_DEBUG("Play");
+    GST_ERROR("Play");
 
     if (!m_streamPrivate || !m_streamPrivate->active()) {
         m_readyState = MediaPlayer::HaveNothing;

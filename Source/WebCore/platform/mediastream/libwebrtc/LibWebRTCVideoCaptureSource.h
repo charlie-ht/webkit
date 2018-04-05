@@ -55,8 +55,11 @@ public:
     void addSink(GstElement *sink) { m_capturer.addSink(sink); }
     GstElement *Pipeline() { return m_capturer.m_pipeline.get(); }
 
+    void startProducingData() override;
+    void stopProducingData() override;
+
 protected:
-    LibWebRTCVideoCaptureSource(const String& deviceID, const String& name);
+    LibWebRTCVideoCaptureSource(const String& deviceID, const String& name, const gchar * source_factory);
     virtual ~LibWebRTCVideoCaptureSource();
 
     const RealtimeMediaSourceSettings& settings() const override;
@@ -64,6 +67,7 @@ protected:
 
     mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
     mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
+    GStreamerVideoCapturer& m_capturer;
 
 private:
     LibWebRTCVideoCaptureSource(GStreamerCaptureDevice device);
@@ -73,13 +77,10 @@ private:
     static GstFlowReturn newSampleCallback(GstElement*, LibWebRTCVideoCaptureSource*);
 
     bool isCaptureSource() const final { return true; }
-    void startProducingData() final;
-    void stopProducingData() final;
     bool applySize(const IntSize&) final;
     bool applyFrameRate(double) final;
     bool applyAspectRatio(double) final { return true; }
 
-    GStreamerVideoCapturer& m_capturer;
     rtc::scoped_refptr<webrtc::VideoTrackInterface> m_videoTrack;
 };
 

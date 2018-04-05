@@ -36,14 +36,13 @@ GStreamerVideoCapturer::GStreamerVideoCapturer(GStreamerCaptureDevice device)
 {
 }
 
-GStreamerVideoCapturer::GStreamerVideoCapturer()
-    : GStreamerCapturer("videotestsrc", adoptGRef(gst_caps_new_empty_simple("video/x-raw")))
+GStreamerVideoCapturer::GStreamerVideoCapturer(const gchar *source_factory)
+    : GStreamerCapturer(source_factory, adoptGRef(gst_caps_new_empty_simple("video/x-raw")))
 {
 }
 
 void GStreamerVideoCapturer::setupPipeline() {
     m_pipeline = makeElement ("pipeline");
-
     GRefPtr<GstElement> source = createSource();
     GRefPtr<GstElement> converter = gst_parse_bin_from_description ("videoscale ! videoconvert ! videorate",
         TRUE, NULL); // FIXME Handle errors.

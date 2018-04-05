@@ -49,6 +49,7 @@ public:
     static CaptureSourceOrError create(const String& deviceID, const String& name, const MediaConstraints*);
 
     static VideoCaptureFactory& factory();
+    Color getBackgroundColor();
 
     virtual ~MockRealtimeVideoSource();
 

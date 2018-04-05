@@ -571,7 +571,6 @@ webrtc [ Skip ]
 imported/w3c/web-platform-tests/webrtc/ [ Skip ]
 http/tests/webrtc [ Skip ]
 
-fast/mediastream [ Pass ]
 # The MediaStream implementation is also still not completed
 webkit.org/b/79203 fast/mediastream/mock-media-source-webaudio.html [ Timeout ]
 webkit.org/b/79203 fast/mediastream/getUserMedia-webaudio.html [ Failure ]
@@ -596,7 +595,6 @@ webkit.org/b/160996 fast/mediastream/MediaStream-video-element-video-tracks-disa
 webkit.org/b/172269 fast/mediastream/media-devices-enumerate-devices.html [ Failure ]
 
 # WIP - to be investigated.
-webkit.org/b/173257 fast/mediastream/MediaStream-video-element-displays-buffer.html [ Failure ]
 webkit.org/b/173257 fast/mediastream/MediaStream-video-element-track-stop.html [ Timeout Failure Crash ]
 webkit.org/b/173257 fast/mediastream/MediaStreamTrack-getSettings.html [ Failure ]
 webkit.org/b/79203 fast/mediastream/RTCPeerConnection-closed-state.html [ Failure Timeout ]

@@ -53,6 +53,7 @@ public:
     GstElement * createSource();
     virtual const gchar* Name() = 0;
 
+    GRefPtr<GstElement> m_src;
     GRefPtr<GstElement> m_sink;
     GRefPtr<GstElement> m_tee;
     GRefPtr<GstElement> m_capsfilter;

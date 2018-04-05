@@ -36,18 +36,18 @@ namespace WebCore {
 // because the MediaPlayer expected LibWebRTCVideoCaptureSource to be able to properly
 // build the GStreamer pipeline. Still we make it so that it behaves as closely as possible
 // to the MockRealtimeMediaSource class.
-class MockLibWebRTCVideoCaptureSource final : public LibWebRTCVideoCaptureSource {
+class MockLibWebRTCVideoCaptureSource final : public LibWebRTCVideoCaptureSource,
+    RealtimeMediaSource::Observer {
 public:
     MockLibWebRTCVideoCaptureSource(const String& deviceID, const String& name);
 
 private:
-    RealtimeMediaSource &m_mocked_source;
+    void startProducingData() final;
+    RealtimeMediaSource &m_mockedSource;
     const RealtimeMediaSourceCapabilities& capabilities() const final;
-    MockRealtimeMediaSource::MockDevice device() const { return m_device; }
-    MockRealtimeMediaSource::MockDevice m_device { MockRealtimeMediaSource::MockDevice::Invalid };
-    bool mockCamera() const { return device() == MockRealtimeMediaSource::MockDevice::Camera1 || device() == MockRealtimeMediaSource::MockDevice::Camera2; }
-    bool mockScreen() const { return device() == MockRealtimeMediaSource::MockDevice::Screen1 || device() == MockRealtimeMediaSource::MockDevice::Screen2; }
     void captureFailed() override;
+
+    void videoSampleAvailable(MediaSample& sample) override;
 };
 
 } // namespace WebCore

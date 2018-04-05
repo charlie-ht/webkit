@@ -67,17 +67,17 @@ GStreamerCapturer::GStreamerCapturer(const gchar *source_factory, GRefPtr<GstCap
 GstElement * GStreamerCapturer::createSource()
 {
     if (m_sourceFactory) {
-        auto source = makeElement(m_sourceFactory);
-        g_assert (source);
+        m_src = makeElement(m_sourceFactory);
+        g_assert (m_src);
 
-        return source;
+        return m_src.get();
     }
 
     gchar* name = g_strdup_printf("%s_%p", Name(), this);
-    auto res = gst_device_create_element(m_device.get(), name);
+    m_src = gst_device_create_element(m_device.get(), name);
     g_free (name);
 
-    return res;
+    return m_src.get();
 }
 
 GstCaps * GStreamerCapturer::getCaps()
@@ -126,6 +126,7 @@ void GStreamerCapturer::addSink(GstElement *sink)
     }
 
     GST_INFO_OBJECT(m_pipeline.get(), "Adding sink: %" GST_PTR_FORMAT, sink);
+    // gst_element_get_state (m_pipeline.get(), NULL, NULL, GST_CLOCK_TIME_NONE);
     gchar* dump_name;
     dump_name = g_strdup_printf("%s_sink_%s_added", GST_OBJECT_NAME(m_pipeline.get()),
         GST_OBJECT_NAME (sink));
@@ -137,10 +138,15 @@ void GStreamerCapturer::addSink(GstElement *sink)
 void GStreamerCapturer::play() {
     g_assert(m_pipeline.get());
 
-    GST_INFO_OBJECT ((gpointer) m_pipeline.get(), "Going to PLAYING!");
+    GST_ERROR_OBJECT ((gpointer) m_pipeline.get(), "Going to PLAYING!");
 
     gst_element_set_state (m_pipeline.get(), GST_STATE_PLAYING);
-    gst_element_get_state (m_pipeline.get(), NULL, NULL, GST_CLOCK_TIME_NONE);
+    GstState state;
+    // gst_element_get_state (m_pipeline.get(), &state, NULL, GST_CLOCK_TIME_NONE);
+    GST_ERROR_OBJECT ((gpointer) m_pipeline.get(), "STATE: %s",
+        gst_element_state_get_name (state));
+    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()),
+        GST_DEBUG_GRAPH_SHOW_ALL, gst_element_state_get_name (state));
 }
 
 void GStreamerCapturer::stop() {

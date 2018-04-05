@@ -413,6 +413,30 @@ void MockRealtimeVideoSource::delaySamples(Seconds delta)
     m_delayUntil = MonotonicTime::now() + delta;
 }
 
+#include <gst/gst.h>
+Color MockRealtimeVideoSource::getBackgroundColor()
+{
+    switch (device()) {
+    case MockDevice::Camera1:
+        GST_ERROR ("BLACK");
+        return Color::black;
+    case MockDevice::Camera2:
+        GST_ERROR ("darkGray");
+        return Color::darkGray;
+    case MockDevice::Screen1:
+        GST_ERROR ("lightGray");
+        return Color::lightGray;
+    case MockDevice::Screen2:
+        return Color::yellow;
+    case MockDevice::Microphone1:
+    case MockDevice::Microphone2:
+    case MockDevice::Invalid:
+        ASSERT_NOT_REACHED();
+        return Color::yellow;
+    }
+}
+
+
 void MockRealtimeVideoSource::generateFrame()
 {
     if (m_delayUntil) {
@@ -421,6 +445,7 @@ void MockRealtimeVideoSource::generateFrame()
         m_delayUntil = MonotonicTime();
     }
 
+    GST_ERROR ("Next!");
     ImageBuffer* buffer = imageBuffer();
     if (!buffer)
         return;
@@ -431,27 +456,7 @@ void MockRealtimeVideoSource::generateFrame()
     auto& size = this->size();
     FloatRect frameRect(FloatPoint(), size);
 
-    Color fillColor;
-    switch (device()) {
-    case MockDevice::Camera1:
-        fillColor = Color::black;
-        break;
-    case MockDevice::Camera2:
-        fillColor = Color::darkGray;
-        break;
-    case MockDevice::Screen1:
-        fillColor = Color::lightGray;
-        break;
-    case MockDevice::Screen2:
-        fillColor = Color::yellow;
-        break;
-    case MockDevice::Microphone1:
-    case MockDevice::Microphone2:
-    case MockDevice::Invalid:
-        ASSERT_NOT_REACHED();
-        break;
-    }
-
+    Color fillColor = getBackgroundColor();
     context.fillRect(FloatRect(FloatPoint(), size), fillColor);
 
     if (!muted()) {

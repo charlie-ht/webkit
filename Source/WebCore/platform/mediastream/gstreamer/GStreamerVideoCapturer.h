@@ -36,7 +36,7 @@ namespace WebCore {
 class GStreamerVideoCapturer: public GStreamerCapturer {
 public:
     GStreamerVideoCapturer(GStreamerCaptureDevice device);
-    GStreamerVideoCapturer();
+    GStreamerVideoCapturer(const gchar *source_factory);
     void setupPipeline() final;
     bool setSize(int width, int height);
     bool setFrameRate(double);

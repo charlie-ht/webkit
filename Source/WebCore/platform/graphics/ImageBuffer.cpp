@@ -102,6 +102,7 @@ FloatRect ImageBuffer::clampedRect(const FloatRect& rect)
     return FloatRect(rect.location(), clampedSize(rect.size()));
 }
 
+#if USE(CG) && !PLATFORM(GTK)
 Vector<uint8_t> ImageBuffer::toBGRAData() const
 {
 #if USE(CG)
@@ -113,6 +114,7 @@ Vector<uint8_t> ImageBuffer::toBGRAData() const
     return { };
 #endif
 }
+#endif
 
 #if !(USE(CG) || USE(DIRECT2D))
 

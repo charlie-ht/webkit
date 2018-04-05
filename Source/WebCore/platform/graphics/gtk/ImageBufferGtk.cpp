@@ -30,6 +30,7 @@
 #include <wtf/text/CString.h>
 #include <wtf/text/WTFString.h>
 
+#include <gst/gst.h>
 namespace WebCore {
 
 static bool encodeImage(cairo_surface_t* surface, const String& mimeType, std::optional<double> quality, GUniqueOutPtr<gchar>& buffer, gsize& bufferSize)
@@ -38,8 +39,10 @@ static bool encodeImage(cairo_surface_t* surface, const String& mimeType, std::o
     // http://developer.gnome.org/gdk-pixbuf/stable/gdk-pixbuf-File-saving.html#gdk-pixbuf-save-to-bufferv
 
     String type = mimeType.substring(sizeof "image");
-    if (type != "jpeg" && type != "png" && type != "tiff" && type != "ico" && type != "bmp")
+    if (type != "jpeg" && type != "png" && type != "tiff" && type != "ico" && type != "bmp") {
+        GST_ERROR ("Boom %s", type.utf8().data());
         return false;
+    }
 
     GRefPtr<GdkPixbuf> pixbuf;
     if (type == "jpeg") {
@@ -85,6 +88,17 @@ String ImageBuffer::toDataURL(const String& mimeType, std::optional<double> qual
     base64Encode(imageData.data(), imageData.size(), base64Data);
 
     return "data:" + mimeType + ";base64," + base64Data;
+}
+
+Vector<uint8_t> ImageBuffer::toBGRAData() const
+{
+    GST_ERROR ("====== GO GO GO");
+    auto pixbuf = adoptGRef(cairoSurfaceToGdkPixbuf(m_data.m_surface.get()));
+    auto pixels = gdk_pixbuf_get_pixels (pixbuf.get());
+
+    Vector<uint8_t> imageData;
+    imageData.append(pixels, gdk_pixbuf_get_byte_length (pixbuf.get()));
+    return imageData;
 }
 
 Vector<uint8_t> ImageBuffer::toData(const String& mimeType, std::optional<double> quality) const
