@@ -43,6 +43,7 @@
 
 #include "VideoTrackPrivateMediaStream.h"
 #include "AudioTrackPrivateMediaStream.h"
+#include "gstreamer/GStreamerMediaStreamSource.h"
 
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
 #define VIDEO_FORMAT "BGRx"
@@ -56,7 +57,7 @@ GST_DEBUG_CATEGORY(webkit_webrtc_debug);
 namespace WebCore {
 
 MediaPlayerPrivateLibWebRTC::MediaPlayerPrivateLibWebRTC(MediaPlayer* player)
-    : MediaPlayerPrivateGStreamerBase(player)
+    : MediaPlayerPrivateGStreamer(player)
 {
     initializeGStreamerAndGStreamerDebugging();
 }
@@ -69,6 +70,12 @@ MediaPlayerPrivateLibWebRTC::~MediaPlayerPrivateLibWebRTC()
     GStreamerVideoDecoderFactory::removeObserver(*this);
 }
 
+void MediaPlayerPrivateLibWebRTC::sourceSetup(GstElement *source)
+{
+    webkit_media_stream_src_set_stream(WEBKIT_MEDIA_STREAM_SRC(source),
+        m_streamPrivate.get());
+}
+
 bool MediaPlayerPrivateLibWebRTC::initializeGStreamerAndGStreamerDebugging()
 {
     bool res = initializeGStreamer();
@@ -76,6 +83,7 @@ bool MediaPlayerPrivateLibWebRTC::initializeGStreamerAndGStreamerDebugging()
     static std::once_flag debugRegisteredFlag;
     std::call_once(debugRegisteredFlag, [] {
         GST_DEBUG_CATEGORY_INIT(webkit_webrtc_debug, "webkitlibwebrtcplayer", 0, "WebKit WebRTC player");
+        gst_element_register(nullptr, "mediastreamsrc", GST_RANK_PRIMARY, WEBKIT_TYPE_MEDIA_STREAM_SRC);
         rtc::LogMessage::LogToDebug(rtc::LS_WARNING);
     });
 
@@ -155,6 +163,10 @@ void MediaPlayerPrivateLibWebRTC::handleExternalPipelineBusMessagesSync(GstEleme
 void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
 {
     m_streamPrivate = &stream;
+
+    MediaPlayerPrivateGStreamer::load(String("mediastream://") + stream.id());
+
+    return;
 
     auto name = g_strdup_printf("LibWebRTC%sPipeline_%p",
         stream.hasCaptureVideoSource() ? "Local" : "Remote", this);
@@ -331,8 +343,7 @@ void MediaPlayerPrivateLibWebRTC::pause()
     setState(GST_STATE_PAUSED);
 }
 
-void MediaPlayerPrivateLibWebRTC::audioSamplesAvailable(MediaStreamTrackPrivate&,
-    const MediaTime&, const PlatformAudioData& audioData, const AudioStreamDescription&, size_t)
+void MediaPlayerPrivateLibWebRTC::audioSamplesAvailable(MediaStreamTrackPrivate&, const MediaTime&, const PlatformAudioData& audioData, const AudioStreamDescription&, size_t)
 {
     if (!m_audioSrc)
         return;

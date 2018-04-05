@@ -134,7 +134,8 @@ static GstAudioChannelPosition webKitWebAudioGStreamerChannelPosition(int channe
 }
 
 #define webkit_web_audio_src_parent_class parent_class
-G_DEFINE_TYPE_WITH_CODE(WebKitWebAudioSrc, webkit_web_audio_src, GST_TYPE_BIN, GST_DEBUG_CATEGORY_INIT(webkit_web_audio_src_debug, \
+G_DEFINE_TYPE_WITH_CODE(WebKitWebAudioSrc, webkit_web_audio_src, GST_TYPE_BIN,
+    GST_DEBUG_CATEGORY_INIT(webkit_web_audio_src_debug, \
                             "webkitwebaudiosrc", \
                             0, \
                             "webaudiosrc element"));

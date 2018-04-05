@@ -30,7 +30,7 @@
 #include "RealtimeMediaSource.h"
 #include "GStreamerVideoDecoderFactory.h"
 
-#include "MediaPlayerPrivateGStreamerBase.h"
+#include "MediaPlayerPrivateGStreamer.h"
 
 #include <gst/audio/streamvolume.h>
 #include <gst/gst.h>
@@ -38,7 +38,7 @@
 namespace WebCore {
 
 class MediaPlayerPrivateLibWebRTC
-    : public MediaPlayerPrivateGStreamerBase
+    : public MediaPlayerPrivateGStreamer
     , private MediaStreamTrackPrivate::Observer
     , GStreamerVideoDecoderFactory::Observer {
 public:
@@ -48,6 +48,7 @@ public:
     static void registerMediaEngine(MediaEngineRegistrar);
 
 private:
+    void sourceSetup(GstElement*) final;
     String engineDescription() const final { return "GStreamerLibWebRTC"; }
 
     static bool initializeGStreamerAndGStreamerDebugging();

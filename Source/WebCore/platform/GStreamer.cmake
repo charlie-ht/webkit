@@ -43,6 +43,7 @@ if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
         platform/mediastream/gstreamer/GStreamerAudioCapturer.cpp
         platform/mediastream/gstreamer/GStreamerVideoCapturer.cpp
         platform/mediastream/gstreamer/GStreamerCaptureDeviceManager.cpp
+        platform/mediastream/gstreamer/GStreamerMediaStreamSource.cpp
     )
 
     list(APPEND WebCore_SYSTEM_INCLUDE_DIRECTORIES
