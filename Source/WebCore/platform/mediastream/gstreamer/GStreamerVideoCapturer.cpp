@@ -45,7 +45,7 @@ void GStreamerVideoCapturer::setupPipeline() {
     m_pipeline = makeElement ("pipeline");
 
     GRefPtr<GstElement> source = createSource();
-    GRefPtr<GstElement> converter = gst_parse_bin_from_description ("videoscale ! videoconvert",
+    GRefPtr<GstElement> converter = gst_parse_bin_from_description ("videoscale ! videoconvert ! videorate",
         TRUE, NULL); // FIXME Handle errors.
     m_capsfilter = makeElement ("capsfilter");
     m_tee = makeElement ("tee");

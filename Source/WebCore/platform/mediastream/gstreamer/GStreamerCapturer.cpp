@@ -115,8 +115,8 @@ void GStreamerCapturer::addSink(GstElement *sink)
     gst_bin_add_many (GST_BIN (m_pipeline.get()), queue, sink, nullptr);
     gst_element_sync_state_with_parent (queue);
     gst_element_sync_state_with_parent (sink);
-    gst_element_link_pads (m_tee.get(), "src_%u", queue, "sink");
-    gst_element_link (queue, sink);
+    g_assert (gst_element_link_pads (m_tee.get(), "src_%u", queue, "sink"));
+    g_assert (gst_element_link (queue, sink));
 
     if (sink == m_sink.get()) {
         GST_INFO_OBJECT (m_pipeline.get(), "Setting queue as leaky upstream",
@@ -140,6 +140,7 @@ void GStreamerCapturer::play() {
     GST_INFO_OBJECT ((gpointer) m_pipeline.get(), "Going to PLAYING!");
 
     gst_element_set_state (m_pipeline.get(), GST_STATE_PLAYING);
+    gst_element_get_state (m_pipeline.get(), NULL, NULL, GST_CLOCK_TIME_NONE);
 }
 
 void GStreamerCapturer::stop() {
