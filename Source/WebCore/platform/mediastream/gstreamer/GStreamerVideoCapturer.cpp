@@ -99,6 +99,11 @@ bool GStreamerVideoCapturer::setFrameRate(double frameRate)
         return false;
     }
 
+    if (numerator == 0) {
+        GST_ERROR_OBJECT (m_pipeline.get(), "Do not force variable frameRate");
+        return false;
+    }
+
     auto caps = gst_caps_copy (m_caps.get());
     gst_caps_set_simple (caps, "framerate",
         GST_TYPE_FRACTION, numerator, denominator, nullptr);
