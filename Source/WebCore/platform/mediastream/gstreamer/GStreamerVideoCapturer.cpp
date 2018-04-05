@@ -91,7 +91,14 @@ bool GStreamerVideoCapturer::setSize(int width, int height)
 bool GStreamerVideoCapturer::setFrameRate(double frameRate)
 {
     int numerator, denominator;
+
     gst_util_double_to_fraction(frameRate, &numerator, &denominator);
+
+    if (numerator < -G_MAXINT) {
+        GST_INFO_OBJECT (m_pipeline.get(), "Framerate %f not allowed",
+            frameRate);
+        return false;
+    }
 
     auto caps = gst_caps_copy (m_caps.get());
     gst_caps_set_simple (caps, "framerate",

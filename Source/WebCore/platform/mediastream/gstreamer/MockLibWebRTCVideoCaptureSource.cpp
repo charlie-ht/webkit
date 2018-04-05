@@ -52,7 +52,7 @@ CaptureSourceOrError MockRealtimeVideoSource::create(const String& deviceID,
 
 MockLibWebRTCVideoCaptureSource::MockLibWebRTCVideoCaptureSource(const String& deviceID,
         const String& name)
-    : LibWebRTCVideoCaptureSource(deviceID)
+    : LibWebRTCVideoCaptureSource(deviceID, name)
     , m_mocked_source(*new MockLibwebrtcRealtimeVideoSource(deviceID, name))
     , m_device(MockRealtimeMediaSource::mockDeviceFromID(deviceID))
 {
