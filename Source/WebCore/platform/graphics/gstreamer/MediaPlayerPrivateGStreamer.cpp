@@ -388,6 +388,7 @@ bool MediaPlayerPrivateGStreamer::changePipelineState(GstState newState)
         // state change requests.
         static const Seconds readyStateTimerDelay { 1_min };
         m_readyTimerHandler.startOneShot(readyStateTimerDelay);
+
     } else if (newState != GST_STATE_READY)
         m_readyTimerHandler.stop();
 
