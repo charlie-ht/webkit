@@ -54,8 +54,8 @@ public:
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
     WEBCORE_EXPORT static AudioCaptureFactory& factory();
 
-    GstElement *Pipeline() { return m_capturer.m_pipeline.get(); }
-    GStreamerCapturer &Capturer() { return m_capturer; }
+    GstElement *Pipeline() { return m_capturer->m_pipeline.get(); }
+    GStreamerCapturer *Capturer() { return m_capturer.get(); }
 
 protected:
     LibWebRTCAudioCaptureSource(const String& deviceID, const String& name);
@@ -80,7 +80,7 @@ private:
     bool applyVolume(double) final { return true; }
 
     rtc::scoped_refptr<webrtc::AudioTrackInterface> m_audioTrack;
-    GStreamerAudioCapturer& m_capturer;
+    std::unique_ptr<GStreamerAudioCapturer> m_capturer;
 
     static GstFlowReturn newSampleCallback(GstElement*, LibWebRTCAudioCaptureSource*);
     void triggerSampleAvailable(GstSample* sample);

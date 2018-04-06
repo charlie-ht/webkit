@@ -40,8 +40,7 @@
     <branch version="1.7.0"
             module="v${version}.tar.gz"
             checkoutdir="libvpx-${version}"
-            repo="chromium.googlesource.com"
-            hash="sha256:5b3f97591aa30a83c710bf55857971125b0a1486fe423b3133846ce437e8147e"/>
+            repo="chromium.googlesource.com"/>
   </autotools>
 
   <autotools id="gstreamer" autogen-sh="configure" autogenargs="--disable-gtk-doc --disable-introspection">

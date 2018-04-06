@@ -70,7 +70,7 @@ public:
 
     // Reference count; implementation copied from rtc::RefCountedObject.
     // FIXME- Should we rely on GStreamer Buffer refcounting here?!
-    void AddRef() const {
+    void AddRef() const override {
         rtc::AtomicOps::Increment(&ref_count_);
     }
 

@@ -94,14 +94,14 @@ RealtimeMediaSource::AudioCaptureFactory& LibWebRTCAudioCaptureSource::factory()
 
 LibWebRTCAudioCaptureSource::LibWebRTCAudioCaptureSource(GStreamerCaptureDevice device)
     : RealtimeMediaSource(device.persistentId(), RealtimeMediaSource::Type::Audio, device.label()),
-    m_capturer(*new GStreamerAudioCapturer(device))
+    m_capturer(std::make_unique<GStreamerAudioCapturer>(device))
 {
     initializeGStreamerDebug();
 }
 
 LibWebRTCAudioCaptureSource::LibWebRTCAudioCaptureSource(const String& deviceID, const String& name)
     : RealtimeMediaSource(deviceID, RealtimeMediaSource::Type::Audio, name),
-    m_capturer(*new GStreamerAudioCapturer())
+    m_capturer(std::make_unique<GStreamerAudioCapturer>())
 {
     initializeGStreamerDebug();
 }
@@ -118,9 +118,9 @@ void LibWebRTCAudioCaptureSource::startProducingData()
     m_audioTrack = peerConnectionFactory->CreateAudioTrack("audio",
         peerConnectionFactory->CreateAudioSource(nullptr));
 
-    m_capturer.setupPipeline();
-    g_signal_connect(m_capturer.m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
-    m_capturer.play();
+    m_capturer->setupPipeline();
+    g_signal_connect(m_capturer->m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
+    m_capturer->play();
 }
 
 GstFlowReturn LibWebRTCAudioCaptureSource::newSampleCallback(GstElement* sink, LibWebRTCAudioCaptureSource* source)
@@ -141,13 +141,13 @@ GstFlowReturn LibWebRTCAudioCaptureSource::newSampleCallback(GstElement* sink, L
 
 void LibWebRTCAudioCaptureSource::stopProducingData()
 {
-    m_capturer.stop();
+    m_capturer->stop();
 }
 
 const RealtimeMediaSourceCapabilities& LibWebRTCAudioCaptureSource::capabilities() const
 {
     if (!m_capabilities) {
-        GRefPtr<GstCaps> caps = m_capturer.getCaps();
+        GRefPtr<GstCaps> caps = m_capturer->getCaps();
         gint min_samplerate = 0, max_samplerate = 0;
         guint i;
 
@@ -175,7 +175,7 @@ const RealtimeMediaSourceCapabilities& LibWebRTCAudioCaptureSource::capabilities
 
 bool LibWebRTCAudioCaptureSource::applySampleRate(int sampleRate)
 {
-    return m_capturer.setSampleRate(sampleRate);
+    return m_capturer->setSampleRate(sampleRate);
 }
 
 const RealtimeMediaSourceSettings& LibWebRTCAudioCaptureSource::settings() const

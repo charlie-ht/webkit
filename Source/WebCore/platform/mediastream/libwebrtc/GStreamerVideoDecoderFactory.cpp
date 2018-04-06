@@ -85,25 +85,26 @@ public:
 
     int32_t InitDecode(const webrtc::VideoCodec*, int32_t)
     {
-        m_pipeline = makeElement("pipeline");
-
-        GStreamer::connectSimpleBusMessageCallback(m_pipeline.get());
+        GstElement *srcBin = makeElement("bin");
 
         m_src = makeElement("appsrc");
+        if (GStreamerVideoDecoderFactory::newSource(String::fromUTF8(m_stream_id.c_str()), m_src)) {
+            GST_INFO ("Let a mediastreamsrc handle the decoding!");
+
+            return WEBRTC_VIDEO_CODEC_OK;
+        }
+
         m_capsfilter = CreateFilter();
         m_decoder = makeElement("decodebin");
-
         auto sinkpad = gst_element_get_static_pad(m_capsfilter, "sink");
         g_signal_connect(m_decoder, "pad-added", G_CALLBACK(decodebin_pad_added_cb), sinkpad);
 
-        m_sink = GStreamerVideoDecoderFactory::requestSink(String::fromUTF8(m_stream_id.c_str()),
-            m_pipeline.get());
+        m_pipeline = makeElement("pipeline");
+        GStreamer::connectSimpleBusMessageCallback(m_pipeline.get());
 
-        if (!m_sink) {
-            m_sink = makeElement("appsink");
-            gst_app_sink_set_emit_signals(GST_APP_SINK(m_sink), TRUE);
-            g_signal_connect(m_sink, "new-sample", G_CALLBACK(newSampleCallbackTramp), this);
-        }
+        m_sink = makeElement("appsink");
+        gst_app_sink_set_emit_signals(GST_APP_SINK(m_sink), TRUE);
+        g_signal_connect(m_sink, "new-sample", G_CALLBACK(newSampleCallbackTramp), this);
 
         gst_bin_add_many(GST_BIN(m_pipeline.get()), m_src, m_decoder, m_capsfilter, m_sink, nullptr);
         g_assert(gst_element_link_many(m_src, m_decoder, nullptr));
@@ -128,11 +129,13 @@ public:
 
     int32_t Release() final
     {
-        GRefPtr<GstBus> bus = adoptGRef(gst_pipeline_get_bus(GST_PIPELINE(m_pipeline.get())));
-        gst_bus_set_sync_handler(bus.get(), nullptr, nullptr, nullptr);
+        if (m_pipeline.get()) {
+            GRefPtr<GstBus> bus = adoptGRef(gst_pipeline_get_bus(GST_PIPELINE(m_pipeline.get())));
+            gst_bus_set_sync_handler(bus.get(), nullptr, nullptr, nullptr);
 
-        gst_element_set_state(m_pipeline.get(), GST_STATE_NULL);
-        m_pipeline = nullptr;
+            gst_element_set_state(m_pipeline.get(), GST_STATE_NULL);
+            m_pipeline = nullptr;
+        }
 
         return WEBRTC_VIDEO_CODEC_OK;
     }
@@ -156,7 +159,7 @@ public:
         GST_BUFFER_PTS(buffer) = ((guint64)(render_time_ms)*GST_MSECOND) - m_firstBufferPts;
         m_dts_pts_map[GST_BUFFER_PTS(buffer)] = input_image._timeStamp;
 
-        GST_LOG_OBJECT(m_pipeline.get(), "%ld Decoding: %" GST_PTR_FORMAT,
+        GST_LOG("%ld Decoding: %" GST_PTR_FORMAT,
             render_time_ms, buffer);
         switch (gst_app_src_push_sample(GST_APP_SRC(m_src),
             gst_sample_new(buffer, GetCapsForFrame(input_image), nullptr, nullptr))) {
@@ -217,7 +220,7 @@ public:
         m_dts_pts_map.erase(GST_BUFFER_PTS(buffer));
         std::unique_ptr<webrtc::VideoFrame> frame(GStreamer::VideoFrameFromBuffer(sample, webrtc::kVideoRotation_0));
         GST_BUFFER_DTS(buffer) = GST_CLOCK_TIME_NONE;
-        GST_LOG_OBJECT(m_pipeline.get(), "Output decoded frame! %ld -> %" GST_PTR_FORMAT,
+        GST_LOG("Output decoded frame! %ld -> %" GST_PTR_FORMAT,
             frame->timestamp(), buffer);
 
         m_image_ready_cb->Decoded(*frame.get(), rtc::Optional<int32_t>(), rtc::Optional<uint8_t>());
@@ -285,14 +288,14 @@ public:
 // FIME- Make MT safe!
 Vector<GStreamerVideoDecoderFactory::Observer*> OBSERVERS;
 
-GstElement* GStreamerVideoDecoderFactory::requestSink(String track_id, GstElement* pipeline)
+bool GStreamerVideoDecoderFactory::newSource(String track_id, GstElement *source)
 {
     for (Observer* observer : OBSERVERS) {
-        auto sink = observer->requestSink(track_id, pipeline);
-        if (sink)
-            return sink;
+        if (observer->newSource(track_id, source))
+            return true;
     }
-    return nullptr;
+
+    return false;
 }
 
 void GStreamerVideoDecoderFactory::addObserver(Observer& observer)

@@ -435,7 +435,7 @@ GstContext* MediaPlayerPrivateGStreamerBase::requestGLContext(const char* contex
 
 bool MediaPlayerPrivateGStreamerBase::ensureGstGLContext()
 {
-    GST_INFO_OBJECT (pipeline(), "Ensuring GL Context %" GST_PTR_FORMAT, m_glContext);
+    GST_INFO_OBJECT (pipeline(), "Ensuring GL Context %" GST_PTR_FORMAT, m_glContext.get());
     if (m_glContext)
         return true;
 

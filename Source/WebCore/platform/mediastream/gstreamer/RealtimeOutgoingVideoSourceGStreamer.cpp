@@ -85,11 +85,13 @@ RealtimeOutgoingVideoSourceGStreamer::RealtimeOutgoingVideoSourceGStreamer(Ref<M
 {
 }
 
+#if 0
 template <GstVideoFrame* F>
 static inline rtc::Callback0<void> UnmapGstFrameWhenDone(GstVideoFrame* frame)
 {
     return gst_video_frame_unmap(frame);
 }
+#endif
 
 static inline int ConvertToI420(webrtc::VideoType src_video_type,
                   const uint8_t* src_frame,

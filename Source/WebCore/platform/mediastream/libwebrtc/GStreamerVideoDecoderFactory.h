@@ -40,13 +40,13 @@ public:
     class Observer {
     public:
         virtual ~Observer() = default;
-        virtual GstElement* requestSink (String track_id, GstElement *pipeline) = 0;
+        virtual bool newSource (String track_id, GstElement *source) = 0;
     };
 
     GStreamerVideoDecoderFactory();
     static void addObserver(Observer&);
     static void removeObserver(Observer&);
-    static GstElement * requestSink (String track_id, GstElement *pipeline);
+    static bool newSource(String track_id, GstElement *source);
 
 private:
     std::unique_ptr<webrtc::VideoDecoder> CreateVideoDecoder(const webrtc::SdpVideoFormat& format) final;

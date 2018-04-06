@@ -67,7 +67,6 @@ MediaPlayerPrivateLibWebRTC::~MediaPlayerPrivateLibWebRTC()
     for (auto& track : m_streamPrivate->tracks()) {
         track->removeObserver(*this);
     }
-    GStreamerVideoDecoderFactory::removeObserver(*this);
 }
 
 void MediaPlayerPrivateLibWebRTC::sourceSetup(GstElement *source)
@@ -364,21 +363,6 @@ void MediaPlayerPrivateLibWebRTC::sampleBufferUpdated(MediaStreamTrackPrivate&, 
 {
     auto gstsample = static_cast<MediaSampleGStreamer*>(&sample)->platformSample().sample.gstSample;
     gst_app_src_push_sample(GST_APP_SRC(m_videoSrc.get()), gstsample);
-}
-
-GstElement* MediaPlayerPrivateLibWebRTC::requestSink (String track_id, GstElement *pipeline) {
-    String current_track_id = m_videoTrack->source().persistentID();
-    if (track_id == current_track_id) {
-        GST_INFO_OBJECT (pipeline, "Plugin our sink directly to the decoder.");
-
-        handleExternalPipelineBusMessagesSync(pipeline);
-        return m_sink.get();
-    }
-
-    GST_INFO_OBJECT (m_pipeline.get(), "Not our track: %s != %s", track_id.utf8().data(),
-        current_track_id.utf8().data());
-
-    return nullptr;
 }
 
 }
