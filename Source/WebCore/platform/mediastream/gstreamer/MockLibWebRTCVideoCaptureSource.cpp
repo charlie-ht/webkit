@@ -83,7 +83,7 @@ void MockLibWebRTCVideoCaptureSource::startProducingData()
 
 void MockLibWebRTCVideoCaptureSource::videoSampleAvailable(MediaSample& sample)
 {
-    auto src = m_capturer.m_src.get();
+    auto src = m_capturer->m_src.get();
 
     if (src) {
         g_object_set(src, "is-live", true, "format", GST_FORMAT_TIME, nullptr);

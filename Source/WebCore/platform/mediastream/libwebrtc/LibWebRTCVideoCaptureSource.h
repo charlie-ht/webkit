@@ -52,8 +52,8 @@ namespace WebCore {
 class LibWebRTCVideoCaptureSource : public RealtimeMediaSource {
 public:
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
-    void addSink(GstElement *sink) { m_capturer.addSink(sink); }
-    GstElement *Pipeline() { return m_capturer.m_pipeline.get(); }
+    GstElement *Pipeline() { return m_capturer->m_pipeline.get(); }
+    GStreamerCapturer *Capturer() { return m_capturer.get(); }
 
     void startProducingData() override;
     void stopProducingData() override;
@@ -67,7 +67,7 @@ protected:
 
     mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
     mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
-    GStreamerVideoCapturer& m_capturer;
+    std::unique_ptr<GStreamerVideoCapturer> m_capturer;
 
 private:
     LibWebRTCVideoCaptureSource(GStreamerCaptureDevice device);

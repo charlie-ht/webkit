@@ -168,6 +168,7 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
 
     return;
 
+#if 0
     auto name = g_strdup_printf("LibWebRTC%sPipeline_%p",
         stream.hasCaptureVideoSource() ? "Local" : "Remote", this);
     setPipeline(gst_pipeline_new(name));
@@ -261,6 +262,7 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
 
     m_readyState = MediaPlayer::HaveEnoughData;
     m_player->readyStateChanged();
+#endif
 }
 
 void MediaPlayerPrivateLibWebRTC::load(const String&)
@@ -281,9 +283,9 @@ void MediaPlayerPrivateLibWebRTC::cancelLoad()
 {
 }
 
-void MediaPlayerPrivateLibWebRTC::prepareToPlay()
-{
-}
+// void MediaPlayerPrivateLibWebRTC::prepareToPlay()
+// {
+// }
 
 void MediaPlayerPrivateLibWebRTC::loadingFailed(MediaPlayer::NetworkState error)
 {
@@ -323,25 +325,25 @@ void MediaPlayerPrivateLibWebRTC::setState(GstState state)
     }
 }
 
-void MediaPlayerPrivateLibWebRTC::play()
-{
-    GST_ERROR("Play");
+// void MediaPlayerPrivateLibWebRTC::play()
+// {
+//     GST_ERROR("Play");
 
-    if (!m_streamPrivate || !m_streamPrivate->active()) {
-        m_readyState = MediaPlayer::HaveNothing;
-        loadingFailed(MediaPlayer::Empty);
-        return;
-    }
+//     if (!m_streamPrivate || !m_streamPrivate->active()) {
+//         m_readyState = MediaPlayer::HaveNothing;
+//         loadingFailed(MediaPlayer::Empty);
+//         return;
+//     }
 
-    GST_DEBUG("Connecting to live stream, descriptor: %p", m_streamPrivate.get());
+//     GST_DEBUG("Connecting to live stream, descriptor: %p", m_streamPrivate.get());
 
-    setState(GST_STATE_PLAYING);
-}
+//     // setState(GST_STATE_PLAYING);
+// }
 
-void MediaPlayerPrivateLibWebRTC::pause()
-{
-    setState(GST_STATE_PAUSED);
-}
+// void MediaPlayerPrivateLibWebRTC::pause()
+// {
+//     setState(GST_STATE_PAUSED);
+// }
 
 void MediaPlayerPrivateLibWebRTC::audioSamplesAvailable(MediaStreamTrackPrivate&, const MediaTime&, const PlatformAudioData& audioData, const AudioStreamDescription&, size_t)
 {

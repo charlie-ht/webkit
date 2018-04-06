@@ -33,6 +33,9 @@
 #include "GRefPtrGStreamer.h"
 #include "GStreamerMediaStreamSource.h"
 #include "gstreamer/GStreamerAudioData.h"
+#include "gstreamer/GStreamerCapturer.h"
+#include "LibWebRTCVideoCaptureSource.h"
+#include "LibWebRTCAudioCaptureSource.h"
 
 namespace WebCore {
 
@@ -48,17 +51,14 @@ class WebKitMediaStreamTrackObserver: public MediaStreamTrackPrivate::Observer
 {
 public:
     virtual ~WebKitMediaStreamTrackObserver() {};
-    WebKitMediaStreamTrackObserver() = default;
+    WebKitMediaStreamTrackObserver(WebKitMediaStreamSrc *src): m_src(src) {}
     void trackStarted(MediaStreamTrackPrivate&) final{};
     void trackEnded(MediaStreamTrackPrivate&) final{};
-    void trackMutedChanged(MediaStreamTrackPrivate&) final;
+    void trackMutedChanged(MediaStreamTrackPrivate&) final {};
     void trackSettingsChanged(MediaStreamTrackPrivate&) final{};
     void trackEnabledChanged(MediaStreamTrackPrivate&) final{};
-    void sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample&) final {};
-    void audioSamplesAvailable(MediaStreamTrackPrivate&, const MediaTime&, const PlatformAudioData&, const AudioStreamDescription&, size_t) final {};
     void readyStateChanged(MediaStreamTrackPrivate&) final{};
 
-    /*
     void sampleBufferUpdated(MediaStreamTrackPrivate&, MediaSample& sample) final
     {
         auto gstsample = static_cast<MediaSampleGStreamer*>(&sample)->platformSample().sample.gstSample;
@@ -71,7 +71,10 @@ public:
         auto audiodata = static_cast<const GStreamerAudioData&>(audioData);
 
         webkit_media_stream_src_push_audio_sample (m_src, audiodata.getSample());
-    }*/
+    }
+
+private:
+    WebKitMediaStreamSrc * m_src;
 };
 
 typedef struct _WebKitMediaStreamSrcClass   WebKitMediaStreamSrcClass;
@@ -162,29 +165,47 @@ webkit_media_stream_src_class_init (WebKitMediaStreamSrcClass *klass)
 static void
 webkit_media_stream_src_init (WebKitMediaStreamSrc *self)
 {  
-    self->observer = new WebKitMediaStreamTrackObserver();
+    self->observer = new WebKitMediaStreamTrackObserver(self);
 }
 
-gboolean
-webkit_media_stream_src_load_track_simple (WebKitMediaStreamSrc * self,
-    MediaStreamTrackPrivate * track, GstElement ** element)
+static gboolean
+webkit_media_stream_src_setup_src (WebKitMediaStreamSrc * self,
+    MediaStreamTrackPrivate * track, GstElement * element)
 {
-    if (*element) {
+    if (element) {
         GST_INFO_OBJECT (self, "We already have an element for track type %d"
             " - not adding %s", track->type(), track->label().utf8().data());
         return FALSE;
     }
 
-    *element = gst_element_factory_make("appsrc", "webrtcplayer_audiosrc");
-    g_object_set(*element, "is-live", true, "format", GST_FORMAT_TIME, nullptr);
-    gst_bin_add (GST_BIN(self), *element);
+    g_object_set(element, "is-live", true, "format", GST_FORMAT_TIME,
+        "do-timestamp", TRUE, nullptr);
+    gst_bin_add (GST_BIN(self), element);
+    gst_element_set_state (element, GST_STATE_PLAYING);
 
     auto pad = gst_ghost_pad_new ("src",
-        adoptGRef(gst_element_get_static_pad (*element, "src")).get());
+        adoptGRef(gst_element_get_static_pad (element, "src")).get());
 
     gst_element_add_pad (GST_ELEMENT (self), pad);
 
+    if (track)
+        track->addObserver(*self->observer);
+
     return TRUE;
+}
+
+static gboolean
+webkit_media_stream_src_setup_from_capturer (WebKitMediaStreamSrc * self,
+    GStreamerCapturer * capturer, GstElement **element)
+{
+    GstElement *proxysink = gst_element_factory_make ("proxysink", NULL);
+    *element = gst_element_factory_make ("proxysrc", NULL);
+
+    g_object_set (*element, "proxysink", proxysink, NULL);
+    
+    webkit_media_stream_src_setup_src (self, NULL, *element);
+
+    capturer->addSink(proxysink);
 }
 
 gboolean
@@ -192,16 +213,27 @@ webkit_media_stream_src_set_stream (WebKitMediaStreamSrc * self, MediaStreamPriv
 {
     for (auto& track : stream->tracks()) {
         if (track->type() == RealtimeMediaSource::Type::Audio) {
-            webkit_media_stream_src_load_track_simple (self, track.get(), &self->audioSrc);
+            webkit_media_stream_src_setup_src (self, track.get(), 
+                (self->audioSrc = gst_element_factory_make("appsrc", NULL)));
         } else if (track->type() == RealtimeMediaSource::Type::Video) {
-            webkit_media_stream_src_load_track_simple (self, track.get(), &self->videoSrc);
+            if (stream->hasCaptureVideoSource()) {
+                LibWebRTCVideoCaptureSource& source = static_cast<LibWebRTCVideoCaptureSource&>(track->source());
+                auto capturer = source.Capturer();
+
+                webkit_media_stream_src_setup_from_capturer (self, capturer, &self->videoSrc);
+            } else {
+                webkit_media_stream_src_setup_src (self, track.get(),
+                    (self->videoSrc = gst_element_factory_make("appsrc", NULL)));
+            }
         } else {
             GST_INFO("Unsuported track type: %d", track->type());
             continue;
         }
 
-        track->addObserver(*self->observer);
+        GST_ERROR ("Adding observer");
     }
+
+    gst_element_no_more_pads (GST_ELEMENT (self));
 
     return TRUE;
 }
@@ -209,12 +241,14 @@ webkit_media_stream_src_set_stream (WebKitMediaStreamSrc * self, MediaStreamPriv
 static void
 webkit_media_stream_src_push_video_sample (WebKitMediaStreamSrc * self, GstSample *gstsample)
 {
+    GST_ERROR ("Pushing sample %" GST_PTR_FORMAT, gst_sample_get_caps (gstsample));
     g_assert(gst_app_src_push_sample(GST_APP_SRC(self->videoSrc), gstsample) == GST_FLOW_OK);
 }
 
 static void
 webkit_media_stream_src_push_audio_sample (WebKitMediaStreamSrc * self, GstSample *gstsample)
 {
+    GST_ERROR ("Pushing sample");
     g_assert(gst_app_src_push_sample(GST_APP_SRC(self->audioSrc), gstsample) == GST_FLOW_OK);
 }
 

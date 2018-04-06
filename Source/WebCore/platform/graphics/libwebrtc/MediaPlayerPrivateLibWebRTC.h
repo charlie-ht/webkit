@@ -62,9 +62,9 @@ private:
     void load(const String&) final;
     void cancelLoad() final;
 
-    void prepareToPlay() final;
-    void play() final;
-    void pause() final;
+    // void prepareToPlay() final;
+    // void play() final;
+    // void pause() final;
 
     FloatSize naturalSize() const final;
 

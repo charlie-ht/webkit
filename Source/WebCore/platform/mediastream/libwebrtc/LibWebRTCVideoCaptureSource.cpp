@@ -83,14 +83,14 @@ CaptureSourceOrError LibWebRTCVideoCaptureSource::create(const String& deviceID,
 
 LibWebRTCVideoCaptureSource::LibWebRTCVideoCaptureSource(const String& deviceID, const String& name, const gchar *source_factory)
     : RealtimeMediaSource(deviceID, RealtimeMediaSource::Type::Video, name)
-    , m_capturer(*new GStreamerVideoCapturer(source_factory))
+    , m_capturer(std::make_unique<GStreamerVideoCapturer>(source_factory))
 {
     initializeGStreamerDebug();
 }
 
 LibWebRTCVideoCaptureSource::LibWebRTCVideoCaptureSource(GStreamerCaptureDevice device)
     : RealtimeMediaSource(device.persistentId(), RealtimeMediaSource::Type::Video, device.label())
-    , m_capturer(*new GStreamerVideoCapturer(device))
+    , m_capturer(std::make_unique<GStreamerVideoCapturer>(device))
 {
     initializeGStreamerDebug();
 }
@@ -101,29 +101,29 @@ LibWebRTCVideoCaptureSource::~LibWebRTCVideoCaptureSource()
 
 bool LibWebRTCVideoCaptureSource::applySize(const IntSize &size)
 {
-    m_capturer.setSize(size.width(), size.height());
+    m_capturer->setSize(size.width(), size.height());
 
     return true;
 }
 
 bool LibWebRTCVideoCaptureSource::applyFrameRate(double framerate)
 {
-    m_capturer.setFrameRate(framerate);
+    m_capturer->setFrameRate(framerate);
 
     return true;
 }
 
 void LibWebRTCVideoCaptureSource::startProducingData()
 {
-    m_capturer.setupPipeline();
+    m_capturer->setupPipeline();
 
-    m_capturer.setSize(size().width(), size().height());
-    m_capturer.setFrameRate(frameRate());
+    m_capturer->setSize(size().width(), size().height());
+    m_capturer->setFrameRate(frameRate());
     m_currentSettings->setWidth(size().width());
     m_currentSettings->setHeight(size().height());
     m_currentSettings->setFrameRate(frameRate());
-    g_signal_connect(m_capturer.m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
-    m_capturer.play();
+    g_signal_connect(m_capturer->m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
+    m_capturer->play();
 }
 
 GstFlowReturn LibWebRTCVideoCaptureSource::newSampleCallback(GstElement* sink, LibWebRTCVideoCaptureSource* source)
@@ -141,7 +141,7 @@ GstFlowReturn LibWebRTCVideoCaptureSource::newSampleCallback(GstElement* sink, L
 
 void LibWebRTCVideoCaptureSource::stopProducingData()
 {
-    m_capturer.stop();
+    m_capturer->stop();
 
     GST_INFO ("Reset height and width after stopping source");
     setHeight(0);
@@ -152,7 +152,7 @@ const RealtimeMediaSourceCapabilities& LibWebRTCVideoCaptureSource::capabilities
 {
     if (!m_capabilities) {
         RealtimeMediaSourceCapabilities capabilities(settings().supportedConstraints());
-        GRefPtr<GstCaps> caps = adoptGRef(m_capturer.getCaps());
+        GRefPtr<GstCaps> caps = adoptGRef(m_capturer->getCaps());
         capabilities.setDeviceId(id());
 
         int32_t minWidth = G_MAXINT32, minHeight = G_MAXINT32, minFramerate = G_MAXINT32;
