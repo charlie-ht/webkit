@@ -164,6 +164,7 @@ void MediaPlayerPrivateLibWebRTC::load(MediaStreamPrivate& stream)
     m_streamPrivate = &stream;
 
     MediaPlayerPrivateGStreamer::load(String("mediastream://") + stream.id());
+    m_player->play();
 
     return;
 

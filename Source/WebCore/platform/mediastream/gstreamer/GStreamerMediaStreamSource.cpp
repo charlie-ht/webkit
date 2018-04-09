@@ -182,12 +182,14 @@ webkit_media_stream_src_init (WebKitMediaStreamSrc *self)
 
 static gboolean
 webkit_media_stream_src_setup_src (WebKitMediaStreamSrc * self,
-    MediaStreamTrackPrivate * track, GstElement * element)
+    MediaStreamTrackPrivate * track, GstElement * element,
+    const gchar * track_type_name)
 {
     gst_bin_add (GST_BIN(self), element);
     gst_element_set_state (element, GST_STATE_PLAYING);
 
-    auto pad = gst_ghost_pad_new ("src",
+    CString padname = String::format("%s_src", track_type_name).utf8();
+    auto pad = gst_ghost_pad_new (padname.data(),
         adoptGRef(gst_element_get_static_pad (element, "src")).get());
 
     gst_element_add_pad (GST_ELEMENT (self), pad);
@@ -200,24 +202,26 @@ webkit_media_stream_src_setup_src (WebKitMediaStreamSrc * self,
 
 static gboolean
 webkit_media_stream_src_setup_app_src (WebKitMediaStreamSrc * self,
-    MediaStreamTrackPrivate * track, GstElement ** element)
+    MediaStreamTrackPrivate * track, GstElement ** element,
+    const gchar * track_type_name)
 {
     *element = gst_element_factory_make("appsrc", NULL);
     g_object_set(*element, "is-live", true, "format", GST_FORMAT_TIME, NULL);
 
-    return webkit_media_stream_src_setup_src (self, track, *element);
+    return webkit_media_stream_src_setup_src (self, track, *element, track_type_name);
 }
 
 static gboolean
 webkit_media_stream_src_setup_from_capturer (WebKitMediaStreamSrc * self,
-    GStreamerCapturer * capturer, GstElement **element)
+    GStreamerCapturer * capturer, GstElement **element,
+    const gchar *track_type_name)
 {
     GstElement *proxysink = gst_element_factory_make ("proxysink", NULL);
     *element = gst_element_factory_make ("proxysrc", NULL);
 
     g_object_set (*element, "proxysink", proxysink, NULL);
     
-    webkit_media_stream_src_setup_src (self, NULL, *element);
+    webkit_media_stream_src_setup_src (self, NULL, *element, track_type_name);
 
     capturer->addSink(proxysink);
 
@@ -235,7 +239,7 @@ webkit_media_stream_src_setup_encoded_src (WebKitMediaStreamSrc * self,
     }
 
     self->videoSrc = element;
-    return webkit_media_stream_src_setup_src (self, NULL, element);
+    return webkit_media_stream_src_setup_src (self, NULL, element, "video");
 }
 
 gboolean
@@ -247,20 +251,24 @@ webkit_media_stream_src_set_stream (WebKitMediaStreamSrc * self, MediaStreamPriv
                 LibWebRTCAudioCaptureSource& source = static_cast<LibWebRTCAudioCaptureSource&>(track->source());
                 auto capturer = source.Capturer();
 
-                webkit_media_stream_src_setup_from_capturer (self, capturer, &self->audioSrc);
+                webkit_media_stream_src_setup_from_capturer (self, capturer, &self->audioSrc,
+                    "audio");
             } else {
-                webkit_media_stream_src_setup_app_src (self, track.get(), &self->audioSrc);
+                webkit_media_stream_src_setup_app_src (self, track.get(), &self->audioSrc,
+                    "audio");
             }
         } else if (track->type() == RealtimeMediaSource::Type::Video) {
             if (stream->hasCaptureVideoSource()) {
                 LibWebRTCVideoCaptureSource& source = static_cast<LibWebRTCVideoCaptureSource&>(track->source());
                 auto capturer = source.Capturer();
 
-                webkit_media_stream_src_setup_from_capturer (self, capturer, &self->videoSrc);
+                webkit_media_stream_src_setup_from_capturer (self, capturer, &self->videoSrc,
+                    "video");
             } else if (track->source().persistentID().length()) {
                 GStreamerVideoDecoderFactory::addObserver(*self->observer);
             } else {
-                webkit_media_stream_src_setup_app_src (self, track.get(), &self->videoSrc);
+                webkit_media_stream_src_setup_app_src (self, track.get(), &self->videoSrc,
+                    "video");
             }
         } else {
             GST_INFO("Unsuported track type: %d", track->type());
@@ -276,14 +284,12 @@ webkit_media_stream_src_set_stream (WebKitMediaStreamSrc * self, MediaStreamPriv
 static void
 webkit_media_stream_src_push_video_sample (WebKitMediaStreamSrc * self, GstSample *gstsample)
 {
-    GST_ERROR ("Pushing sample %" GST_PTR_FORMAT, gst_sample_get_caps (gstsample));
     g_assert(gst_app_src_push_sample(GST_APP_SRC(self->videoSrc), gstsample) == GST_FLOW_OK);
 }
 
 static void
 webkit_media_stream_src_push_audio_sample (WebKitMediaStreamSrc * self, GstSample *gstsample)
 {
-    GST_ERROR ("Pushing sample");
     g_assert(gst_app_src_push_sample(GST_APP_SRC(self->audioSrc), gstsample) == GST_FLOW_OK);
 }
 
