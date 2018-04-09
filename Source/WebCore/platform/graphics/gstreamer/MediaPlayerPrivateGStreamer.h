@@ -278,6 +278,11 @@ private:
     HashMap<AtomicString, RefPtr<InbandMetadataTextTrackPrivateGStreamer>> m_metadataTracks;
 #endif
 #endif
+
+#if ENABLE(MEDIA_STREAM)
+    RefPtr<MediaStreamPrivate> m_streamPrivate;
+#endif
+
     virtual bool isMediaSource() const { return false; }
 };
 }

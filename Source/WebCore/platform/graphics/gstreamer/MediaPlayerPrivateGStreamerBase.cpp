@@ -72,6 +72,10 @@
 #include <epoxy/gl.h>
 #endif
 
+#if USE(LIBWEBRTC)
+#include "gstreamer/GStreamerMediaStreamSource.h"
+#endif
+
 #define GST_USE_UNSTABLE_API
 #include <gst/gl/gl.h>
 #undef GST_USE_UNSTABLE_API
@@ -134,6 +138,9 @@ void registerWebKitGStreamerElements()
     GRefPtr<GstElementFactory> clearKeyDecryptorFactory = adoptGRef(gst_element_factory_find("webkitclearkey"));
     if (!clearKeyDecryptorFactory)
         gst_element_register(nullptr, "webkitclearkey", GST_RANK_PRIMARY + 100, WEBKIT_TYPE_MEDIA_CK_DECRYPT);
+#endif
+#if USE(LIBWEBRTC)
+        gst_element_register(nullptr, "mediastreamsrc", GST_RANK_PRIMARY, WEBKIT_TYPE_MEDIA_STREAM_SRC);
 #endif
 }
 

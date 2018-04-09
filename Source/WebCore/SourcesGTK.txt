@@ -62,8 +62,6 @@ platform/graphics/egl/GLContextEGLX11.cpp
 platform/graphics/glx/GLContextGLX.cpp
 
 platform/graphics/gstreamer/ImageGStreamerCairo.cpp
-
-platform/graphics/libwebrtc/MediaPlayerPrivateLibWebRTC.cpp
 platform/graphics/libwebrtc/MediaSampleLibWebRTC.cpp
 
 platform/graphics/opengl/Extensions3DOpenGLCommon.cpp

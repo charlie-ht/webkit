@@ -51,6 +51,10 @@
 #include <wtf/glib/RunLoopSourcePriority.h>
 #include <wtf/text/CString.h>
 
+#if USE(LIBWEBRTC)
+#include "gstreamer/GStreamerMediaStreamSource.h"
+#endif
+
 #if ENABLE(VIDEO_TRACK)
 #include "AudioTrackPrivateGStreamer.h"
 #include "InbandMetadataTextTrackPrivateGStreamer.h"
@@ -290,12 +294,18 @@ void MediaPlayerPrivateGStreamer::load(const String&, MediaSourcePrivateClient*)
 #endif
 
 #if ENABLE(MEDIA_STREAM)
-void MediaPlayerPrivateGStreamer::load(MediaStreamPrivate&)
+void MediaPlayerPrivateGStreamer::load(MediaStreamPrivate& stream)
 {
+#if USE(LIBWEBRTC)
+    m_streamPrivate = &stream;
+    load(String("mediastream://") + stream.id());
+    m_player->play();
+#else
     // Properly fail so the global MediaPlayer tries to fallback to the next MediaPlayerPrivate.
     m_networkState = MediaPlayer::FormatError;
     m_player->networkStateChanged();
     notImplemented();
+#endif
 }
 #endif
 
@@ -1733,6 +1743,11 @@ void MediaPlayerPrivateGStreamer::sourceSetup(GstElement* sourceElement)
     if (WEBKIT_IS_WEB_SRC(m_source.get())) {
         webKitWebSrcSetMediaPlayer(WEBKIT_WEB_SRC(m_source.get()), m_player);
         g_signal_connect(GST_ELEMENT_PARENT(m_source.get()), "element-added", G_CALLBACK(uriDecodeBinElementAddedCallback), this);
+#if ENABLE(MEDIA_STREAM)
+    } else if (WEBKIT_IS_MEDIA_STREAM_SRC (sourceElement)) {
+        webkit_media_stream_src_set_stream(WEBKIT_MEDIA_STREAM_SRC(sourceElement),
+            m_streamPrivate.get());
+#endif
     }
 }
 
@@ -2252,14 +2267,17 @@ void MediaPlayerPrivateGStreamer::getSupportedTypes(HashSet<String, ASCIICaseIns
 MediaPlayer::SupportsType MediaPlayerPrivateGStreamer::supportsType(const MediaEngineSupportParameters& parameters)
 {
     MediaPlayer::SupportsType result = MediaPlayer::IsNotSupported;
+
 #if ENABLE(MEDIA_SOURCE)
     // MediaPlayerPrivateGStreamerMSE is in charge of mediasource playback, not us.
     if (parameters.isMediaSource)
         return result;
 #endif
 
+#if !USE(LIBWEBRTC)
     if (parameters.isMediaStream)
         return result;
+#endif
 
     if (parameters.type.isEmpty())
         return result;

@@ -40,6 +40,7 @@ namespace WebCore {
 typedef struct _WebKitMediaStreamSrc        WebKitMediaStreamSrc;
 
 #define WEBKIT_MEDIA_STREAM_SRC(o)              (G_TYPE_CHECK_INSTANCE_CAST  ((o), WEBKIT_TYPE_MEDIA_STREAM_SRC, WebKitMediaStreamSrc))
+#define WEBKIT_IS_MEDIA_STREAM_SRC(o)           (G_TYPE_CHECK_INSTANCE_TYPE  ((o), WEBKIT_TYPE_MEDIA_STREAM_SRC))
 #define WEBKIT_TYPE_MEDIA_STREAM_SRC            (webkit_media_stream_src_get_type ())
 GType              webkit_media_stream_src_get_type (void) G_GNUC_CONST;
 gboolean           webkit_media_stream_src_set_stream(WebKitMediaStreamSrc * src, MediaStreamPrivate * stream);
