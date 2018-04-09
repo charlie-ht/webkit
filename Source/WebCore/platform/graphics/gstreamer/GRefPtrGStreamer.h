@@ -22,6 +22,7 @@
 #if USE(GSTREAMER)
 
 #include <wtf/glib/GRefPtr.h>
+#include <gst/gst.h>
 
 typedef struct _GstElement GstElement;
 typedef struct _GstDevice GstDevice;
@@ -44,7 +45,7 @@ typedef struct _GstQuery GstQuery;
 typedef struct _WebKitVideoSink WebKitVideoSink;
 typedef struct _WebKitWebSrc WebKitWebSrc;
 
-#if USE(GSTREAMER_PLAYBIN3)
+#if GST_CHECK_VERSION(1, 10, 0)
 typedef struct _GstStream GstStream;
 typedef struct _GstStreamCollection GstStreamCollection;
 #endif
@@ -137,7 +138,7 @@ GRefPtr<WebKitWebSrc> ensureGRef(WebKitWebSrc* ptr);
 template<> WebKitWebSrc* refGPtr<WebKitWebSrc>(WebKitWebSrc* ptr);
 template<> void derefGPtr<WebKitWebSrc>(WebKitWebSrc* ptr);
 
-#if USE(GSTREAMER_PLAYBIN3)
+#if GST_CHECK_VERSION(1, 10, 0)
 template<> GRefPtr<GstStream> adoptGRef(GstStream*);
 template<> GstStream* refGPtr<GstStream>(GstStream*);
 template<> void derefGPtr<GstStream>(GstStream*);

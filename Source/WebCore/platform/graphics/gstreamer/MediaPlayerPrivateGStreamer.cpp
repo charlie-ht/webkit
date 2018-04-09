@@ -632,7 +632,7 @@ bool MediaPlayerPrivateGStreamer::seeking() const
     return m_seeking;
 }
 
-#if USE(GSTREAMER_PLAYBIN3)
+#if GST_CHECK_VERSION(1, 10, 0)
 void MediaPlayerPrivateGStreamer::updateTracks()
 {
     ASSERT(!m_isLegacyPlaybin);
@@ -766,7 +766,7 @@ void MediaPlayerPrivateGStreamer::enableTrack(TrackPrivateBaseGStreamer::TrackTy
         GstElement* element = isMediaSource() ? m_source.get() : m_pipeline.get();
         g_object_set(element, propertyName, index, nullptr);
     }
-#if USE(GSTREAMER_PLAYBIN3)
+#if GST_CHECK_VERSION(1, 10, 0)
     else {
         GstStream* stream = gst_stream_collection_get_stream(m_streamCollection.get(), index);
         if (stream) {
@@ -1291,7 +1291,7 @@ void MediaPlayerPrivateGStreamer::handleMessage(GstMessage* message)
         gst_tag_list_unref(tags);
         break;
     }
-#if USE(GSTREAMER_PLAYBIN3)
+#if GST_CHECK_VERSION(1, 10, 0)
     case GST_MESSAGE_STREAM_COLLECTION: {
         GRefPtr<GstStreamCollection> collection;
         gst_message_parse_stream_collection(message, &collection.outPtr());
@@ -2424,13 +2424,14 @@ void MediaPlayerPrivateGStreamer::createGSTPlayBin()
 
     // gst_element_factory_make() returns a floating reference so
     // we should not adopt.
-#if USE(GSTREAMER_PLAYBIN3)
-    m_isLegacyPlaybin = false;
-    setPipeline(gst_element_factory_make("playbin3", "play"));
-#else
-    m_isLegacyPlaybin = true;
-    setPipeline(gst_element_factory_make("playbin", "play"));
+    auto playbin_name = "playbin";
+#if GST_CHECK_VERSION(1, 10, 0)
+    m_isLegacyPlaybin = g_getenv("USE_PLAYBIN3") == nullptr;
+    if (!m_isLegacyPlaybin)
+        playbin_name = "playbin3";
 #endif
+
+    setPipeline(gst_element_factory_make(playbin_name, "play"));
     setStreamVolumeElement(GST_STREAM_VOLUME(m_pipeline.get()));
 
     GST_INFO("Using legacy playbin element: %s", boolForPrinting(m_isLegacyPlaybin));
