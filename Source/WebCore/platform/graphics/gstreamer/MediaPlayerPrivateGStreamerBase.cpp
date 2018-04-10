@@ -323,13 +323,20 @@ static std::pair<Vector<GRefPtr<GstEvent>>, Vector<String>> extractEventsAndSyst
 
 bool MediaPlayerPrivateGStreamerBase::handleSyncMessage(GstMessage* message)
 {
+    if (GST_MESSAGE_TYPE(message) == GST_MESSAGE_ERROR) {
+        GST_ERROR_OBJECT(pipeline(), "%" GST_PTR_FORMAT,
+            gst_message_get_structure (message));
+        gst_debug_print_stack_trace();
+    }
+        
+
     UNUSED_PARAM(message);
     if (GST_MESSAGE_TYPE(message) != GST_MESSAGE_NEED_CONTEXT)
         return false;
 
     const gchar* contextType;
     gst_message_parse_context_type(message, &contextType);
-    GST_DEBUG_OBJECT(pipeline(), "Handling %s need-context message for %s", contextType, GST_MESSAGE_SRC_NAME(message));
+    GST_ERROR_OBJECT(pipeline(), "Handling %s need-context message for %s", contextType, GST_MESSAGE_SRC_NAME(message));
 
 #if USE(GSTREAMER_GL)
     GRefPtr<GstContext> elementContext = adoptGRef(requestGLContext(contextType));

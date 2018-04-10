@@ -290,10 +290,13 @@ Vector<GStreamerVideoDecoderFactory::Observer*> OBSERVERS;
 
 bool GStreamerVideoDecoderFactory::newSource(String track_id, GstElement *source)
 {
+    GST_ERROR ("New decoder!");
     for (Observer* observer : OBSERVERS) {
+        GST_ERROR ("?? New decoder!");
         if (observer->newSource(track_id, source))
             return true;
     }
+    GST_ERROR ("Nothing.");
 
     return false;
 }

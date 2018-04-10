@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include "config.h"
+
 #if ENABLE(VIDEO) && USE(GSTREAMER)
 
 #include "GRefPtrGStreamer.h"
@@ -146,7 +148,7 @@ private:
     virtual void updateStates();
     virtual void asyncStateChangeDone();
 
-    void createGSTPlayBin();
+    void createGSTPlayBin(bool force_playbin3);
 
     bool loadNextLocation();
     void mediaLocationChanged(GstMessage*);
@@ -177,6 +179,7 @@ private:
     static void downloadBufferFileCreatedCallback(MediaPlayerPrivateGStreamer*);
 
     void setPlaybinURL(const URL& urlString);
+    void loadFull(const String &url, bool force_playbin3);
 
 #if GST_CHECK_VERSION(1, 10, 0)
     void updateTracks();
