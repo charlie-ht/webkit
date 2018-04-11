@@ -54,7 +54,7 @@ public:
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
     WEBCORE_EXPORT static AudioCaptureFactory& factory();
 
-    GstElement *Pipeline() { return m_capturer->m_pipeline.get(); }
+    GstElement *Pipeline() { return m_capturer->pipeline(); }
     GStreamerCapturer *Capturer() { return m_capturer.get(); }
 
 protected:

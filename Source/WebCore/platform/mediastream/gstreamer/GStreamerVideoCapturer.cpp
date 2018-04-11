@@ -43,23 +43,27 @@ GStreamerVideoCapturer::GStreamerVideoCapturer(const gchar *source_factory)
 
 void GStreamerVideoCapturer::setupPipeline() {
     m_pipeline = makeElement ("pipeline");
-    GRefPtr<GstElement> source = createSource();
-    GRefPtr<GstElement> converter = gst_parse_bin_from_description ("videoscale ! videoconvert ! videorate",
+
+    GStreamerCapturer::setupPipeline();
+
+    GstElement *source = g_object_ref (createSource());
+    GstElement *converter = gst_parse_bin_from_description ("videoscale ! videoconvert ! videorate",
         TRUE, NULL); // FIXME Handle errors.
+
+    // Gonna pass our new ref to the pipeline.
     m_capsfilter = makeElement ("capsfilter");
     m_tee = makeElement ("tee");
     m_sink = makeElement ("appsink");
 
     gst_app_sink_set_emit_signals(GST_APP_SINK (m_sink.get()), TRUE);
 
-    gst_bin_add_many (GST_BIN (m_pipeline.get()), source.get(), converter.get(),
+    gst_bin_add_many (GST_BIN (m_pipeline.get()), source, converter,
         m_capsfilter.get(), m_tee.get(), NULL);
-    gst_element_link_many (source.get(), converter.get(), m_capsfilter.get(), m_tee.get(), NULL);
+    gst_element_link_many (source, converter, m_capsfilter.get(), m_tee.get(), NULL);
     g_object_set (m_capsfilter.get(), "caps", m_caps.get(), nullptr);
 
     addSink(m_sink.get());
 
-    GStreamerCapturer::setupPipeline();
 }
 
 GstVideoInfo GStreamerVideoCapturer::GetBestFormat()
@@ -74,6 +78,9 @@ GstVideoInfo GStreamerVideoCapturer::GetBestFormat()
 
 bool GStreamerVideoCapturer::setSize(int width, int height)
 {
+    if (width == 0 || height == 0)
+        return false;
+
     GstCaps *caps = gst_caps_copy (m_caps.get());
     gst_caps_set_simple (caps, "width", G_TYPE_INT, width, "height",
         G_TYPE_INT, height, nullptr);

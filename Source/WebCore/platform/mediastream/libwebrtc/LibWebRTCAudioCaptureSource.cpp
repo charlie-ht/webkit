@@ -119,7 +119,7 @@ void LibWebRTCAudioCaptureSource::startProducingData()
         peerConnectionFactory->CreateAudioSource(nullptr));
 
     m_capturer->setupPipeline();
-    g_signal_connect(m_capturer->m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
+    g_signal_connect(m_capturer->sink(), "new-sample", G_CALLBACK(newSampleCallback), this);
     m_capturer->play();
 }
 

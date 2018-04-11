@@ -40,20 +40,23 @@ public:
     MockLibwebrtcRealtimeVideoSource(const String& deviceID, const String& name)
         : MockRealtimeVideoSource(deviceID, name) {}
     void updateSampleBuffer() {
+        int fps_n, fps_d;
         auto imageBuffer = this->imageBuffer();
 
         if (!imageBuffer)
             return;
 
+        gst_util_double_to_fraction(frameRate(), &fps_n, &fps_d);
         auto data = imageBuffer->toBGRAData();
         auto size = data.size();
-        GST_ERROR ("Size is %d", size);
+        GST_ERROR ("Framerate is %f", frameRate());
         auto image_size = imageBuffer->internalSize();
         auto gstsample = gst_sample_new (gst_buffer_new_wrapped((guint8*) data.releaseBuffer().get(),
             size), adoptGRef(gst_caps_new_simple ("video/x-raw",
                 "format", G_TYPE_STRING, "BGRA",
                 "width", G_TYPE_INT, image_size.width(),
                 "height", G_TYPE_INT, image_size.height(),
+                "framerate", GST_TYPE_FRACTION, fps_n, fps_d,
                 nullptr)).get(),
             nullptr, nullptr);
 
@@ -83,11 +86,10 @@ void MockLibWebRTCVideoCaptureSource::startProducingData()
 
 void MockLibWebRTCVideoCaptureSource::videoSampleAvailable(MediaSample& sample)
 {
-    auto src = m_capturer->m_src.get();
+    auto src = m_capturer->source();
 
     if (src) {
         g_object_set(src, "is-live", true, "format", GST_FORMAT_TIME, nullptr);
-        GST_ERROR ("Yay pushin sample :-)");
         auto gstsample = static_cast<MediaSampleGStreamer*>(&sample)->platformSample().sample.gstSample;
         gst_app_src_push_sample(GST_APP_SRC(src), gstsample);
     }

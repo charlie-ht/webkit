@@ -1138,7 +1138,7 @@ void MediaPlayerPrivateGStreamer::handleMessage(GstMessage* message)
         GST_ERROR("Error %d: %s (url=%s): %s", err->code, err->message, debug.get(), m_url.string().utf8().data());
 
         GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL,
-            String::format("%s.error", GST_OBJECT_NAME (m_pipeline.get())).utf8().data());
+            String::format("%s.error", GST_OBJECT_NAME(m_pipeline.get())).utf8().data());
 
         error = MediaPlayer::Empty;
         if (g_error_matches(err.get(), GST_STREAM_ERROR, GST_STREAM_ERROR_CODEC_NOT_FOUND)
@@ -1181,8 +1181,9 @@ void MediaPlayerPrivateGStreamer::handleMessage(GstMessage* message)
         // Construct a filename for the graphviz dot file output.
         GstState newState;
         gst_message_parse_state_changed(message, &currentState, &newState, nullptr);
-        CString dotFileName = String::format("%s.%s_%s", GST_OBJECT_NAME (m_pipeline.get()),
-            gst_element_state_get_name(currentState), gst_element_state_get_name(newState)).utf8();
+        CString dotFileName = String::format("%s.%s_%s", GST_OBJECT_NAME(m_pipeline.get()),
+            gst_element_state_get_name(currentState), gst_element_state_get_name(newState))
+                                  .utf8();
         GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, dotFileName.data());
 
         break;
@@ -1752,7 +1753,7 @@ void MediaPlayerPrivateGStreamer::sourceSetup(GstElement* sourceElement)
         g_signal_connect(GST_ELEMENT_PARENT(m_source.get()), "element-added", G_CALLBACK(uriDecodeBinElementAddedCallback), this);
 #if ENABLE(MEDIA_STREAM)
     } else if (WEBKIT_IS_MEDIA_STREAM_SRC(sourceElement)) {
-        gst_object_ref (sourceElement);
+        gst_object_ref(sourceElement);
         webkit_media_stream_src_set_stream(WEBKIT_MEDIA_STREAM_SRC(sourceElement),
             m_streamPrivate.get());
 #endif
@@ -2430,8 +2431,6 @@ void MediaPlayerPrivateGStreamer::createGSTPlayBin(bool force_playbin3)
 {
     ASSERT(!m_pipeline);
 
-    // gst_element_factory_make() returns a floating reference so
-    // we should not adopt.
     auto playbin_name = "playbin";
 #if GST_CHECK_VERSION(1, 10, 0)
     m_isLegacyPlaybin = force_playbin3 ? false : !g_getenv("USE_PLAYBIN3");
@@ -2440,6 +2439,8 @@ void MediaPlayerPrivateGStreamer::createGSTPlayBin(bool force_playbin3)
         playbin_name = "playbin3";
 #endif
 
+    // gst_element_factory_make() returns a floating reference so
+    // we should not adopt.
     setPipeline(gst_element_factory_make(playbin_name, String::format("play_%p", this).utf8().data()));
     setStreamVolumeElement(GST_STREAM_VOLUME(m_pipeline.get()));
 

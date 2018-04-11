@@ -106,21 +106,32 @@ GstElement * GStreamerCapturer::makeElement(const gchar *factory_name) {
     return elem;
 }
 
-void GStreamerCapturer::addSink(GstElement *sink)
+bool GStreamerCapturer::addSink(GstElement *sink)
 {
-    g_return_if_fail(m_pipeline.get());
-    g_return_if_fail(m_tee.get());
+    g_return_val_if_fail(m_pipeline.get(), false);
+    g_return_val_if_fail(m_tee.get(), false);
 
     auto queue = makeElement("queue");
     gst_bin_add_many (GST_BIN (m_pipeline.get()), queue, sink, nullptr);
     gst_element_sync_state_with_parent (queue);
     gst_element_sync_state_with_parent (sink);
-    g_assert (gst_element_link_pads (m_tee.get(), "src_%u", queue, "sink"));
-    g_assert (gst_element_link (queue, sink));
+    if (!gst_element_link (queue, sink)) {
+        GST_ERROR_OBJECT(m_pipeline.get(),
+            "Could not link %" GST_PTR_FORMAT " and %" GST_PTR_FORMAT,
+            queue, sink);
+        return false;
+    }
+
+    if (!gst_element_link_pads (m_tee.get(), "src_%u", queue, "sink")) {
+        GST_ERROR_OBJECT(m_pipeline.get(),
+            "Could not link %" GST_PTR_FORMAT " and %" GST_PTR_FORMAT,
+            m_tee.get(), queue);
+        return false;
+    }
 
     if (sink == m_sink.get()) {
         GST_INFO_OBJECT (m_pipeline.get(), "Setting queue as leaky upstream",
-            " so that the player can set the sink as to PAUSED without "
+            " so that the player can set the sink to PAUSED without "
             " setting the whole capturer to PAUSED");
         g_object_set (queue, "leaky", 2 /* upstream */, nullptr);
     }
@@ -133,6 +144,8 @@ void GStreamerCapturer::addSink(GstElement *sink)
     GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN (m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL,
         dump_name);
     g_free (dump_name);
+
+    return true;
 }
 
 void GStreamerCapturer::play() {

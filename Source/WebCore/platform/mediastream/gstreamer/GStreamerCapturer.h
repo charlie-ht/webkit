@@ -48,11 +48,15 @@ public:
     virtual void play();
     virtual void stop();
     GstCaps * getCaps();
-    void addSink(GstElement *sink);
+    bool addSink(GstElement *sink);
     GstElement * makeElement(const gchar *factory_name);
     GstElement * createSource();
     virtual const gchar* Name() = 0;
+    GstElement * source() { return m_src.get(); }
+    GstElement * pipeline() { return m_pipeline.get(); }
+    GstElement * sink() { return m_sink.get(); }
 
+protected:
     GRefPtr<GstElement> m_src;
     GRefPtr<GstElement> m_sink;
     GRefPtr<GstElement> m_tee;
