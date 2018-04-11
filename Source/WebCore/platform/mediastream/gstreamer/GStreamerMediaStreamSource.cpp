@@ -277,6 +277,7 @@ webkit_media_stream_src_finalize(GObject* object)
 static GstStateChangeReturn
 webkit_media_stream_src_change_state(GstElement* element, GstStateChange transition)
 {
+    GstStateChangeReturn res;
     auto* self = WEBKIT_MEDIA_STREAM_SRC(element);
 
     if (transition == GST_STATE_CHANGE_PAUSED_TO_READY) {
@@ -294,7 +295,14 @@ webkit_media_stream_src_change_state(GstElement* element, GstStateChange transit
         GStreamerVideoDecoderFactory::removeObserver(*self->observer);
     }
 
-    return GST_ELEMENT_CLASS(webkit_media_stream_src_parent_class)->change_state(element, transition);
+    res = GST_ELEMENT_CLASS(webkit_media_stream_src_parent_class)->change_state(element, transition);
+
+    if (transition == GST_STATE_CHANGE_READY_TO_PAUSED) {
+        res = GST_STATE_CHANGE_NO_PREROLL;
+    }
+
+    return res;
+
 }
 
 static void

@@ -46,7 +46,7 @@ void GStreamerVideoCapturer::setupPipeline() {
 
     GStreamerCapturer::setupPipeline();
 
-    GstElement *source = g_object_ref (createSource());
+    GstElement *source = createSource();
     GstElement *converter = gst_parse_bin_from_description ("videoscale ! videoconvert ! videorate",
         TRUE, NULL); // FIXME Handle errors.
 

@@ -89,7 +89,6 @@ void MockLibWebRTCVideoCaptureSource::videoSampleAvailable(MediaSample& sample)
     auto src = m_capturer->source();
 
     if (src) {
-        g_object_set(src, "is-live", true, "format", GST_FORMAT_TIME, nullptr);
         auto gstsample = static_cast<MediaSampleGStreamer*>(&sample)->platformSample().sample.gstSample;
         gst_app_src_push_sample(GST_APP_SRC(src), gstsample);
     }

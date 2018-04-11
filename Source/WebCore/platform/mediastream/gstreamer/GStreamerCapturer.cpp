@@ -27,6 +27,7 @@
 
 #include "GStreamerCapturer.h"
 #include <gst/app/gstappsink.h>
+#include <gst/app/gstappsrc.h>
 #include "GStreamerUtilities.h"
 #include "GStreamerUtils.h"
 
@@ -68,6 +69,9 @@ GstElement * GStreamerCapturer::createSource()
 {
     if (m_sourceFactory) {
         m_src = makeElement(m_sourceFactory);
+        if (GST_IS_APP_SRC (m_src.get())) {
+            g_object_set(m_src.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
+        }
         g_assert (m_src);
 
         return m_src.get();
