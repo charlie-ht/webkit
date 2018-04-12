@@ -135,6 +135,8 @@ public:
 
     void enableTrack(TrackPrivateBaseGStreamer::TrackType, unsigned index);
 
+    bool handleSyncMessage(GstMessage* message) override;
+
 private:
     static void getSupportedTypes(HashSet<String, ASCIICaseInsensitiveHash>&);
     static MediaPlayer::SupportsType supportsType(const MediaEngineSupportParameters&);
@@ -183,6 +185,7 @@ private:
 
 #if GST_CHECK_VERSION(1, 10, 0)
     void updateTracks();
+    void clearTracks();
 #endif
 
 protected:
