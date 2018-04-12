@@ -1,3 +1,73 @@
+2018-05-18  Alejandro G. Castro  <alex@igalia.com> and Thibault Saunier  <tsaunier@igalia.com>
+
+        [GTK][WPE] Add mediaDevices.enumerateDevices support
+        https://bugs.webkit.org/show_bug.cgi?id=185761
+
+        Reviewed by NOBODY (OOPS!).
+
+        In order to implement the checkUserMediaPermissionForOrigin
+        function that is called when the webpage wants to enumerate the
+        list of devices in the system we added some new APIs for the GTK
+        and WPE ports. We have extended the
+        WebKitUserMediaPermissionRequest class to support a new kind of
+        the request, the checkRequest. With this addition WebKit can
+        create a WebKitUserMediaPermissionRequest with a permission check
+        proxy, if that is the case the WebKitWebView widget launches
+        WebKitWebView::permission-check signal and the browser can
+        connnect to it to revolve it with the new
+        webkit_permission_request_resolve_check API, adding the hash salt
+        and the decision about allowing access to the devices. Main point
+        about this API is make sure the user can control the webpages
+        don't get smart trying to fingerprint the system. There is a
+        default implementation in the widget that that basically always
+        denies access and generates a random hashsalt.
+
+        * UIProcess/API/glib/WebKitPermissionRequest.cpp:
+        (webkit_permission_request_resolve_check): Added the API to
+        resolve the permission-check requested by the engine.
+        * UIProcess/API/glib/WebKitUIClient.cpp:
+        (checkUserMediaPermissionForOrigin): Added the implementation for
+        the platform used when the webpage calls the enumerateDevices API.
+        * UIProcess/API/glib/WebKitUserMediaPermissionRequest.cpp:
+        (webkitUserMediaPermissionResolveCheck): Added the function that
+        resolves the permission check passing the hash salt and the
+        boolean specifying if the operation is allowed to the completion
+        handler in the request.
+        (webkit_permission_request_interface_init): Added the new class
+        function.
+        (webkitUserMediaPermissionRequestDispose): Make sure we dispose
+        correctly now that we have a new checkRequest, in that situation
+        request is null.
+        (webkit_user_media_permission_is_for_audio_device): Control the
+        browser does not call this API when we are doing a permission check.
+        (webkit_user_media_permission_is_for_video_device): Ditto.
+        (webkitUserMediaPermissionCheckCreate): Added new builder for the
+        WebKitPermissionRequest class using a UserMediaPermissionCheckProxy.
+        * UIProcess/API/glib/WebKitUserMediaPermissionRequestPrivate.h:
+        Added the new API for the engine to create a WebKitPermissionRequest.
+        (webkitUserMediaPermissionCheckCreate):
+        * UIProcess/API/glib/WebKitWebView.cpp:
+        (webkitWebViewPermissionCheck): Added default implementation for
+        the signal callback.
+        (webkit_web_view_class_init): Set the default implementation for
+        the permission-check signal.
+        (webkitWebViewMakePermissionCheck): Added new API to launch ask
+        for permission check, this is private used by the engine.
+        * UIProcess/API/glib/WebKitWebViewPrivate.h: Define the new
+        private API webkitWebViewMakePermissionCheck.
+        * UIProcess/API/gtk/WebKitPermissionRequest.h: Added the new API
+        to resolve the permission check in the engine. Two minor style
+        modifications.
+        * UIProcess/API/gtk/WebKitWebView.h: Added the new class function
+        for the permission-check signal.
+        * UIProcess/API/gtk/docs/webkit2gtk-4.0-sections.txt: Added the
+        new symbol to the documentation:
+        webkit_permission_request_resolve_check.
+        * UIProcess/API/wpe/WebKitPermissionRequest.h: Added the new API
+        to resolve the permission check in the engine.
+        * UIProcess/API/wpe/WebKitWebView.h: Added the new class function
+        for the permission-check signal.
+
 2018-05-28  Sam Weinig  <sam@webkit.org>
 
         Modernize SVGRenderStyleDefs.h

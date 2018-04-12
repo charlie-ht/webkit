@@ -1,3 +1,85 @@
+2018-05-18  Alejandro G. Castro  <alex@igalia.com> and Thibault Saunier  <tsaunier@igalia.com>
+
+        [GTK][WPE] Add mediaDevices.enumerateDevices support
+        https://bugs.webkit.org/show_bug.cgi?id=185761
+
+        Reviewed by NOBODY (OOPS!).
+
+        We are adding all the required classes to make the
+        enumerateDevices work, that means the our own
+        RealtimeMediaSourceCenterLibWebRTC for the platform, the
+        GStreamerCaptureDeviceManager, the audio/video capturers and their
+        respective audio/video sources. We are using the GstDeviceMonitor
+        monitor to make the request the information from the system.
+
+        Unskipped the relevant tests for the enumerateDevices.
+
+        * Modules/mediastream/MediaDevicesRequest.cpp:
+        (WebCore::MediaDevicesRequest::filterDeviceList): Add support for
+        GTK and WPE platforms when filtering devices if there is no
+        persistent access to the origin.
+        * platform/GStreamer.cmake: Added the new files to the compilation.
+        * platform/audio/AudioStreamDescription.h: Added new GStreamer type.
+        * platform/audio/PlatformAudioData.h: Added new GStreamer type for
+        the GStreamerAudioData class.
+        * platform/graphics/gstreamer/GStreamerCommon.cpp:
+        (WebCore::simpleBusMessageCallback): This function and the next
+        one help us to connect a monitoring callback to a pipeline for
+        debugging.
+        (WebCore::connectSimpleBusMessageCallback): Ditto.
+        * platform/graphics/gstreamer/GStreamerCommon.h: Ditto.
+        * platform/mediastream/RealtimeMediaSourceCenter.cpp:
+        (WebCore::RealtimeMediaSourceCenter::singleton): Remove the code
+        used for compilation for the platform when we do not have a
+        RealtimeMediaSourceCenterLibWebRTC. Now we return the proper class
+        for the platform.
+        * platform/mediastream/gstreamer/GStreamerAudioCaptureSource.cpp:
+        Added class representing the RealtimeMediaSource for the Audio
+        with GStreamer.
+        * platform/mediastream/gstreamer/GStreamerAudioCaptureSource.h:
+        Ditto.
+        * platform/mediastream/gstreamer/GStreamerAudioCapturer.cpp: Added
+        this class that represents the GStreamer pipeline that captures
+        audio from the system devices, it inherits from GStreamerCapturer.
+        * platform/mediastream/gstreamer/GStreamerAudioCapturer.h: Dito.
+        * platform/mediastream/gstreamer/GStreamerAudioData.h: Added this
+        class implementing PlatformAudioData for the GStreamer platform,
+        used to pass the samples information.
+        * platform/mediastream/gstreamer/GStreamerAudioStreamDescription.h:
+        Added this class implementing AudioStreamDescription to export the
+        information about the audio stream to libwebrtc.
+        * platform/mediastream/gstreamer/GStreamerCaptureDevice.h: Added
+        this base class for the audio and video capturing devices, it
+        implements general WebKit CaptureDevice class.
+        * platform/mediastream/gstreamer/GStreamerCaptureDeviceManager.cpp:
+        Added this class that implements the system monitor to get the
+        list of available devices in the system. It uses GstDeviceMonitor
+        to handle the operation. It uses two singleton device managers one
+        for audio and another one for video, the design required by the
+        RealtimeMediaSourceCenter.
+        * platform/mediastream/gstreamer/GStreamerCaptureDeviceManager.h: Ditto.
+        * platform/mediastream/gstreamer/GStreamerCapturer.cpp: Added this
+        base class representing how GStreamer captures the media from the
+        input devices in the system. Two classes inherit from this one to
+        capture audio and video. It setups the GStreamer pipeline and adds
+        functions to control it.
+        * platform/mediastream/gstreamer/GStreamerCapturer.h: Ditto.
+        * platform/mediastream/gstreamer/GStreamerVideoCaptureSource.cpp:
+        Added this RealtimeMediaSource representing the source of the
+        video data for the GStreamer platform. It handles the settings and
+        capabilities of the source and creates the capturer used to
+        control the operation of the stream.
+        * platform/mediastream/gstreamer/GStreamerVideoCaptureSource.h: Ditto.
+        * platform/mediastream/gstreamer/GStreamerVideoCapturer.cpp: Added
+        this class that inherits from the GStreamerCapturer and controls
+        the GStreamer pipelines of the video streams of the system.
+        * platform/mediastream/gstreamer/GStreamerVideoCapturer.h: Ditto.
+        * platform/mediastream/gstreamer/RealtimeMediaSourceCenterLibWebRTC.cpp:
+        Added this class that implements the key RealtimeMediaSourceCenter
+        functions to configure the base class for the platform, using the
+        other GStreamer classes.
+        * platform/mediastream/gstreamer/RealtimeMediaSourceCenterLibWebRTC.h: Ditto
+
 2018-05-29  Antoine Quint  <graouts@apple.com>
 
         [Web Animations] Handle relative length units

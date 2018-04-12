@@ -197,6 +197,8 @@ struct _WebKitWebViewClass {
                                                     WebKitPolicyDecisionType     type);
     gboolean       (* permission_request)          (WebKitWebView               *web_view,
                                                     WebKitPermissionRequest     *permission_request);
+    gboolean       (* permission_check)            (WebKitWebView               *web_view,
+                                                    WebKitPermissionRequest     *permission_request);
     void           (* mouse_target_changed)        (WebKitWebView               *web_view,
                                                     WebKitHitTestResult         *hit_test_result,
                                                     guint                        modifiers);

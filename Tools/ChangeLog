@@ -1,3 +1,20 @@
+2018-05-18  Alejandro G. Castro  <alex@igalia.com> and Thibault Saunier  <tsaunier@igalia.com>
+
+        [GTK][WPE] Add mediaDevices.enumerateDevices support
+        https://bugs.webkit.org/show_bug.cgi?id=185761
+
+        Reviewed by NOBODY (OOPS!).
+
+        Added new API test for the mediaDevices.enumerateDevices:
+        usermedia-enumeratedevices-permission-check.
+
+        * TestWebKitAPI/Tests/WebKitGLib/TestUIClient.cpp:
+        (permissionCheck): Implemented the permission check resolution.
+        (testWebViewUserMediaEnumerateDevicesPermissionCheck): Added the
+        new test checking the enumerateDevices API when permission is
+        denied and when permission is allowed for the origin.
+        (beforeAll): Defined the new test.
+
 2018-05-29  Thibault Saunier  <tsaunier@igalia.com>
 
         [GStreamer] Update "qtdemux: Clarify field name about stream-encryption-system" patch

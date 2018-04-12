@@ -231,6 +231,25 @@ public:
         return TRUE;
     }
 
+    static gboolean permissionCheck(WebKitWebView*, WebKitPermissionRequest* request, UIClientTest* test)
+    {
+        g_assert(WEBKIT_IS_PERMISSION_REQUEST(request));
+        test->assertObjectIsDeletedWhenTestFinishes(G_OBJECT(request));
+
+        if (test->m_verifyMediaTypes && WEBKIT_IS_USER_MEDIA_PERMISSION_REQUEST(request)) {
+            WebKitUserMediaPermissionRequest* userMediaRequest = WEBKIT_USER_MEDIA_PERMISSION_REQUEST(request);
+            g_assert(!webkit_user_media_permission_is_for_audio_device(userMediaRequest));
+            g_assert(!webkit_user_media_permission_is_for_video_device(userMediaRequest));
+        }
+
+        if (test->m_allowPermissionRequests)
+            webkit_permission_request_resolve_check(request, "randomHashSalt", true);
+        else
+            webkit_permission_request_resolve_check(request, "randomHashSalt", false);
+
+        return TRUE;
+    }
+
     static void permissionResultMessageReceivedCallback(WebKitUserContentManager* userContentManager, WebKitJavascriptResult* javascriptResult, UIClientTest* test)
     {
         test->m_permissionResult.reset(WebViewTest::javascriptResultToCString(javascriptResult));
@@ -251,6 +270,7 @@ public:
         g_signal_connect(m_webView, "script-dialog", G_CALLBACK(scriptDialog), this);
         g_signal_connect(m_webView, "mouse-target-changed", G_CALLBACK(mouseTargetChanged), this);
         g_signal_connect(m_webView, "permission-request", G_CALLBACK(permissionRequested), this);
+        g_signal_connect(m_webView, "permission-check", G_CALLBACK(permissionCheck), this);
         webkit_user_content_manager_register_script_message_handler(m_userContentManager.get(), "permission");
         g_signal_connect(m_userContentManager.get(), "script-message-received::permission", G_CALLBACK(permissionResultMessageReceivedCallback), this);
     }
@@ -818,6 +838,47 @@ static void testWebViewGeolocationPermissionRequests(UIClientTest* test, gconstp
 #endif // ENABLE(GEOLOCATION)
 
 #if ENABLE(MEDIA_STREAM)
+static void testWebViewUserMediaEnumerateDevicesPermissionCheck(UIClientTest* test, gconstpointer)
+{
+    WebKitSettings* settings = webkit_web_view_get_settings(test->m_webView);
+    gboolean enabled = webkit_settings_get_enable_media_stream(settings);
+    webkit_settings_set_enable_media_stream(settings, TRUE);
+
+#if PLATFORM(GTK)
+    test->showInWindowAndWaitUntilMapped();
+#endif
+    static const char* userMediaRequestHTML =
+        "<html>"
+        "  <script>"
+        "  function runTest()"
+        "  {"
+        "    navigator.mediaDevices.enumerateDevices().then("
+        "        function(devices) { "
+        "            devices.forEach(function(device) {"
+        "                                if (device.label) document.title = \"OK\";"
+        "                                             else document.title = \"Permission denied\";"
+        "            })"
+        "    })"
+        "  }"
+        "  </script>"
+        "  <body onload='runTest();'></body>"
+        "</html>";
+
+    test->m_verifyMediaTypes = TRUE;
+
+    // Test denying a permission request.
+    test->m_allowPermissionRequests = false;
+    test->loadHtml(userMediaRequestHTML, nullptr);
+    test->waitUntilTitleChangedTo("Permission denied");
+
+    // Test allowing a permission request.
+    test->m_allowPermissionRequests = true;
+    test->loadHtml(userMediaRequestHTML, nullptr);
+    test->waitUntilTitleChangedTo("OK");
+
+    webkit_settings_set_enable_media_stream(settings, enabled);
+}
+
 static void testWebViewUserMediaPermissionRequests(UIClientTest* test, gconstpointer)
 {
     WebKitSettings* settings = webkit_web_view_get_settings(test->m_webView);
@@ -1140,6 +1201,7 @@ void beforeAll()
     UIClientTest::add("WebKitWebView", "geolocation-permission-requests", testWebViewGeolocationPermissionRequests);
 #endif
 #if ENABLE(MEDIA_STREAM)
+    UIClientTest::add("WebKitWebView", "usermedia-enumeratedevices-permission-check", testWebViewUserMediaEnumerateDevicesPermissionCheck);
     UIClientTest::add("WebKitWebView", "usermedia-permission-requests", testWebViewUserMediaPermissionRequests);
     UIClientTest::add("WebKitWebView", "audio-usermedia-permission-request", testWebViewAudioOnlyUserMediaPermissionRequests);
 #endif
