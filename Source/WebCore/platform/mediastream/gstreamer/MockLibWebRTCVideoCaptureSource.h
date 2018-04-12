@@ -42,6 +42,7 @@ public:
     MockLibWebRTCVideoCaptureSource(const String& deviceID, const String& name);
 
 private:
+    void stopProducingData() final;
     void startProducingData() final;
     RealtimeMediaSource &m_mockedSource;
     const RealtimeMediaSourceCapabilities& capabilities() const final;

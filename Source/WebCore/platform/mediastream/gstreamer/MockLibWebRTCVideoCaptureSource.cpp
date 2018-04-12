@@ -84,6 +84,14 @@ void MockLibWebRTCVideoCaptureSource::startProducingData()
     m_mockedSource.start();
 }
 
+
+void MockLibWebRTCVideoCaptureSource::stopProducingData()
+{
+    m_mockedSource.stop();
+
+    LibWebRTCVideoCaptureSource::stopProducingData();
+}
+
 void MockLibWebRTCVideoCaptureSource::videoSampleAvailable(MediaSample& sample)
 {
     auto src = m_capturer->source();
