@@ -69,6 +69,8 @@
 #include <WebCore/RefPtrCairo.h>
 #include <WebCore/URL.h>
 #include <glib/gi18n-lib.h>
+#include <wtf/CryptographicallyRandomNumber.h>
+#include <wtf/HexNumber.h>
 #include <wtf/SetForScope.h>
 #include <wtf/glib/GRefPtr.h>
 #include <wtf/glib/WTFGType.h>
@@ -124,6 +126,7 @@ enum {
 
     DECIDE_POLICY,
     PERMISSION_REQUEST,
+    PERMISSION_CHECK,
 
     MOUSE_TARGET_CHANGED,
 
@@ -212,6 +215,7 @@ struct _WebKitWebViewPrivate {
     CString title;
     CString customTextEncoding;
     CString activeURI;
+    String mediaIdentifierHashSalt;
     bool isLoading;
     bool isEphemeral;
     bool isControlledByAutomation;
@@ -425,6 +429,26 @@ static gboolean webkitWebViewDecidePolicy(WebKitWebView*, WebKitPolicyDecision* 
 static gboolean webkitWebViewPermissionRequest(WebKitWebView*, WebKitPermissionRequest* request)
 {
     webkit_permission_request_deny(request);
+    return TRUE;
+}
+
+static gboolean webkitWebViewPermissionCheck(WebKitWebView* webView, WebKitPermissionRequest* request)
+{
+    WebKitWebViewPrivate* priv = webView->priv;
+    if (priv->mediaIdentifierHashSalt.isNull()) {
+        static int hashSaltSize = 128;
+        static int randomDataSize = hashSaltSize / 16;
+        uint64_t randomData[randomDataSize];
+        cryptographicallyRandomValues(reinterpret_cast<unsigned char*>(randomData), sizeof(randomData));
+
+        StringBuilder builder;
+        builder.reserveCapacity(128);
+        for (int i = 0; i < randomDataSize; i++)
+            appendUnsigned64AsHex(randomData[0], builder);
+        priv->mediaIdentifierHashSalt = builder.toString();
+    }
+
+    webkit_permission_request_resolve_check(request, priv->mediaIdentifierHashSalt.utf8().data(), false);
     return TRUE;
 }
 
@@ -835,6 +859,7 @@ static void webkit_web_view_class_init(WebKitWebViewClass* webViewClass)
     webViewClass->script_dialog = webkitWebViewScriptDialog;
     webViewClass->decide_policy = webkitWebViewDecidePolicy;
     webViewClass->permission_request = webkitWebViewPermissionRequest;
+    webViewClass->permission_check = webkitWebViewPermissionCheck;
     webViewClass->run_file_chooser = webkitWebViewRunFileChooser;
     webViewClass->authenticate = webkitWebViewAuthenticate;
     webViewClass->show_notification = webkitWebViewShowNotification;
@@ -1492,6 +1517,48 @@ static void webkit_web_view_class_init(WebKitWebViewClass* webViewClass)
         g_cclosure_marshal_generic,
         G_TYPE_BOOLEAN, 1, /* number of parameters */
         WEBKIT_TYPE_PERMISSION_REQUEST);
+
+    /**
+     * WebKitWebView::permission-check:
+     * @web_view: the #WebKitWebView on which the signal is emitted
+     * @request: the #WebKitPermissionRequest
+     *
+     * This signal is emitted when WebKit wants to check the
+     * permissions already given to an origin by a user, such as
+     * allowing the browser to use the microphone or the
+     * camera. Usually the embedder does not ask the user to resolve
+     * the request but uses what the user answered previously, denying
+     * by default if the user did not give permissions specifically to
+     * this origin.
+     *
+     * For more information about how to use the @request check
+     * permission-request signal documentation.
+     *
+     * If the signal is not handled, the @request will be denied and a
+     * random hash salt will be generated. Usually a embedder wants to
+     * connect to the signal and call
+     * webkit_permission_request_resolve_check() answering based on
+     * what the user already decided about some previous
+     * #WebKitPermissionRequest, that means storing the previous
+     * decisions of the user about each origin. It also should use a
+     * random salt that must be stored for each origin to make sure
+     * the webpage always gets the same ID for the devices, or some
+     * applications could not work properly.
+     *
+     * Returns: %TRUE to stop other handlers from being invoked for the event.
+     *   %FALSE to propagate the event further.
+     *
+     */
+    signals[PERMISSION_CHECK] = g_signal_new(
+        "permission-check",
+        G_TYPE_FROM_CLASS(webViewClass),
+        G_SIGNAL_RUN_LAST,
+        G_STRUCT_OFFSET(WebKitWebViewClass, permission_check),
+        g_signal_accumulator_true_handled, nullptr /* accumulator data */,
+        g_cclosure_marshal_generic,
+        G_TYPE_BOOLEAN, 1, /* number of parameters */
+        WEBKIT_TYPE_PERMISSION_REQUEST);
+
     /**
      * WebKitWebView::mouse-target-changed:
      * @web_view: the #WebKitWebView on which the signal is emitted
@@ -2198,6 +2265,12 @@ void webkitWebViewMakePermissionRequest(WebKitWebView* webView, WebKitPermission
 {
     gboolean returnValue;
     g_signal_emit(webView, signals[PERMISSION_REQUEST], 0, request, &returnValue);
+}
+
+void webkitWebViewMakePermissionCheck(WebKitWebView* webView, WebKitPermissionRequest* request)
+{
+    gboolean returnValue;
+    g_signal_emit(webView, signals[PERMISSION_CHECK], 0, request, &returnValue);
 }
 
 void webkitWebViewMouseTargetChanged(WebKitWebView* webView, const WebHitTestResultData& hitTestResult, WebEvent::Modifiers modifiers)

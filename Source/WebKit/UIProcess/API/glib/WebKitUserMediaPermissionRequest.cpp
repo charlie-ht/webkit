@@ -19,6 +19,7 @@
 #include "config.h"
 #include "WebKitUserMediaPermissionRequest.h"
 
+#include "UserMediaPermissionCheckProxy.h"
 #include "UserMediaPermissionRequestProxy.h"
 #include "WebKitPermissionRequest.h"
 #include "WebKitUserMediaPermissionRequestPrivate.h"
@@ -53,6 +54,7 @@ static void webkit_permission_request_interface_init(WebKitPermissionRequestIfac
 
 struct _WebKitUserMediaPermissionRequestPrivate {
     RefPtr<UserMediaPermissionRequestProxy> request;
+    RefPtr<UserMediaPermissionCheckProxy> checkRequest;
     bool madeDecision;
 };
 
@@ -95,16 +97,28 @@ static void webkitUserMediaPermissionRequestDeny(WebKitPermissionRequest* reques
     priv->request->deny(UserMediaPermissionRequestProxy::UserMediaAccessDenialReason::PermissionDenied);
 }
 
+static void webkitUserMediaPermissionResolveCheck(WebKitPermissionRequest* request, const gchar* salt, gboolean allowed)
+{
+    ASSERT(WEBKIT_IS_USER_MEDIA_PERMISSION_REQUEST(request));
+
+    WebKitUserMediaPermissionRequestPrivate* priv = WEBKIT_USER_MEDIA_PERMISSION_REQUEST(request)->priv;
+
+    priv->checkRequest->setUserMediaAccessInfo(String::fromUTF8(salt), allowed);
+}
+
 static void webkit_permission_request_interface_init(WebKitPermissionRequestIface* iface)
 {
     iface->allow = webkitUserMediaPermissionRequestAllow;
     iface->deny = webkitUserMediaPermissionRequestDeny;
+    iface->resolve_check = webkitUserMediaPermissionResolveCheck;
 }
 
 static void webkitUserMediaPermissionRequestDispose(GObject* object)
 {
     // Default behaviour when no decision has been made is denying the request.
-    webkitUserMediaPermissionRequestDeny(WEBKIT_PERMISSION_REQUEST(object));
+    WebKitUserMediaPermissionRequestPrivate* priv = WEBKIT_USER_MEDIA_PERMISSION_REQUEST(object)->priv;
+    if (priv->request)
+        webkitUserMediaPermissionRequestDeny(WEBKIT_PERMISSION_REQUEST(object));
     G_OBJECT_CLASS(webkit_user_media_permission_request_parent_class)->dispose(object);
 }
 
@@ -118,7 +132,9 @@ static void webkitUserMediaPermissionRequestDispose(GObject* object)
  */
 gboolean webkit_user_media_permission_is_for_audio_device(WebKitUserMediaPermissionRequest* request)
 {
-    g_return_val_if_fail(request->priv->request, FALSE);
+    g_return_val_if_fail(request->priv->request || request->priv->checkRequest, FALSE);
+    if (request->priv->checkRequest)
+        return FALSE;
     return request->priv->request->requiresAudioCapture();
 }
 
@@ -132,7 +148,9 @@ gboolean webkit_user_media_permission_is_for_audio_device(WebKitUserMediaPermiss
  */
 gboolean webkit_user_media_permission_is_for_video_device(WebKitUserMediaPermissionRequest* request)
 {
-    g_return_val_if_fail(request->priv->request, FALSE);
+    g_return_val_if_fail(request->priv->request || request->priv->checkRequest, FALSE);
+    if (request->priv->checkRequest)
+        return FALSE;
     return request->priv->request->requiresVideoCapture();
 }
 
@@ -194,5 +212,16 @@ WebKitUserMediaPermissionRequest* webkitUserMediaPermissionRequestCreate(UserMed
     UNUSED_PARAM(topLevelDocumentOrigin);
 
     usermediaPermissionRequest->priv->request = &request;
+    return usermediaPermissionRequest;
+}
+
+WebKitUserMediaPermissionRequest* webkitUserMediaPermissionCheckCreate(UserMediaPermissionCheckProxy& request, API::SecurityOrigin& userMediaDocumentOrigin, API::SecurityOrigin& topLevelDocumentOrigin)
+{
+    WebKitUserMediaPermissionRequest* usermediaPermissionRequest = WEBKIT_USER_MEDIA_PERMISSION_REQUEST(g_object_new(WEBKIT_TYPE_USER_MEDIA_PERMISSION_REQUEST, nullptr));
+
+    UNUSED_PARAM(userMediaDocumentOrigin);
+    UNUSED_PARAM(topLevelDocumentOrigin);
+
+    usermediaPermissionRequest->priv->checkRequest = &request;
     return usermediaPermissionRequest;
 }

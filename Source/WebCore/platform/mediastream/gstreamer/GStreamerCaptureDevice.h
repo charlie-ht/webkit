@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Igalia S.L
+ *  Copyright (C) 2017 Igalia S.L. All rights reserved.
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -18,8 +18,30 @@
 
 #pragma once
 
-#include "APISecurityOrigin.h"
-#include "WebKitUserMediaPermissionRequest.h"
+#if ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 
-WebKitUserMediaPermissionRequest* webkitUserMediaPermissionRequestCreate(WebKit::UserMediaPermissionRequestProxy&, API::SecurityOrigin&, API::SecurityOrigin&);
-WebKitUserMediaPermissionRequest* webkitUserMediaPermissionCheckCreate(WebKit::UserMediaPermissionCheckProxy&, API::SecurityOrigin&, API::SecurityOrigin&);
+#include "CaptureDevice.h"
+#include "GRefPtrGStreamer.h"
+
+#include <gst/gst.h>
+
+namespace WebCore {
+
+class GStreamerCaptureDevice : public CaptureDevice {
+public:
+    GStreamerCaptureDevice(GRefPtr<GstDevice>&& device, const String& persistentId, DeviceType type, const String& label, const String& groupId = emptyString())
+        : CaptureDevice(persistentId, type, label, groupId)
+        , m_device(device)
+    {
+    }
+
+    GstCaps* caps() const { return gst_device_get_caps(m_device.get()); }
+    GstDevice * device() { return m_device.get(); }
+
+private:
+    GRefPtr<GstDevice> m_device;
+};
+
+}
+
+#endif // ENABLE(MEDIA_STREAM)  && USE(GSTREAMER)

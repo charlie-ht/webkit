@@ -191,6 +191,13 @@ private:
         return true;
     }
 
+    bool checkUserMediaPermissionForOrigin(WebPageProxy&, WebFrameProxy&, API::SecurityOrigin& userMediaDocumentOrigin, API::SecurityOrigin& topLevelDocumentOrigin, UserMediaPermissionCheckProxy& permissionRequest) override
+    {
+        GRefPtr<WebKitUserMediaPermissionRequest> userMediaPermissionRequest = adoptGRef(webkitUserMediaPermissionCheckCreate(permissionRequest, userMediaDocumentOrigin, topLevelDocumentOrigin));
+        webkitWebViewMakePermissionCheck(m_webView, WEBKIT_PERMISSION_REQUEST(userMediaPermissionRequest.get()));
+        return true;
+    }
+
     void decidePolicyForNotificationPermissionRequest(WebPageProxy&, API::SecurityOrigin&, Function<void(bool)>&& completionHandler) final
     {
         GRefPtr<WebKitNotificationPermissionRequest> notificationPermissionRequest = adoptGRef(webkitNotificationPermissionRequestCreate(NotificationPermissionRequest::create(WTFMove(completionHandler)).ptr()));
