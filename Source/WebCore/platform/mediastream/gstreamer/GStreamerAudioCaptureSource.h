@@ -28,20 +28,11 @@
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
 
-#include "CaptureDevice.h"
 #include "RealtimeMediaSource.h"
-#include <wtf/HashMap.h>
-#include <wtf/Lock.h>
-#include <wtf/RefCounted.h>
-#include <wtf/RefPtr.h>
-#include <wtf/text/WTFString.h>
-#include "GRefPtrGStreamer.h"
-#include "gstreamer/GStreamerAudioCapturer.h"
-#include "gstreamer/GStreamerCaptureDevice.h"
+#include "GStreamerAudioCapturer.h"
+#include "GStreamerCaptureDevice.h"
 
-#include "LibWebRTCMacros.h"
 #include "webrtc/api/mediastreaminterface.h"
-#include "webrtc/modules/audio_device/include/audio_device_defines.h"
 
 namespace WTF {
 class MediaTime;
@@ -76,7 +67,6 @@ private:
     bool isCaptureSource() const final { return true; }
     void startProducingData() final;
     void stopProducingData() final;
-
     bool applyVolume(double) final { return true; }
 
     rtc::scoped_refptr<webrtc::AudioTrackInterface> m_audioTrack;

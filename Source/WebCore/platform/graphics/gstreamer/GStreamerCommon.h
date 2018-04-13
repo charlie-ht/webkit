@@ -82,6 +82,8 @@ inline GstClockTime toGstClockTime(const MediaTime &mediaTime)
 }
 
 bool gstRegistryHasElementForMediaType(GList* elementFactories, const char* capsString);
+void connectSimpleBusMessageCallback(GstElement *pipeline);
+
 }
 
 #ifndef GST_BUFFER_DTS_OR_PTS

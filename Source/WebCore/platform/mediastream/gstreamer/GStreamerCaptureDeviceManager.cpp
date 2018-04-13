@@ -20,8 +20,8 @@
 
 #if ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 #include "GStreamerCaptureDeviceManager.h"
-#include "GStreamerUtilities.h"
 
+#include "GStreamerUtilities.h"
 #include <wtf/glib/GUniquePtr.h>
 
 namespace WebCore {
@@ -125,13 +125,10 @@ void GStreamerCaptureDeviceManager::refreshCaptureDevices()
     }
 
     GList* devices = gst_device_monitor_get_devices(m_deviceMonitor.get());
-    if (devices != NULL) {
-        while (devices != NULL) {
-            GstDevice* device = GST_DEVICE_CAST(devices->data);
-            deviceAdded(device);
-            gst_object_unref(device);
-            devices = g_list_delete_link(devices, devices);
-        }
+    while (devices) {
+        GRefPtr<GstDevice> device = adoptGRef(GST_DEVICE_CAST(devices->data));
+        deviceAdded(device.get());
+        devices = g_list_delete_link(devices, devices);
     }
 
     gst_device_monitor_stop(m_deviceMonitor.get());
