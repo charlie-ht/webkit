@@ -66,29 +66,30 @@ static GstStaticPadTemplate audio_src_template = GST_STATIC_PAD_TEMPLATE("audio_
     GST_PAD_SOMETIMES,
     GST_STATIC_CAPS("audio/x-raw(ANY);"));
 
-G_DECLARE_FINAL_TYPE(WebKitMediaStreamStream, webkit_media_stream_stream, WEBKIT, MEDIA_STREAM_STREAM, GstStream);
+#define WEBKIT_TYPE_MEDIA_STREAM (webkit_media_stream_get_type ())
+G_DECLARE_FINAL_TYPE(WebKitMediaStream, webkit_media_stream, WEBKIT, MEDIA_STREAM, GstStream);
 
-struct _WebKitMediaStreamStream {
+struct _WebKitMediaStream {
     GstStream parent;
 
     gboolean observing;
     RefPtr<MediaStreamTrackPrivate> track;
 };
 
-G_DEFINE_TYPE(WebKitMediaStreamStream, webkit_media_stream_stream, GST_TYPE_STREAM);
+G_DEFINE_TYPE(WebKitMediaStream, webkit_media_stream, GST_TYPE_STREAM);
 
 static void
-webkit_media_stream_stream_init(WebKitMediaStreamStream*)
+webkit_media_stream_init(WebKitMediaStream*)
 {
 }
 
 static void
-webkit_media_stream_stream_class_init(WebKitMediaStreamStreamClass*)
+webkit_media_stream_class_init(WebKitMediaStreamClass*)
 {
 }
 
 GstStream*
-webkit_media_stream_stream_new(MediaStreamPrivate* stream, MediaStreamTrackPrivate* track)
+webkit_media_stream_new(MediaStreamPrivate* stream, MediaStreamTrackPrivate* track)
 {
     GRefPtr<GstCaps> caps;
     GstStreamType type;
@@ -107,12 +108,12 @@ webkit_media_stream_stream_new(MediaStreamPrivate* stream, MediaStreamTrackPriva
         return NULL;
     }
 
-    auto gststream = (GstStream*)g_object_new(webkit_media_stream_stream_get_type(),
+    auto gststream = (GstStream*)g_object_new(webkit_media_stream_get_type(),
         "stream-id", track->id().utf8().data(),
         "caps", caps.get(),
         "stream-type", type,
         "stream-flags", GST_STREAM_FLAG_SELECT, NULL);
-    ((WebKitMediaStreamStream*)gststream)->track = track;
+    ((WebKitMediaStream*)gststream)->track = track;
 
     return gststream;
 }
@@ -153,14 +154,14 @@ public:
         return webkit_media_stream_src_setup_encoded_src(m_mediaStreamSrc, track_id, source);
     }
 
-    void addStream(String id, WebKitMediaStreamStream* stream)
+    void addStream(String id, WebKitMediaStream* stream)
     {
         m_streamMap.add(id, stream);
     }
 
 private:
     WebKitMediaStreamSrc* m_mediaStreamSrc;
-    HashMap<String, GRefPtr<WebKitMediaStreamStream>> m_streamMap;
+    HashMap<String, GRefPtr<WebKitMediaStream>> m_streamMap;
 };
 
 typedef struct _WebKitMediaStreamSrcClass WebKitMediaStreamSrcClass;
@@ -281,17 +282,18 @@ webkit_media_stream_src_change_state(GstElement* element, GstStateChange transit
     auto* self = WEBKIT_MEDIA_STREAM_SRC(element);
 
     if (transition == GST_STATE_CHANGE_PAUSED_TO_READY) {
+        GST_OBJECT_LOCK (self);
         auto collection = self->stream_collection.get();
-
         if (collection) {
             for (guint i = 0; i < gst_stream_collection_get_size(collection); i++) {
-                auto stream = (WebKitMediaStreamStream*)gst_stream_collection_get_stream(collection, i);
+                auto stream = WEBKIT_MEDIA_STREAM(gst_stream_collection_get_stream(collection, i));
                 auto track = stream->track.get();
-
                 if (track)
                     track->removeObserver(*self->observer);
             }
         }
+        GST_OBJECT_UNLOCK (self);
+
         GStreamerVideoDecoderFactory::removeObserver(*self->observer);
     }
 
@@ -451,17 +453,18 @@ webkit_media_stream_src_setup_encoded_src(WebKitMediaStreamSrc* self,
 static void
 webkit_media_stream_src_post_stream_collection(WebKitMediaStreamSrc* self, MediaStreamPrivate* stream)
 {
+    GST_OBJECT_LOCK (self);
     self->stream_collection = adoptGRef(gst_stream_collection_new(stream->id().utf8().data()));
-
     for (auto& track : stream->tracks()) {
-        auto gststream = webkit_media_stream_stream_new(stream, track.get());
+        auto gststream = webkit_media_stream_new(stream, track.get());
 
         if (!gststream)
             continue;
 
-        self->observer->addStream(track->id(), (WebKitMediaStreamStream*)gststream);
+        self->observer->addStream(track->id(), WEBKIT_MEDIA_STREAM(gststream));
         gst_stream_collection_add_stream(self->stream_collection.get(), gststream);
     }
+    GST_OBJECT_UNLOCK (self);
 
     gst_element_post_message(GST_ELEMENT(self),
         gst_message_new_stream_collection(GST_OBJECT(self), self->stream_collection.get()));
