@@ -38,7 +38,7 @@ public:
     GStreamerAudioCapturer();
     void setupPipeline() final;
     bool setSampleRate(int sampleRate);
-    virtual const gchar* Name() { return "Audio"; }
+    virtual const gchar* name() { return "Audio"; }
 };
 
 } // namespace WebCore
