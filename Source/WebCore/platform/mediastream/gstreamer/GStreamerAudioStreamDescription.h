@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include "config.h"
-
 #if USE(LIBWEBRTC)
 
 #include "AudioStreamDescription.h"
@@ -32,25 +30,26 @@ class GStreamerAudioStreamDescription final: public AudioStreamDescription {
 public:
     GStreamerAudioStreamDescription(GstAudioInfo info)
         : m_info(info)
-        , m_caps(adoptGRef(gst_audio_info_to_caps (&m_info)))
+        , m_caps(adoptGRef(gst_audio_info_to_caps(&m_info)))
     {
     }
 
     GStreamerAudioStreamDescription(GstAudioInfo *info)
         : m_info(*info)
-        , m_caps(adoptGRef(gst_audio_info_to_caps (&m_info)))
+        , m_caps(adoptGRef(gst_audio_info_to_caps(&m_info)))
     {
     }
 
     GStreamerAudioStreamDescription()
     {
-        gst_audio_info_init (&m_info);
+        gst_audio_info_init(&m_info);
     }
 
-    WEBCORE_EXPORT ~GStreamerAudioStreamDescription() {};
+    WEBCORE_EXPORT ~GStreamerAudioStreamDescription() { };
 
-    const PlatformDescription& platformDescription() const {
-        m_platformDescription = { PlatformDescription::GStreamerAudioStreamDescription, (AudioStreamBasicDescription*) &m_info};
+    const PlatformDescription& platformDescription() const
+    {
+        m_platformDescription = { PlatformDescription::GStreamerAudioStreamDescription, (AudioStreamBasicDescription*) &m_info };
 
         return m_platformDescription;
     }
