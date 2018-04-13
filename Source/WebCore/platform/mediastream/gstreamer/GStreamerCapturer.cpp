@@ -29,7 +29,6 @@
 #include "GStreamerCapturer.h"
 
 #include "GStreamerUtilities.h"
-#include "GStreamerUtils.h"
 
 #include <gst/app/gstappsink.h>
 #include "webrtc/api/mediastreaminterface.h"
@@ -98,7 +97,7 @@ GstCaps * GStreamerCapturer::getCaps()
 
 void GStreamerCapturer::setupPipeline()
 {
-    GStreamer::connectSimpleBusMessageCallback(m_pipeline.get());
+    connectSimpleBusMessageCallback(m_pipeline.get());
 }
 
 GstElement * GStreamerCapturer::makeElement(const gchar *factory_name) {
