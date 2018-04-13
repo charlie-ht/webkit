@@ -302,7 +302,6 @@ webkit_media_stream_src_change_state(GstElement* element, GstStateChange transit
     }
 
     return res;
-
 }
 
 static void
