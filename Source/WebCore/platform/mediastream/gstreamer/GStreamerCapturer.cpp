@@ -31,9 +31,8 @@
 #include "GStreamerUtilities.h"
 
 #include <gst/app/gstappsink.h>
-#include "webrtc/api/mediastreaminterface.h"
-
 #include <mutex>
+#include <webrtc/api/mediastreaminterface.h>
 
 GST_DEBUG_CATEGORY(webkit_capturer_debug);
 #define GST_CAT_DEFAULT webkit_capturer_debug
@@ -50,8 +49,7 @@ static void initializeGStreamerAndDebug()
     });
 }
 
-GStreamerCapturer::GStreamerCapturer(GStreamerCaptureDevice device,
-    GRefPtr<GstCaps> caps)
+GStreamerCapturer::GStreamerCapturer(GStreamerCaptureDevice device, GRefPtr<GstCaps> caps)
     : m_device(adoptGRef(device.Device()))
     , m_caps(caps)
     , m_sourceFactory(nullptr)
@@ -59,35 +57,35 @@ GStreamerCapturer::GStreamerCapturer(GStreamerCaptureDevice device,
     initializeGStreamerAndDebug();
 }
 
-GStreamerCapturer::GStreamerCapturer(const gchar *source_factory, GRefPtr<GstCaps> caps)
+GStreamerCapturer::GStreamerCapturer(const char* sourceFactory, GRefPtr<GstCaps> caps)
     : m_device(nullptr)
     , m_caps(caps)
-    , m_sourceFactory(source_factory)
+    , m_sourceFactory(sourceFactory)
 {
     initializeGStreamerAndDebug();
 }
 
-GstElement * GStreamerCapturer::createSource()
+GstElement* GStreamerCapturer::createSource()
 {
     if (m_sourceFactory) {
         m_src = makeElement(m_sourceFactory);
-        g_assert (m_src);
+        g_assert(m_src);
 
         return m_src.get();
     }
 
-    gchar* name = g_strdup_printf("%s_%p", Name(), this);
-    m_src = gst_device_create_element(m_device.get(), name);
-    g_free (name);
+    char* sourceName = g_strdup_printf("%s_%p", name(), this);
+    m_src = gst_device_create_element(m_device.get(), sourceName);
+    g_free(sourceName);
 
     return m_src.get();
 }
 
-GstCaps * GStreamerCapturer::getCaps()
+GstCaps* GStreamerCapturer::getCaps()
 {
     if (m_sourceFactory) {
-        auto elem = adoptGRef((GstElement*) gst_object_ref_sink (makeElement(m_sourceFactory)));
-        auto pad = adoptGRef(gst_element_get_static_pad (elem.get(), "src"));
+        auto element = adoptGRef((GstElement*) gst_object_ref_sink(makeElement(m_sourceFactory)));
+        auto pad = adoptGRef(gst_element_get_static_pad(element.get(), "src"));
 
         return gst_pad_query_caps (pad.get(), nullptr);
     }
@@ -100,13 +98,14 @@ void GStreamerCapturer::setupPipeline()
     connectSimpleBusMessageCallback(m_pipeline.get());
 }
 
-GstElement * GStreamerCapturer::makeElement(const gchar *factory_name) {
-    auto elem = gst_element_factory_make(factory_name, nullptr);
-    gchar* name = g_strdup_printf("%s_capturer_%s_%p", Name(), GST_OBJECT_NAME (elem), this);
-    gst_object_set_name (GST_OBJECT (elem), name);
-    g_free(name);
+GstElement* GStreamerCapturer::makeElement(const char* factoryName)
+{
+    auto element = gst_element_factory_make(factoryName, nullptr);
+    char* capturerName = g_strdup_printf("%s_capturer_%s_%p", name(), GST_OBJECT_NAME(element), this);
+    gst_object_set_name(GST_OBJECT(element), capturerName);
+    g_free(capturerName);
 
-    return elem;
+    return element;
 }
 
 void GStreamerCapturer::addSink(GstElement *sink)
@@ -115,52 +114,50 @@ void GStreamerCapturer::addSink(GstElement *sink)
     g_return_if_fail(m_tee.get());
 
     auto queue = makeElement("queue");
-    gst_bin_add_many (GST_BIN (m_pipeline.get()), queue, sink, nullptr);
-    gst_element_sync_state_with_parent (queue);
-    gst_element_sync_state_with_parent (sink);
-    g_assert (gst_element_link_pads (m_tee.get(), "src_%u", queue, "sink"));
-    g_assert (gst_element_link (queue, sink));
+    gst_bin_add_many(GST_BIN(m_pipeline.get()), queue, sink, nullptr);
+    gst_element_sync_state_with_parent(queue);
+    gst_element_sync_state_with_parent(sink);
+    g_assert(gst_element_link_pads(m_tee.get(), "src_%u", queue, "sink"));
+    g_assert(gst_element_link(queue, sink));
 
     if (sink == m_sink.get()) {
-        GST_INFO_OBJECT (m_pipeline.get(), "Setting queue as leaky upstream",
+        GST_INFO_OBJECT(m_pipeline.get(), "Setting queue as leaky upstream",
             " so that the player can set the sink as to PAUSED without "
             " setting the whole capturer to PAUSED");
-        g_object_set (queue, "leaky", 2 /* upstream */, nullptr);
+        g_object_set(queue, "leaky", 2 /* upstream */, nullptr);
     }
 
     GST_INFO_OBJECT(m_pipeline.get(), "Adding sink: %" GST_PTR_FORMAT, sink);
-    // gst_element_get_state (m_pipeline.get(), NULL, NULL, GST_CLOCK_TIME_NONE);
-    gchar* dump_name;
-    dump_name = g_strdup_printf("%s_sink_%s_added", GST_OBJECT_NAME(m_pipeline.get()),
-        GST_OBJECT_NAME (sink));
-    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN (m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL,
-        dump_name);
-    g_free (dump_name);
+
+    char* dumpName;
+    dumpName = g_strdup_printf("%s_sink_%s_added", GST_OBJECT_NAME(m_pipeline.get()), GST_OBJECT_NAME(sink));
+    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, dumpName);
+    g_free(dumpName);
 }
 
-void GStreamerCapturer::play() {
+void GStreamerCapturer::play()
+{
     g_assert(m_pipeline.get());
 
-    GST_ERROR_OBJECT ((gpointer) m_pipeline.get(), "Going to PLAYING!");
+    GST_ERROR_OBJECT((gpointer) m_pipeline.get(), "Going to PLAYING!");
 
-    gst_element_set_state (m_pipeline.get(), GST_STATE_PLAYING);
+    gst_element_set_state(m_pipeline.get(), GST_STATE_PLAYING);
     GstState state;
-    // gst_element_get_state (m_pipeline.get(), &state, NULL, GST_CLOCK_TIME_NONE);
-    GST_ERROR_OBJECT ((gpointer) m_pipeline.get(), "STATE: %s",
-        gst_element_state_get_name (state));
-    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()),
-        GST_DEBUG_GRAPH_SHOW_ALL, gst_element_state_get_name (state));
+    GST_ERROR_OBJECT((gpointer) m_pipeline.get(), "STATE: %s", gst_element_state_get_name(state));
+    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, gst_element_state_get_name(state));
 }
 
-void GStreamerCapturer::stop() {
+void GStreamerCapturer::stop()
+{
     GRefPtr<GstBus> bus = adoptGRef(gst_pipeline_get_bus(GST_PIPELINE(m_pipeline.get())));
     gst_bus_set_sync_handler(bus.get(), nullptr, nullptr, nullptr);
     g_assert(m_pipeline.get());
 
-    GST_INFO_OBJECT ((gpointer) m_pipeline.get(), "Tearing down!");
+    GST_INFO_OBJECT((gpointer) m_pipeline.get(), "Tearing down!");
 
-    gst_element_set_state (m_pipeline.get(), GST_STATE_NULL);
+    gst_element_set_state(m_pipeline.get(), GST_STATE_NULL);
 }
 
 } // namespace WebCore
-#endif //ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+
+#endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
