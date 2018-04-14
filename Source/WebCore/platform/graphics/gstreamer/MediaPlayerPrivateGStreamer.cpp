@@ -23,8 +23,8 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include "MediaPlayerPrivateGStreamer.h"
 #include "config.h"
+#include "MediaPlayerPrivateGStreamer.h"
 
 #if ENABLE(VIDEO) && USE(GSTREAMER)
 
@@ -639,9 +639,9 @@ bool MediaPlayerPrivateGStreamer::seeking() const
 
 #if GST_CHECK_VERSION(1, 10, 0)
 
-#define CLEAR_TRACKS(tracks, method) \
-    for (auto& track : tracks.values())\
-        method(*track);\
+#define CLEAR_TRACKS(tracks, method)    \
+    for (auto& track : tracks.values()) \
+        method(*track);                 \
     tracks.clear();
 
 void MediaPlayerPrivateGStreamer::clearTracks()
@@ -655,15 +655,15 @@ void MediaPlayerPrivateGStreamer::clearTracks()
 #undef CLEAR_TRACKS
 
 #if ENABLE(VIDEO_TRACK)
-#define CREATE_TRACK(type, Type) \
-    if (!useMediaSource) { \
-         RefPtr<Type##TrackPrivateGStreamer> track = Type##TrackPrivateGStreamer::create(createWeakPtr(), i, stream);\
-         m_##type## Tracks.add(track->id(), track);\
-         m_player->add##Type##Track(*track);\
+#define CREATE_TRACK(type, Type)                                                                                     \
+    if (!useMediaSource) {                                                                                           \
+        RefPtr<Type##TrackPrivateGStreamer> track = Type##TrackPrivateGStreamer::create(createWeakPtr(), i, stream); \
+        m_##type##Tracks.add(track->id(), track);                                                                    \
+        m_player->add##Type##Track(*track);                                                                          \
     }
 #else
 #define CREATE_TRACK(type, _id, tracks, method, stream)
-    m_has##Type## = true;
+m_has##Type## = true;
 #endif
 
 void MediaPlayerPrivateGStreamer::updateTracks()
@@ -688,9 +688,9 @@ void MediaPlayerPrivateGStreamer::updateTracks()
             CREATE_TRACK(video, Video)
         } else if (type & GST_STREAM_TYPE_TEXT && !useMediaSource) {
 #if ENABLE(VIDEO_TRACK)
-                RefPtr<InbandTextTrackPrivateGStreamer> track = InbandTextTrackPrivateGStreamer::create(i, stream);
-                m_textTracks.add(streamId, track);
-                m_player->addTextTrack(*track);
+            RefPtr<InbandTextTrackPrivateGStreamer> track = InbandTextTrackPrivateGStreamer::create(i, stream);
+            m_textTracks.add(streamId, track);
+            m_player->addTextTrack(*track);
 #endif
         } else
             GST_WARNING("Unknown track type found for stream %s", streamId.utf8().data());
@@ -1733,6 +1733,30 @@ void MediaPlayerPrivateGStreamer::sourceSetup(GstElement* sourceElement)
     GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, "source-setup");
 }
 
+#if GST_CHECK_VERSION(1, 10, 0) && ENABLE(MEDIA_STREAM)
+FloatSize MediaPlayerPrivateGStreamer::naturalSize() const
+{
+    GstStream* stream = nullptr;
+
+    if (!m_currentVideoStreamId.isEmpty()) {
+        stream = m_videoTracks.get(m_currentVideoStreamId)->stream();
+    } else if (m_videoTracks.size() == 1) {
+        // FIXME - fast/mediastream/MediaStream-video-element.html checkes
+        // video size before a track is selected. This should not be required.
+        auto it = m_videoTracks.begin();
+        stream = it->value->stream();
+    }
+
+    if (WEBKIT_IS_MEDIA_STREAM(stream)) {
+        FloatSize size = webkit_media_stream_get_size(WEBKIT_MEDIA_STREAM(stream));
+        if (!size.isEmpty())
+            return size;
+    }
+
+    return MediaPlayerPrivateGStreamerBase::naturalSize();
+}
+#endif // GST_CHECK_VERSION(1, 10, 0) && ENABLE(MEDIA_STREAM)
+
 bool MediaPlayerPrivateGStreamer::hasSingleSecurityOrigin() const
 {
     if (!m_source)
@@ -1961,7 +1985,7 @@ void MediaPlayerPrivateGStreamer::updateStates()
 bool MediaPlayerPrivateGStreamer::handleSyncMessage(GstMessage* message)
 {
 #if GST_CHECK_VERSION(1, 10, 0)
-    if (GST_MESSAGE_TYPE (message) == GST_MESSAGE_STREAM_COLLECTION) {
+    if (GST_MESSAGE_TYPE(message) == GST_MESSAGE_STREAM_COLLECTION) {
         GRefPtr<GstStreamCollection> collection;
         gst_message_parse_stream_collection(message, &collection.outPtr());
 

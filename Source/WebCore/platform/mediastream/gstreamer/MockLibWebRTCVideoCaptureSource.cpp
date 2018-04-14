@@ -30,16 +30,19 @@
 #include <gst/app/gstappsrc.h>
 
 #include "MediaSampleGStreamer.h"
-#include "MockRealtimeVideoSource.h"
 #include "MockLibWebRTCVideoCaptureSource.h"
+#include "MockRealtimeVideoSource.h"
 
 namespace WebCore {
 
 class MockLibwebrtcRealtimeVideoSource : public MockRealtimeVideoSource {
 public:
     MockLibwebrtcRealtimeVideoSource(const String& deviceID, const String& name)
-        : MockRealtimeVideoSource(deviceID, name) {}
-    void updateSampleBuffer() {
+        : MockRealtimeVideoSource(deviceID, name)
+    {
+    }
+    void updateSampleBuffer()
+    {
         int fps_n, fps_d;
         auto imageBuffer = this->imageBuffer();
 
@@ -49,15 +52,17 @@ public:
         gst_util_double_to_fraction(frameRate(), &fps_n, &fps_d);
         auto data = imageBuffer->toBGRAData();
         auto size = data.size();
-        GST_ERROR ("Framerate is %f", frameRate());
+        GST_ERROR("Framerate is %f", frameRate());
         auto image_size = imageBuffer->internalSize();
-        auto gstsample = gst_sample_new (gst_buffer_new_wrapped((guint8*) data.releaseBuffer().get(),
-            size), adoptGRef(gst_caps_new_simple ("video/x-raw",
-                "format", G_TYPE_STRING, "BGRA",
-                "width", G_TYPE_INT, image_size.width(),
-                "height", G_TYPE_INT, image_size.height(),
-                "framerate", GST_TYPE_FRACTION, fps_n, fps_d,
-                nullptr)).get(),
+        auto gstsample = gst_sample_new(gst_buffer_new_wrapped((guint8*)data.releaseBuffer().get(),
+                                            size),
+            adoptGRef(gst_caps_new_simple("video/x-raw",
+                          "format", G_TYPE_STRING, "BGRA",
+                          "width", G_TYPE_INT, image_size.width(),
+                          "height", G_TYPE_INT, image_size.height(),
+                          "framerate", GST_TYPE_FRACTION, fps_n, fps_d,
+                          nullptr))
+                .get(),
             nullptr, nullptr);
 
         auto sample = MediaSampleGStreamer::create(WTFMove(gstsample),
@@ -66,14 +71,13 @@ public:
     }
 };
 
-
 CaptureSourceOrError MockRealtimeVideoSource::create(const String& deviceID,
     const String& name, const MediaConstraints* constraints)
 {
     auto source = adoptRef(*new MockLibWebRTCVideoCaptureSource(deviceID, name));
 
     if (constraints && source->applyConstraints(*constraints))
-        return { };
+        return {};
 
     return CaptureSourceOrError(WTFMove(source));
 }
@@ -83,7 +87,6 @@ void MockLibWebRTCVideoCaptureSource::startProducingData()
     LibWebRTCVideoCaptureSource::startProducingData();
     m_mockedSource.start();
 }
-
 
 void MockLibWebRTCVideoCaptureSource::stopProducingData()
 {
@@ -100,11 +103,10 @@ void MockLibWebRTCVideoCaptureSource::videoSampleAvailable(MediaSample& sample)
         auto gstsample = static_cast<MediaSampleGStreamer*>(&sample)->platformSample().sample.gstSample;
         gst_app_src_push_sample(GST_APP_SRC(src), gstsample);
     }
-    GST_ERROR ("Sample avalaible!");
 }
 
 MockLibWebRTCVideoCaptureSource::MockLibWebRTCVideoCaptureSource(const String& deviceID,
-        const String& name)
+    const String& name)
     : LibWebRTCVideoCaptureSource(deviceID, name, "appsrc")
     , m_mockedSource(*new MockLibwebrtcRealtimeVideoSource(deviceID, name))
 {
@@ -124,7 +126,6 @@ void MockLibWebRTCVideoCaptureSource::captureFailed()
 
     RealtimeMediaSource::captureFailed();
 }
-
 
 } // namespace WebCore
 

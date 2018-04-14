@@ -76,7 +76,7 @@ public:
     bool hasVideo() const override { return m_hasVideo; }
     bool hasAudio() const override { return m_hasAudio; }
 
-    void load(const String &url) override;
+    void load(const String& url) override;
 #if ENABLE(MEDIA_SOURCE)
     void load(const String& url, MediaSourcePrivateClient*) override;
 #endif
@@ -121,7 +121,7 @@ public:
     virtual void sourceSetup(GstElement*);
 
     GstElement* audioSink() const override;
-    virtual void configurePlaySink() { }
+    virtual void configurePlaySink() {}
 
     void simulateAudioInterruption() override;
 
@@ -131,7 +131,10 @@ public:
     AudioSourceProvider* audioSourceProvider() override;
 #endif
 
-    bool isLiveStream() const override { return m_isStreaming; }
+    bool isLiveStream() const override
+    {
+        return m_isStreaming;
+    }
 
     void enableTrack(TrackPrivateBaseGStreamer::TrackType, unsigned index);
 
@@ -181,11 +184,12 @@ private:
     static void downloadBufferFileCreatedCallback(MediaPlayerPrivateGStreamer*);
 
     void setPlaybinURL(const URL& urlString);
-    void loadFull(const String &url, bool force_playbin3);
+    void loadFull(const String& url, bool force_playbin3);
 
 #if GST_CHECK_VERSION(1, 10, 0)
     void updateTracks();
     void clearTracks();
+    FloatSize naturalSize() const override;
 #endif
 
 protected:
@@ -252,7 +256,7 @@ private:
     float m_lastPlaybackRate;
     Timer m_fillTimer;
     MediaTime m_maxTimeLoaded;
-    bool m_loadingStalled { false };
+    bool m_loadingStalled{ false };
     MediaPlayer::Preload m_preload;
     bool m_delayingLoad;
     mutable MediaTime m_maxTimeLoadedAtLastDidLoadingProgress;
@@ -289,7 +293,10 @@ private:
     RefPtr<MediaStreamPrivate> m_streamPrivate;
 #endif
 
-    virtual bool isMediaSource() const { return false; }
+    virtual bool isMediaSource() const
+    {
+        return false;
+    }
 };
 }
 

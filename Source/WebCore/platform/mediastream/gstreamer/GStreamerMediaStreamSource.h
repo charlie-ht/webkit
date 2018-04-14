@@ -30,20 +30,28 @@
 
 #if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
 
-#include "MediaStreamTrackPrivate.h"
 #include "MediaStreamPrivate.h"
+#include "MediaStreamTrackPrivate.h"
 
 #include <gst/gst.h>
 
 namespace WebCore {
 
-typedef struct _WebKitMediaStreamSrc        WebKitMediaStreamSrc;
+typedef struct _WebKitMediaStreamSrc WebKitMediaStreamSrc;
 
-#define WEBKIT_MEDIA_STREAM_SRC(o)              (G_TYPE_CHECK_INSTANCE_CAST  ((o), WEBKIT_TYPE_MEDIA_STREAM_SRC, WebKitMediaStreamSrc))
-#define WEBKIT_IS_MEDIA_STREAM_SRC(o)           (G_TYPE_CHECK_INSTANCE_TYPE  ((o), WEBKIT_TYPE_MEDIA_STREAM_SRC))
-#define WEBKIT_TYPE_MEDIA_STREAM_SRC            (webkit_media_stream_src_get_type ())
-GType              webkit_media_stream_src_get_type (void) G_GNUC_CONST;
-gboolean           webkit_media_stream_src_set_stream(WebKitMediaStreamSrc * src, MediaStreamPrivate * stream);
+#define WEBKIT_MEDIA_STREAM_SRC(o) (G_TYPE_CHECK_INSTANCE_CAST((o), WEBKIT_TYPE_MEDIA_STREAM_SRC, WebKitMediaStreamSrc))
+#define WEBKIT_IS_MEDIA_STREAM_SRC(o) (G_TYPE_CHECK_INSTANCE_TYPE((o), WEBKIT_TYPE_MEDIA_STREAM_SRC))
+#define WEBKIT_TYPE_MEDIA_STREAM_SRC (webkit_media_stream_src_get_type())
+GType webkit_media_stream_src_get_type(void) G_GNUC_CONST;
+gboolean webkit_media_stream_src_set_stream(WebKitMediaStreamSrc* src, MediaStreamPrivate* stream);
+
+#define WEBKIT_TYPE_MEDIA_STREAM (webkit_media_stream_get_type())
+G_DECLARE_FINAL_TYPE(WebKitMediaStream, webkit_media_stream, WEBKIT, MEDIA_STREAM, GstStream);
+FloatSize webkit_media_stream_get_size(WebKitMediaStream* self);
+
+#define WEBKIT_TYPE_MEDIA_STREAM (webkit_media_stream_get_type())
+G_DECLARE_FINAL_TYPE(WebKitMediaStream, webkit_media_stream, WEBKIT, MEDIA_STREAM, GstStream);
+FloatSize webkit_media_stream_get_size(WebKitMediaStream* self);
 
 } // WebCore
 
