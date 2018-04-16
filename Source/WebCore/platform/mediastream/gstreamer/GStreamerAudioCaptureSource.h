@@ -28,9 +28,9 @@
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
 
-#include "RealtimeMediaSource.h"
 #include "GStreamerAudioCapturer.h"
 #include "GStreamerCaptureDevice.h"
+#include "RealtimeMediaSource.h"
 
 #include "webrtc/api/mediastreaminterface.h"
 
@@ -59,7 +59,7 @@ protected:
     mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
 
 private:
-    GStreamerAudioCaptureSource(GStreamerCaptureDevice device);
+    GStreamerAudioCaptureSource(GStreamerCaptureDevice);
 
     friend class GStreamerAudioCaptureSourceFactory;
 
@@ -73,7 +73,7 @@ private:
     std::unique_ptr<GStreamerAudioCapturer> m_capturer;
 
     static GstFlowReturn newSampleCallback(GstElement*, GStreamerAudioCaptureSource*);
-    void triggerSampleAvailable(GstSample* sample);
+    void triggerSampleAvailable(GstSample*);
 };
 
 } // namespace WebCore

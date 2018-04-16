@@ -32,19 +32,17 @@
 #include "config.h"
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
-
 #include "RealtimeMediaSourceCenterLibWebRTC.h"
 
-#include "gstreamer/GStreamerCaptureDeviceManager.h"
-#include "gstreamer/GStreamerCaptureDevice.h"
-#include "gstreamer/GStreamerAudioCaptureSource.h"
-#include "gstreamer/GStreamerVideoCaptureSource.h"
+#include "GStreamerAudioCaptureSource.h"
+#include "GStreamerCaptureDevice.h"
+#include "GStreamerCaptureDeviceManager.h"
+#include "GStreamerVideoCaptureSource.h"
 #include <wtf/MainThread.h>
 
 namespace WebCore {
 
-class GStreamerVideoCaptureSourceFactory final : public RealtimeMediaSource::VideoCaptureFactory
-{
+class GStreamerVideoCaptureSourceFactory final : public RealtimeMediaSource::VideoCaptureFactory {
 public:
     CaptureSourceOrError createVideoCaptureSource(const CaptureDevice& device, const MediaConstraints* constraints) final
     {

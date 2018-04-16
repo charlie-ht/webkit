@@ -25,21 +25,21 @@
 
 #pragma once
 
-#include "config.h"
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 
-#include "gstreamer/GStreamerCapturer.h"
+#include "GStreamerCapturer.h"
 
 namespace WebCore {
 
 class GStreamerAudioCapturer: public GStreamerCapturer {
 public:
-    GStreamerAudioCapturer(GStreamerCaptureDevice device);
+    GStreamerAudioCapturer(GStreamerCaptureDevice);
     GStreamerAudioCapturer();
     void setupPipeline() final;
-    bool setSampleRate(int sampleRate);
+    bool setSampleRate(int);
     virtual const gchar* name() { return "Audio"; }
 };
 
 } // namespace WebCore
-#endif //ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+
+#endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)

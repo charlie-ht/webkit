@@ -28,20 +28,10 @@
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
 
-#include "CaptureDevice.h"
+#include "GStreamerVideoCapturer.h"
 #include "RealtimeMediaSource.h"
-#include <LibWebRTCMacros.h>
-#include <wtf/HashMap.h>
-#include <wtf/Lock.h>
-#include <wtf/RefCounted.h>
-#include <wtf/RefPtr.h>
-#include <wtf/text/WTFString.h>
 
-#include "webrtc/api/mediastreaminterface.h"
-#include "webrtc/media/base/videocapturer.h"
-#include "webrtc/api/videosinkinterface.h"
-
-#include "gstreamer/GStreamerVideoCapturer.h"
+#include <webrtc/api/mediastreaminterface.h>
 
 namespace WTF {
 class MediaTime;
@@ -70,7 +60,7 @@ protected:
     std::unique_ptr<GStreamerVideoCapturer> m_capturer;
 
 private:
-    GStreamerVideoCaptureSource(GStreamerCaptureDevice device);
+    GStreamerVideoCaptureSource(GStreamerCaptureDevice);
 
     friend class GStreamerVideoCaptureSourceFactory;
 
