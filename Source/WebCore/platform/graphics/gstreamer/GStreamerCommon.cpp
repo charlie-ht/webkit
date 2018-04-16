@@ -325,18 +325,18 @@ static void simpleBusMessageCallback(GstBus*, GstMessage* message, GstBin* pipel
 {
     switch (GST_MESSAGE_TYPE(message)) {
     case GST_MESSAGE_ERROR:
-        GST_ERROR_OBJECT (pipeline, "Got message: %" GST_PTR_FORMAT, message);
+        GST_ERROR_OBJECT(pipeline, "Got message: %" GST_PTR_FORMAT, message);
 
-        gchar* dump_name;
-        dump_name = g_strdup_printf("%s_error", GST_OBJECT_NAME(pipeline));
+        gchar* dumpName;
+        dumpName = g_strdup_printf("%s_error", GST_OBJECT_NAME(pipeline));
         GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(pipeline, GST_DEBUG_GRAPH_SHOW_ALL,
-            dump_name);
-        g_free (dump_name);
+            dumpName);
+        g_free(dumpName);
         break;
     case GST_MESSAGE_STATE_CHANGED:
         if (GST_MESSAGE_SRC(message) == GST_OBJECT(pipeline)) {
             GstState oldstate, newstate, pending;
-            gchar* dump_name;
+            gchar* dumpName;
 
             gst_message_parse_state_changed(message, &oldstate, &newstate,
                 &pending);
@@ -346,15 +346,15 @@ static void simpleBusMessageCallback(GstBus*, GstMessage* message, GstBin* pipel
                 gst_element_state_get_name(newstate),
                 gst_element_state_get_name(pending));
 
-            dump_name = g_strdup_printf("%s_%s_%s",
+            dumpName = g_strdup_printf("%s_%s_%s",
                 GST_OBJECT_NAME(pipeline),
                 gst_element_state_get_name(oldstate),
                 gst_element_state_get_name(newstate));
 
             GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(pipeline),
-                GST_DEBUG_GRAPH_SHOW_ALL, dump_name);
+                GST_DEBUG_GRAPH_SHOW_ALL, dumpName);
 
-            g_free(dump_name);
+            g_free(dumpName);
         }
         break;
     default:

@@ -26,10 +26,11 @@
 #include "config.h"
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
-
 #include "GStreamerAudioCapturer.h"
+
 #include "GStreamerUtilities.h"
 #include "LibWebRTCAudioFormat.h"
+
 #include <gst/app/gstappsink.h>
 
 namespace WebCore {
@@ -50,13 +51,13 @@ GStreamerAudioCapturer::GStreamerAudioCapturer()
 
 void GStreamerAudioCapturer::setupPipeline()
 {
-    auto name = g_strdup_printf ("AudioCapturer_%p", this);
+    auto name = g_strdup_printf("AudioCapturer_%p", this);
     m_pipeline = makeElement("pipeline");
-    g_free (name);
+    g_free(name);
 
     GRefPtr<GstElement> source = createSource();
     GRefPtr<GstElement> converter = gst_parse_bin_from_description("audioconvert ! audioresample",
-        TRUE, NULL); // FIXME Handle errors.
+        TRUE, nullptr); // FIXME Handle errors.
     m_capsfilter = makeElement("capsfilter");
     m_tee = makeElement("tee");
     m_sink = makeElement("appsink");
@@ -65,7 +66,7 @@ void GStreamerAudioCapturer::setupPipeline()
     g_object_set(m_capsfilter.get(), "caps", m_caps.get(), nullptr);
 
     gst_bin_add_many(GST_BIN(m_pipeline.get()), source.get(), converter.get(),
-        m_capsfilter.get(), m_tee.get(), NULL);
+        m_capsfilter.get(), m_tee.get(), nullptr);
     gst_element_link_many(source.get(), converter.get(), m_capsfilter.get(), m_tee.get(), NULL);
     addSink(m_sink.get());
 
@@ -74,7 +75,7 @@ void GStreamerAudioCapturer::setupPipeline()
 
 bool GStreamerAudioCapturer::setSampleRate(int sampleRate)
 {
-    GST_INFO_OBJECT (m_pipeline.get(), "Setting SampleRate %d", sampleRate);
+    GST_INFO_OBJECT(m_pipeline.get(), "Setting SampleRate %d", sampleRate);
 
     m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", "rate",
         G_TYPE_INT, sampleRate, nullptr));
@@ -87,5 +88,7 @@ bool GStreamerAudioCapturer::setSampleRate(int sampleRate)
 
     return false;
 }
+
 } // namespace WebCore
-#endif //ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+
+#endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)

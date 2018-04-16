@@ -40,14 +40,14 @@ namespace WebCore {
 
 class GStreamerCapturer {
 public:
-    GStreamerCapturer(GStreamerCaptureDevice device, GRefPtr<GstCaps> caps);
-    GStreamerCapturer(const char* source_factory, GRefPtr<GstCaps> caps);
+    GStreamerCapturer(GStreamerCaptureDevice, GRefPtr<GstCaps>);
+    GStreamerCapturer(const char* sourceFactory, GRefPtr<GstCaps>);
     virtual void setupPipeline();
     virtual void play();
     virtual void stop();
     GstCaps * getCaps();
     void addSink(GstElement *sink);
-    GstElement * makeElement(const char* factory_name);
+    GstElement * makeElement(const char* factoryName);
     GstElement * createSource();
     virtual const char* name() = 0;
 
@@ -62,5 +62,5 @@ public:
 };
 
 } // namespace WebCore
-#endif //ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 

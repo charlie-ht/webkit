@@ -21,9 +21,10 @@
 
 #if USE(LIBWEBRTC)
 
-#include <gst/audio/audio.h>
-#include "PlatformAudioData.h"
 #include "GRefPtrGStreamer.h"
+#include "PlatformAudioData.h"
+
+#include <gst/audio/audio.h>
 
 namespace WebCore {
 class GStreamerAudioData : public PlatformAudioData {

@@ -25,23 +25,20 @@
  */
 
 #include "config.h"
-#include "GStreamerVideoCaptureSource.h"
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#include "GStreamerVideoCaptureSource.h"
 
+#include "GStreamerCaptureDeviceManager.h"
 #include "MediaSampleGStreamer.h"
-#include "gstreamer/GStreamerCaptureDeviceManager.h"
+
 #include <gst/app/gstappsink.h>
-
-#include "LibWebRTCProviderGlib.h"
-#include "RealtimeMediaSourceCenterLibWebRTC.h"
-
-#include "webrtc/api/mediastreaminterface.h"
-#include "webrtc/api/peerconnectioninterface.h"
-#include "webrtc/media/base/videocommon.h"
-#include "webrtc/media/engine/webrtcvideocapturer.h"
-#include "webrtc/media/engine/webrtcvideocapturerfactory.h"
-#include "webrtc/modules/video_capture/video_capture_defines.h"
+#include <webrtc/api/mediastreaminterface.h>
+#include <webrtc/api/peerconnectioninterface.h>
+#include <webrtc/media/base/videocommon.h>
+#include <webrtc/media/engine/webrtcvideocapturer.h>
+#include <webrtc/media/engine/webrtcvideocapturerfactory.h>
+#include <webrtc/modules/video_capture/video_capture_defines.h>
 
 namespace WebCore {
 
@@ -65,7 +62,7 @@ CaptureSourceOrError GStreamerVideoCaptureSource::create(const String& deviceID,
 {
     auto device = GStreamerVideoCaptureDeviceManager::singleton().gstreamerDeviceWithUID(deviceID);
     if (!device)
-        return {};
+        return { };
 
     auto source = adoptRef(*new GStreamerVideoCaptureSource(
         static_cast<GStreamerCaptureDevice>(device.value())));
@@ -130,7 +127,7 @@ GstFlowReturn GStreamerVideoCaptureSource::newSampleCallback(GstElement* sink, G
 
     // FIXME - Check how presentationSize is supposed to be used here.
     callOnMainThread([protectedThis = makeRef(*source), mediaSample = WTFMove(mediaSample)] {
-            protectedThis->videoSampleAvailable(mediaSample.get());
+        protectedThis->videoSampleAvailable(mediaSample.get());
     });
 
     return GST_FLOW_OK;
@@ -140,7 +137,7 @@ void GStreamerVideoCaptureSource::stopProducingData()
 {
     m_capturer->stop();
 
-    GST_INFO ("Reset height and width after stopping source");
+    GST_INFO("Reset height and width after stopping source");
     setHeight(0);
     setWidth(0);
 }
@@ -162,32 +159,25 @@ const RealtimeMediaSourceCapabilities& GStreamerVideoCaptureSource::capabilities
             if (!gst_structure_has_name(str, "video/x-raw"))
                 continue;
 
-            int32_t tmpMinWidth, tmpMinHeight, tmpMinFPS_n, tmpMinFPS_d, tmpMinFramerate;
-            int32_t tmpMaxWidth, tmpMaxHeight, tmpMaxFPS_n, tmpMaxFPS_d, tmpMaxFramerate;
+            int32_t tmpMinWidth, tmpMinHeight, tmpMinFPSNumerator, tmpMinFPSDenominator, tmpMinFramerate;
+            int32_t tmpMaxWidth, tmpMaxHeight, tmpMaxFPSNumerator, tmpMaxFPSDenominator, tmpMaxFramerate;
 
-            if (!gst_structure_get(str,
-                    "width", GST_TYPE_INT_RANGE, &tmpMinWidth, &tmpMaxWidth,
-                    "height", GST_TYPE_INT_RANGE, &tmpMinHeight, &tmpMaxHeight, nullptr)) {
+            if (!gst_structure_get(str, "width", GST_TYPE_INT_RANGE, &tmpMinWidth, &tmpMaxWidth, "height", GST_TYPE_INT_RANGE, &tmpMinHeight, &tmpMaxHeight, nullptr)) {
 
-                g_assert(gst_structure_get(str,
-                    "width", G_TYPE_INT, &tmpMinWidth,
-                    "height", G_TYPE_INT, &tmpMinHeight, nullptr));
+                g_assert(gst_structure_get(str, "width", G_TYPE_INT, &tmpMinWidth, "height", G_TYPE_INT, &tmpMinHeight, nullptr));
                 tmpMaxWidth = tmpMinWidth;
                 tmpMaxHeight = tmpMinHeight;
             }
 
-            if (gst_structure_get(str,
-                    "framerate", GST_TYPE_FRACTION_RANGE,
-                    &tmpMinFPS_n, &tmpMinFPS_d,
-                    &tmpMaxFPS_n, &tmpMaxFPS_d, nullptr)) {
-                tmpMinFramerate = (int)(tmpMinFPS_n / tmpMinFPS_d);
-                tmpMaxFramerate = (int)(tmpMaxFPS_n / tmpMaxFPS_d);
+            if (gst_structure_get(str, "framerate", GST_TYPE_FRACTION_RANGE, &tmpMinFPSNumerator, &tmpMinFPSDenominator, &tmpMaxFPSNumerator, &tmpMaxFPSDenominator, nullptr)) {
+                tmpMinFramerate = (int)(tmpMinFPSNumerator / tmpMinFPSDenominator);
+                tmpMaxFramerate = (int)(tmpMaxFPSNumerator / tmpMaxFPSDenominator);
             } else if (gst_structure_get(str,
-                           "framerate", GST_TYPE_FRACTION, &tmpMinFPS_n, &tmpMinFPS_d, nullptr)) {
-                tmpMaxFPS_n = tmpMinFPS_n;
-                tmpMaxFPS_d = tmpMinFPS_d;
-                tmpMinFramerate = (int)(tmpMinFPS_n / tmpMinFPS_d);
-                tmpMaxFramerate = (int)(tmpMaxFPS_n / tmpMaxFPS_d);
+                "framerate", GST_TYPE_FRACTION, &tmpMinFPSNumerator, &tmpMinFPSDenominator, nullptr)) {
+                tmpMaxFPSNumerator = tmpMinFPSNumerator;
+                tmpMaxFPSDenominator = tmpMinFPSDenominator;
+                tmpMinFramerate = (int)(tmpMinFPSNumerator / tmpMinFPSDenominator);
+                tmpMaxFramerate = (int)(tmpMaxFPSNumerator / tmpMaxFPSDenominator);
             } else {
                 const GValue* frameRates(gst_structure_get_value(str, "framerate"));
                 tmpMinFramerate = G_MAXINT;
@@ -201,18 +191,18 @@ const RealtimeMediaSourceCapabilities& GStreamerVideoCaptureSource::capabilities
                     g_assert(G_VALUE_TYPE(val) == GST_TYPE_FRACTION);
                     gint framerate = (int)(gst_value_get_fraction_numerator(val) / gst_value_get_fraction_denominator(val));
 
-                    tmpMinFramerate = MIN(tmpMinFramerate, framerate);
-                    tmpMaxFramerate = MAX(tmpMaxFramerate, framerate);
+                    tmpMinFramerate = std::min(tmpMinFramerate, framerate);
+                    tmpMaxFramerate = std::max(tmpMaxFramerate, framerate);
                 }
             }
 
-            minWidth = MIN(tmpMinWidth, minWidth);
-            minHeight = MIN(tmpMinHeight, minHeight);
-            minFramerate = MIN(tmpMinFramerate, minFramerate);
+            minWidth = std::min(tmpMinWidth, minWidth);
+            minHeight = std::min(tmpMinHeight, minHeight);
+            minFramerate = std::min(tmpMinFramerate, minFramerate);
 
-            maxWidth = MAX(tmpMaxWidth, maxWidth);
-            maxHeight = MAX(tmpMaxHeight, maxHeight);
-            maxFramerate = MAX(tmpMaxFramerate, maxFramerate);
+            maxWidth = std::max(tmpMaxWidth, maxWidth);
+            maxHeight = std::max(tmpMaxHeight, maxHeight);
+            maxFramerate = std::max(tmpMaxFramerate, maxFramerate);
 
             m_currentSettings->setWidth(minWidth);
             m_currentSettings->setHeight(minHeight);
