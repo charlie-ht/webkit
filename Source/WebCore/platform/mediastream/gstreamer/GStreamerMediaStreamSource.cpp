@@ -125,6 +125,11 @@ webkit_media_stream_new(MediaStreamTrackPrivate* track)
         "stream-type", type,
         "stream-flags", GST_STREAM_FLAG_SELECT, NULL);
     ((WebKitMediaStream*)gststream)->track = track;
+    gst_stream_set_tags(gststream,
+        adoptGRef(gst_tag_list_new(
+            GST_TAG_TITLE, track->label().utf8().data(),
+            NULL)
+        ).get());
 
     return gststream;
 }
