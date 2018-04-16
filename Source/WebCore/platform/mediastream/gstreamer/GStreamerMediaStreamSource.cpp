@@ -90,9 +90,7 @@ webkit_media_stream_get_size(WebKitMediaStream* self)
 {
     FloatSize size;
 
-    GST_ERROR("Getting siuze");
     if (self->track->isCaptureTrack()) {
-        GST_ERROR("Goint furstr");
         LibWebRTCVideoCaptureSource& source = static_cast<LibWebRTCVideoCaptureSource&>(
             self->track->source());
         size = source.size();
