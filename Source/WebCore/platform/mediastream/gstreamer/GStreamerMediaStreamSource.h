@@ -48,10 +48,7 @@ gboolean webkit_media_stream_src_set_stream(WebKitMediaStreamSrc* src, MediaStre
 #define WEBKIT_TYPE_MEDIA_STREAM (webkit_media_stream_get_type())
 G_DECLARE_FINAL_TYPE(WebKitMediaStream, webkit_media_stream, WEBKIT, MEDIA_STREAM, GstStream);
 FloatSize webkit_media_stream_get_size(WebKitMediaStream* self);
-
-#define WEBKIT_TYPE_MEDIA_STREAM (webkit_media_stream_get_type())
-G_DECLARE_FINAL_TYPE(WebKitMediaStream, webkit_media_stream, WEBKIT, MEDIA_STREAM, GstStream);
-FloatSize webkit_media_stream_get_size(WebKitMediaStream* self);
+MediaStreamTrackPrivate* webkit_media_stream_get_media_stream_track(WebKitMediaStream* self);
 
 } // WebCore
 

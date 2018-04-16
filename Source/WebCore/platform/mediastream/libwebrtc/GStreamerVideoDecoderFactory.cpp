@@ -85,8 +85,6 @@ public:
 
     int32_t InitDecode(const webrtc::VideoCodec*, int32_t)
     {
-        GstElement *srcBin = makeElement("bin");
-
         m_src = makeElement("appsrc");
         if (GStreamerVideoDecoderFactory::newSource(String::fromUTF8(m_stream_id.c_str()), m_src)) {
             GST_INFO ("Let a mediastreamsrc handle the decoding!");
