@@ -42,6 +42,8 @@
 
 namespace WebCore {
 
+#define CSTR(string) string.utf8().data()
+
 #define WEBKIT_MEDIA_STREAM_SRC_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), WEBKIT_TYPE_MEDIA_STREAM_SRC, WebKitMediaStreamSrcClass))
 #define WEBKIT_IS_MEDIA_STREAM_SRC_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), WEBKIT_TYPE_MEDIA_STREAM_SRC))
 #define WEBKIT_MEDIA_STREAM_SRC_GET_CLASS(o) (G_TYPE_INSTANCE_GET_CLASS((o), WEBKIT_TYPE_MEDIA_STREAM_SRC, WebKitMediaStreamSrcClass))
@@ -120,14 +122,14 @@ webkit_media_stream_new(MediaStreamTrackPrivate* track)
     }
 
     auto gststream = (GstStream*)g_object_new(webkit_media_stream_get_type(),
-        "stream-id", track->id().utf8().data(),
+        "stream-id", CSTR(track->id()),
         "caps", caps.get(),
         "stream-type", type,
         "stream-flags", GST_STREAM_FLAG_SELECT, NULL);
     ((WebKitMediaStream*)gststream)->track = track;
     gst_stream_set_tags(gststream,
         adoptGRef(gst_tag_list_new(
-            GST_TAG_TITLE, track->label().utf8().data(),
+            GST_TAG_TITLE, CSTR(track->label()),
             NULL)
         ).get());
 
@@ -300,6 +302,7 @@ webkit_media_stream_src_change_state(GstElement* element, GstStateChange transit
     auto* self = WEBKIT_MEDIA_STREAM_SRC(element);
 
     if (transition == GST_STATE_CHANGE_PAUSED_TO_READY) {
+
         GST_OBJECT_LOCK(self);
         auto collection = self->stream_collection.get();
         if (collection) {
@@ -385,10 +388,15 @@ webkit_media_stream_src_pad_probe_cb(GstPad* pad, GstPadProbeInfo* info, ProbeDa
 
     switch (GST_EVENT_TYPE(event)) {
     case GST_EVENT_STREAM_START: {
-        auto stream_start = gst_event_new_stream_start(data->track->id().utf8().data());
+        GRefPtr<GstStream> stream = nullptr;
+
+        gst_event_parse_stream(event, &stream.outPtr());
+        if (stream.get()) {
+            GST_INFO_OBJECT(pad, "Event has been sticked already");
+            return GST_PAD_PROBE_OK;
+        }
 
         GST_OBJECT_LOCK(self);
-        GstStream* stream = nullptr;
         auto collection = self->stream_collection.get();
 
         for (guint i = 0; i < gst_stream_collection_get_size(collection); i++) {
@@ -401,20 +409,24 @@ webkit_media_stream_src_pad_probe_cb(GstPad* pad, GstPadProbeInfo* info, ProbeDa
                 break;
             }
         }
-        g_assert(stream);
-        gst_event_set_stream(stream_start, stream);
-        gst_event_set_group_id(stream_start, 1);
         GST_OBJECT_UNLOCK(self);
-        gst_event_unref(event);
+        g_assert(stream.get());
 
+        auto stream_start = gst_event_new_stream_start(CSTR(data->track->id()));
+        GST_ERROR("Stream is %p", stream.get());
+        gst_event_set_stream(stream_start, GST_STREAM(stream.get()));
+        gst_event_set_group_id(stream_start, 1);
+
+        gst_event_unref(event);
         // Stick it up so that the pad has the right reference to the event.
         gst_pad_store_sticky_event(pad, stream_start);
         info->data = stream_start;
-        break;
+
+        return GST_PAD_PROBE_HANDLED;
     }
     case GST_EVENT_CAPS: {
-        auto padname = String::format("src_%u", g_atomic_int_add(&(self->npads), 1)).utf8();
-        auto ghostpad = gst_ghost_pad_new_from_template(padname.data(), pad,
+        auto padname = String::format("src_%u", g_atomic_int_add(&(self->npads), 1));
+        auto ghostpad = gst_ghost_pad_new_from_template(CSTR(padname), pad,
             gst_static_pad_template_get(data->pad_template));
 
         gst_pad_set_active(ghostpad, TRUE);
@@ -493,7 +505,7 @@ webkit_media_stream_src_setup_encoded_src(WebKitMediaStreamSrc* self,
     MediaStreamTrackPrivate* track, String track_id, GstElement* element)
 {
     if (track_id != self->videoTrackID) {
-        GST_INFO_OBJECT(self, "Decoder for %s not wanted.", track_id.utf8().data());
+        GST_INFO_OBJECT(self, "Decoder for %s not wanted.", CSTR(track_id));
 
         return FALSE;
     }
@@ -506,7 +518,7 @@ static void
 webkit_media_stream_src_post_stream_collection(WebKitMediaStreamSrc* self, MediaStreamPrivate* stream)
 {
     GST_OBJECT_LOCK(self);
-    self->stream_collection = adoptGRef(gst_stream_collection_new(stream->id().utf8().data()));
+    self->stream_collection = adoptGRef(gst_stream_collection_new(CSTR(stream->id())));
     for (auto& track : stream->tracks()) {
         auto gststream = webkit_media_stream_new(track.get());
 
