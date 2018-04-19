@@ -28,6 +28,7 @@
 #if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
 
 #include <gst/app/gstappsrc.h>
+#include <gst/base/gstflowcombiner.h>
 
 #if GST_CHECK_VERSION(1, 10, 0)
 
@@ -85,6 +86,14 @@ webkit_media_stream_init(WebKitMediaStream*)
 static void
 webkit_media_stream_class_init(WebKitMediaStreamClass*)
 {
+#if 0
+    gst_tag_register_static(WEBKIT_MEDIA_STREAM_TAG_WIDTH, GST_TAG_FLAG_META,
+        G_TYPE_INT, "Webkit MediaStream width", "Webkit MediaStream width",
+        gst_tag_merge_use_first);
+    gst_tag_register_static(WEBKIT_MEDIA_STREAM_TAG_HEIGHT, GST_TAG_FLAG_META,
+        G_TYPE_INT, "Webkit MediaStream height", "Webkit MediaStream height",
+        gst_tag_merge_use_first);
+#endif
 }
 
 FloatSize
@@ -197,6 +206,9 @@ struct _WebKitMediaStreamSrc {
     String videoTrackID;
     volatile gint npads;
     GRefPtr<GstStreamCollection> stream_collection;
+    gulong probeid;
+
+    GstFlowCombiner *flow_combiner;
 };
 
 struct _WebKitMediaStreamSrcClass {
@@ -293,6 +305,7 @@ webkit_media_stream_src_finalize(GObject* object)
     WebKitMediaStreamSrc* self = WEBKIT_MEDIA_STREAM_SRC(object);
 
     g_clear_pointer(&self->uri, g_free);
+    gst_flow_combiner_free(self->flow_combiner);
 }
 
 static GstStateChangeReturn
@@ -361,6 +374,7 @@ static void
 webkit_media_stream_src_init(WebKitMediaStreamSrc* self)
 {
     self->observer = new WebKitMediaStreamTrackObserver(self);
+    self->flow_combiner = gst_flow_combiner_new ();
 }
 
 static gboolean
@@ -388,63 +402,41 @@ webkit_media_stream_src_pad_probe_cb(GstPad* pad, GstPadProbeInfo* info, ProbeDa
 
     switch (GST_EVENT_TYPE(event)) {
     case GST_EVENT_STREAM_START: {
+        const gchar *stream_id;
         GRefPtr<GstStream> stream = nullptr;
 
-        gst_event_parse_stream(event, &stream.outPtr());
-        if (stream.get()) {
+        gst_event_parse_stream_start (event, &stream_id);
+        if (!g_strcmp0(stream_id, CSTR(data->track->id()))) {
             GST_INFO_OBJECT(pad, "Event has been sticked already");
             return GST_PAD_PROBE_OK;
         }
 
-        GST_OBJECT_LOCK(self);
-        auto collection = self->stream_collection.get();
-
-        for (guint i = 0; i < gst_stream_collection_get_size(collection); i++) {
-            auto tmpstream = gst_stream_collection_get_stream(collection, i);
-            auto track = WEBKIT_MEDIA_STREAM(tmpstream)->track.get();
-
-            if (track == data->track) {
-                stream = tmpstream;
-
-                break;
-            }
-        }
-        GST_OBJECT_UNLOCK(self);
-        g_assert(stream.get());
-
         auto stream_start = gst_event_new_stream_start(CSTR(data->track->id()));
-        GST_ERROR("Stream is %p", stream.get());
-        gst_event_set_stream(stream_start, GST_STREAM(stream.get()));
         gst_event_set_group_id(stream_start, 1);
-
         gst_event_unref(event);
+
         // Stick it up so that the pad has the right reference to the event.
-        gst_pad_store_sticky_event(pad, stream_start);
-        info->data = stream_start;
+        gst_pad_push_event(pad, stream_start);
 
         return GST_PAD_PROBE_HANDLED;
-    }
-    case GST_EVENT_CAPS: {
-        auto padname = String::format("src_%u", g_atomic_int_add(&(self->npads), 1));
-        auto ghostpad = gst_ghost_pad_new_from_template(CSTR(padname), pad,
-            gst_static_pad_template_get(data->pad_template));
-
-        gst_pad_set_active(ghostpad, TRUE);
-        gst_pad_sticky_events_foreach(pad, copy_sticky_events, ghostpad);
-
-        GST_INFO("%s Ghosting %" GST_PTR_FORMAT,
-            gst_object_get_path_string(GST_OBJECT_CAST(self)),
-            pad);
-
-        g_assert(gst_element_add_pad(GST_ELEMENT(self), (GstPad*)ghostpad));
-
-        return GST_PAD_PROBE_REMOVE;
     }
     default:
         break;
     }
 
     return GST_PAD_PROBE_OK;
+}
+
+static GstFlowReturn
+webkit_media_stream_src_chain (GstPad * pad, GstObject * object, GstBuffer * buffer)
+{
+  GstFlowReturn res;
+  GRefPtr<WebKitMediaStreamSrc> self = adoptGRef(WEBKIT_MEDIA_STREAM_SRC (gst_object_get_parent (object)));
+
+  res = gst_flow_combiner_update_pad_flow (self.get()->flow_combiner, pad,
+      gst_proxy_pad_chain_default (pad, GST_OBJECT (self.get()), buffer));
+
+  return res;
 }
 
 static gboolean
@@ -461,7 +453,7 @@ webkit_media_stream_src_setup_src(WebKitMediaStreamSrc* self,
     data->pad_template = pad_template;
     data->track = track;
 
-    gst_pad_add_probe(pad.get(), (GstPadProbeType)GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM,
+    self->probeid = gst_pad_add_probe(pad.get(), (GstPadProbeType)GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM,
         (GstPadProbeCallback)webkit_media_stream_src_pad_probe_cb, data,
         [](gpointer data) {
             delete (ProbeData*)data;
@@ -469,6 +461,19 @@ webkit_media_stream_src_setup_src(WebKitMediaStreamSrc* self,
 
     if (observe_track)
         track->addObserver(*self->observer);
+
+    auto padname = String::format("src_%u", g_atomic_int_add(&(self->npads), 1));
+    auto ghostpad = gst_ghost_pad_new_from_template(CSTR(padname), pad.get(),
+        gst_static_pad_template_get(pad_template));
+
+    GST_INFO("%s Ghosting %" GST_PTR_FORMAT,
+        gst_object_get_path_string(GST_OBJECT_CAST(self)),
+        pad);
+
+    auto proxypad = adoptGRef(GST_PAD (gst_proxy_pad_get_internal (GST_PROXY_PAD (ghostpad))));
+    gst_pad_set_chain_function (proxypad.get(),
+        (GstPadChainFunction) webkit_media_stream_src_chain);
+    g_assert(gst_element_add_pad(GST_ELEMENT(self), (GstPad*)ghostpad));
 
     gst_element_set_state(element, GST_STATE_PLAYING);
     return TRUE;

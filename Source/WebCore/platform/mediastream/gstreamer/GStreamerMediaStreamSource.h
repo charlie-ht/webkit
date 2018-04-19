@@ -35,6 +35,9 @@
 
 #include <gst/gst.h>
 
+#define WEBKIT_MEDIA_STREAM_TAG_CAPTURING_WIDTH "webkit-media-stream-width"
+#define WEBKIT_MEDIA_STREAM_TAG_CAPTURING_HEIGHT "webkit-media-stream-height"
+
 namespace WebCore {
 
 typedef struct _WebKitMediaStreamSrc WebKitMediaStreamSrc;

@@ -681,7 +681,12 @@ void MediaPlayerPrivateGStreamer::updateTracks()
         String streamId(gst_stream_get_stream_id(stream.get()));
         GstStreamType type = gst_stream_get_stream_type(stream.get());
 
-        GST_DEBUG_OBJECT(pipeline(), "Inspecting %s track with ID %s", gst_stream_type_get_name(type), streamId.utf8().data());
+        GST_ERROR_OBJECT(pipeline(), "Inspecting %s track with ID %s - upstream ID: %s %" GST_PTR_FORMAT,
+            gst_stream_type_get_name(type),
+            streamId.utf8().data(),
+            gst_stream_collection_get_upstream_id(m_streamCollection.get()),
+            gst_stream_get_tags (stream.get()));
+
         if (type & GST_STREAM_TYPE_AUDIO) {
             CREATE_TRACK(audio, Audio)
         } else if (type & GST_STREAM_TYPE_VIDEO) {
@@ -765,7 +770,12 @@ void MediaPlayerPrivateGStreamer::enableTrack(TrackPrivateBaseGStreamer::TrackTy
             GST_WARNING("%s stream %lu not found", trackTypeAsString, index);
 
         // TODO: MSE GstStream API support: https://bugs.webkit.org/show_bug.cgi?id=182531
-        gst_element_send_event(m_pipeline.get(), gst_event_new_select_streams(selectedStreams));
+        {
+            GST_ERROR ("Selected:");
+            for (auto tmp = selectedStreams; tmp; tmp = tmp->next)
+                GST_ERROR (" - %s", (gchar*) tmp->data);
+        }
+        // gst_element_send_event(m_pipeline.get(), gst_event_new_select_streams(selectedStreams));
     }
 #endif
 
@@ -1285,6 +1295,7 @@ void MediaPlayerPrivateGStreamer::handleMessage(GstMessage* message)
     }
 #if GST_CHECK_VERSION(1, 10, 0)
     case GST_MESSAGE_STREAMS_SELECTED: {
+        return;
         GRefPtr<GstStreamCollection> collection;
         gst_message_parse_streams_selected(message, &collection.outPtr());
 
@@ -1749,10 +1760,12 @@ FloatSize MediaPlayerPrivateGStreamer::naturalSize() const
 
     if (WEBKIT_IS_MEDIA_STREAM(stream)) {
         FloatSize size = webkit_media_stream_get_size(WEBKIT_MEDIA_STREAM(stream));
-        if (!size.isEmpty())
+        if (!size.isEmpty()) {
             return size;
+        }
     }
 
+    GST_ERROR ("Not my own");
     return MediaPlayerPrivateGStreamerBase::naturalSize();
 }
 #endif // GST_CHECK_VERSION(1, 10, 0) && ENABLE(MEDIA_STREAM)
