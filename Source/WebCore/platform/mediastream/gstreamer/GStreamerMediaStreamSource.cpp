@@ -40,6 +40,8 @@
 #include "MediaSampleGStreamer.h"
 #include "gstreamer/GStreamerAudioData.h"
 #include "gstreamer/GStreamerCapturer.h"
+#include "VideoTrackPrivate.h"
+#include "AudioTrackPrivate.h"
 
 namespace WebCore {
 
@@ -52,7 +54,7 @@ namespace WebCore {
 static void webkit_media_stream_src_push_video_sample(WebKitMediaStreamSrc* self, GstSample* gstsample);
 static void webkit_media_stream_src_push_audio_sample(WebKitMediaStreamSrc* self, GstSample* gstsample);
 static gboolean webkit_media_stream_src_setup_encoded_src(WebKitMediaStreamSrc* self,
-    MediaStreamTrackPrivate* track, String track_id, GstElement* element);
+    String track_id, GstElement* element);
 
 static GstStaticPadTemplate video_src_template = GST_STATIC_PAD_TEMPLATE("video_src",
     GST_PAD_SRC,
@@ -75,75 +77,6 @@ struct _WebKitMediaStream {
     gboolean observing;
     RefPtr<MediaStreamTrackPrivate> track;
 };
-
-G_DEFINE_TYPE(WebKitMediaStream, webkit_media_stream, GST_TYPE_STREAM);
-
-static void
-webkit_media_stream_init(WebKitMediaStream*)
-{
-}
-
-static void
-webkit_media_stream_class_init(WebKitMediaStreamClass*)
-{
-#if 0
-    gst_tag_register_static(WEBKIT_MEDIA_STREAM_TAG_WIDTH, GST_TAG_FLAG_META,
-        G_TYPE_INT, "Webkit MediaStream width", "Webkit MediaStream width",
-        gst_tag_merge_use_first);
-    gst_tag_register_static(WEBKIT_MEDIA_STREAM_TAG_HEIGHT, GST_TAG_FLAG_META,
-        G_TYPE_INT, "Webkit MediaStream height", "Webkit MediaStream height",
-        gst_tag_merge_use_first);
-#endif
-}
-
-FloatSize
-webkit_media_stream_get_size(WebKitMediaStream* self)
-{
-    FloatSize size;
-
-    if (self->track->isCaptureTrack()) {
-        LibWebRTCVideoCaptureSource& source = static_cast<LibWebRTCVideoCaptureSource&>(
-            self->track->source());
-        size = source.size();
-    }
-
-    return size;
-}
-
-GstStream*
-webkit_media_stream_new(MediaStreamTrackPrivate* track)
-{
-    GRefPtr<GstCaps> caps;
-    GstStreamType type;
-
-    if (track->type() == RealtimeMediaSource::Type::Audio) {
-        caps = adoptGRef(gst_static_pad_template_get_caps(&audio_src_template));
-        type = GST_STREAM_TYPE_AUDIO;
-    } else if (track->type() == RealtimeMediaSource::Type::Video) {
-        if (track->isCaptureTrack())
-            caps = adoptGRef(gst_static_pad_template_get_caps(&video_src_template));
-        else
-            caps = adoptGRef(gst_static_pad_template_get_caps(&encoded_video_src_template));
-        type = GST_STREAM_TYPE_VIDEO;
-    } else {
-        GST_FIXME("Handle %d type", track->type());
-        return NULL;
-    }
-
-    auto gststream = (GstStream*)g_object_new(webkit_media_stream_get_type(),
-        "stream-id", CSTR(track->id()),
-        "caps", caps.get(),
-        "stream-type", type,
-        "stream-flags", GST_STREAM_FLAG_SELECT, NULL);
-    ((WebKitMediaStream*)gststream)->track = track;
-    gst_stream_set_tags(gststream,
-        adoptGRef(gst_tag_list_new(
-            GST_TAG_TITLE, CSTR(track->label()),
-            NULL)
-        ).get());
-
-    return gststream;
-}
 
 class WebKitMediaStreamTrackObserver
     : public MediaStreamTrackPrivate::Observer,
@@ -178,19 +111,11 @@ public:
     // GStreamerVideoDecoderFactory::Observer implementation.
     bool newSource(String track_id, GstElement* source)
     {
-        auto stream = m_streamMap.get(track_id);
-        return webkit_media_stream_src_setup_encoded_src(m_mediaStreamSrc, stream->track.get(),
-            track_id, source);
-    }
-
-    void addStream(String id, WebKitMediaStream* stream)
-    {
-        m_streamMap.add(id, stream);
+        return webkit_media_stream_src_setup_encoded_src(m_mediaStreamSrc, track_id, source);
     }
 
 private:
     WebKitMediaStreamSrc* m_mediaStreamSrc;
-    HashMap<String, GRefPtr<WebKitMediaStream>> m_streamMap;
 };
 
 typedef struct _WebKitMediaStreamSrcClass WebKitMediaStreamSrcClass;
@@ -205,8 +130,8 @@ struct _WebKitMediaStreamSrc {
     WebKitMediaStreamTrackObserver* observer;
     String videoTrackID;
     volatile gint npads;
-    GRefPtr<GstStreamCollection> stream_collection;
     gulong probeid;
+    RefPtr<MediaStreamPrivate> stream;
 
     GstFlowCombiner *flow_combiner;
 };
@@ -270,7 +195,10 @@ GST_DEBUG_CATEGORY_STATIC(webkit_media_stream_src_debug);
 
 #define _do_init                                                                           \
     G_IMPLEMENT_INTERFACE(GST_TYPE_URI_HANDLER, webkit_media_stream_src_uri_handler_init); \
-    GST_DEBUG_CATEGORY_INIT(webkit_media_stream_src_debug, "webkitwebmediastreamsrc", 0, "mediastreamsrc element");
+    GST_DEBUG_CATEGORY_INIT(webkit_media_stream_src_debug, "webkitwebmediastreamsrc", 0, "mediastreamsrc element"); \
+    gst_tag_register_static(WEBKIT_MEDIA_TRACK_TAG_WIDTH, GST_TAG_FLAG_META, G_TYPE_INT, "Webkit MediaStream width", "Webkit MediaStream width", gst_tag_merge_use_first); \
+    gst_tag_register_static(WEBKIT_MEDIA_TRACK_TAG_HEIGHT, GST_TAG_FLAG_META, G_TYPE_INT, "Webkit MediaStream height", "Webkit MediaStream height", gst_tag_merge_use_first); \
+    gst_tag_register_static(WEBKIT_MEDIA_TRACK_TAG_KIND, GST_TAG_FLAG_META, G_TYPE_INT, "Webkit MediaStream Kind", "Webkit MediaStream Kind", gst_tag_merge_use_first);
 
 G_DEFINE_TYPE_WITH_CODE(WebKitMediaStreamSrc, webkit_media_stream_src, GST_TYPE_BIN, _do_init);
 
@@ -317,15 +245,8 @@ webkit_media_stream_src_change_state(GstElement* element, GstStateChange transit
     if (transition == GST_STATE_CHANGE_PAUSED_TO_READY) {
 
         GST_OBJECT_LOCK(self);
-        auto collection = self->stream_collection.get();
-        if (collection) {
-            for (guint i = 0; i < gst_stream_collection_get_size(collection); i++) {
-                auto stream = WEBKIT_MEDIA_STREAM(gst_stream_collection_get_stream(collection, i));
-                auto track = stream->track.get();
-                if (track)
-                    track->removeObserver(*self->observer);
-            }
-        }
+        for (auto& track : self->stream->tracks())
+            track->removeObserver(*self->observer);
         GST_OBJECT_UNLOCK(self);
 
         GStreamerVideoDecoderFactory::removeObserver(*self->observer);
@@ -390,9 +311,37 @@ copy_sticky_events(GstPad*, GstEvent** event, gpointer user_data)
 
 typedef struct {
     WebKitMediaStreamSrc* self;
-    GstStaticPadTemplate* pad_template;
     RefPtr<MediaStreamTrackPrivate> track;
+    GstStaticPadTemplate *pad_template;
 } ProbeData;
+
+static gboolean
+webkit_media_stream_src_get_tack_size(MediaStreamTrackPrivate *track, gint *width, gint *height)
+{
+
+    if (track->type() == RealtimeMediaSource::Type::Video && track->isCaptureTrack()) {
+        LibWebRTCVideoCaptureSource& source = static_cast<LibWebRTCVideoCaptureSource&>(
+            track->source());
+        *width = (gint) source.size().width();
+        *height = (gint) source.size().height();
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static GstFlowReturn
+webkit_media_stream_src_chain (GstPad * pad, GstObject * object, GstBuffer * buffer)
+{
+  GstFlowReturn res;
+  GRefPtr<WebKitMediaStreamSrc> self = adoptGRef(WEBKIT_MEDIA_STREAM_SRC (gst_object_get_parent (object)));
+
+  res = gst_flow_combiner_update_pad_flow (self.get()->flow_combiner, pad,
+      gst_proxy_pad_chain_default (pad, GST_OBJECT (self.get()), buffer));
+
+  return res;
+}
 
 static GstPadProbeReturn
 webkit_media_stream_src_pad_probe_cb(GstPad* pad, GstPadProbeInfo* info, ProbeData* data)
@@ -415,8 +364,26 @@ webkit_media_stream_src_pad_probe_cb(GstPad* pad, GstPadProbeInfo* info, ProbeDa
         gst_event_set_group_id(stream_start, 1);
         gst_event_unref(event);
 
-        // Stick it up so that the pad has the right reference to the event.
+        auto taglist = gst_tag_list_new_empty();
+        if (!data->track->label().isEmpty())
+            gst_tag_list_add (taglist, GST_TAG_MERGE_APPEND,
+                GST_TAG_TITLE, CSTR(data->track->label()), NULL);
+
+        gint width, height;
+        if (webkit_media_stream_src_get_tack_size(data->track.get(), &width, &height))
+            gst_tag_list_add (taglist, GST_TAG_MERGE_APPEND,
+                WEBKIT_MEDIA_TRACK_TAG_WIDTH, width,
+                WEBKIT_MEDIA_TRACK_TAG_HEIGHT, height, NULL);
+
+        if (data->track->type() == RealtimeMediaSource::Type::Audio)
+            gst_tag_list_add(taglist, GST_TAG_MERGE_APPEND, WEBKIT_MEDIA_TRACK_TAG_KIND,
+                (gint) AudioTrackPrivate::Kind::Main, NULL);
+        else if (data->track->type() == RealtimeMediaSource::Type::Video)
+            gst_tag_list_add(taglist, GST_TAG_MERGE_APPEND, WEBKIT_MEDIA_TRACK_TAG_KIND,
+                (gint) VideoTrackPrivate::Kind::Main, NULL);
+
         gst_pad_push_event(pad, stream_start);
+        gst_pad_push_event(pad, gst_event_new_tag(taglist));
 
         return GST_PAD_PROBE_HANDLED;
     }
@@ -425,18 +392,6 @@ webkit_media_stream_src_pad_probe_cb(GstPad* pad, GstPadProbeInfo* info, ProbeDa
     }
 
     return GST_PAD_PROBE_OK;
-}
-
-static GstFlowReturn
-webkit_media_stream_src_chain (GstPad * pad, GstObject * object, GstBuffer * buffer)
-{
-  GstFlowReturn res;
-  GRefPtr<WebKitMediaStreamSrc> self = adoptGRef(WEBKIT_MEDIA_STREAM_SRC (gst_object_get_parent (object)));
-
-  res = gst_flow_combiner_update_pad_flow (self.get()->flow_combiner, pad,
-      gst_proxy_pad_chain_default (pad, GST_OBJECT (self.get()), buffer));
-
-  return res;
 }
 
 static gboolean
@@ -450,7 +405,6 @@ webkit_media_stream_src_setup_src(WebKitMediaStreamSrc* self,
 
     ProbeData* data = new ProbeData;
     data->self = WEBKIT_MEDIA_STREAM_SRC(self);
-    data->pad_template = pad_template;
     data->track = track;
 
     self->probeid = gst_pad_add_probe(pad.get(), (GstPadProbeType)GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM,
@@ -507,7 +461,7 @@ webkit_media_stream_src_setup_from_capturer(WebKitMediaStreamSrc* self,
 
 static gboolean
 webkit_media_stream_src_setup_encoded_src(WebKitMediaStreamSrc* self,
-    MediaStreamTrackPrivate* track, String track_id, GstElement* element)
+    String track_id, GstElement* element)
 {
     if (track_id != self->videoTrackID) {
         GST_INFO_OBJECT(self, "Decoder for %s not wanted.", CSTR(track_id));
@@ -515,27 +469,16 @@ webkit_media_stream_src_setup_encoded_src(WebKitMediaStreamSrc* self,
         return FALSE;
     }
 
+    MediaStreamTrackPrivate* track = nullptr;
+
+    for (auto& tmptrack : self->stream->tracks()) {
+        if (tmptrack->id() == track_id)
+            track = tmptrack.get();
+    }
+
+
     self->videoSrc = element;
     return webkit_media_stream_src_setup_src(self, track, element, &encoded_video_src_template, FALSE);
-}
-
-static void
-webkit_media_stream_src_post_stream_collection(WebKitMediaStreamSrc* self, MediaStreamPrivate* stream)
-{
-    GST_OBJECT_LOCK(self);
-    self->stream_collection = adoptGRef(gst_stream_collection_new(CSTR(stream->id())));
-    for (auto& track : stream->tracks()) {
-        auto gststream = webkit_media_stream_new(track.get());
-
-        if (!gststream)
-            continue;
-
-        gst_stream_collection_add_stream(self->stream_collection.get(), gststream);
-    }
-    GST_OBJECT_UNLOCK(self);
-
-    gst_element_post_message(GST_ELEMENT(self),
-        gst_message_new_stream_collection(GST_OBJECT(self), self->stream_collection.get()));
 }
 
 gboolean
@@ -543,7 +486,7 @@ webkit_media_stream_src_set_stream(WebKitMediaStreamSrc* self, MediaStreamPrivat
 {
     g_return_val_if_fail(WEBKIT_IS_MEDIA_STREAM_SRC(self), FALSE);
 
-    webkit_media_stream_src_post_stream_collection(self, stream);
+    self->stream = stream;
     for (auto& track : stream->tracks()) {
         if (track->type() == RealtimeMediaSource::Type::Audio) {
             if (FALSE) { // FIXME!! make proxysink/src working (stream->hasCaptureAudioSource()) {
@@ -578,8 +521,6 @@ webkit_media_stream_src_set_stream(WebKitMediaStreamSrc* self, MediaStreamPrivat
             continue;
         }
     }
-
-    gst_element_no_more_pads(GST_ELEMENT(self));
 
     return TRUE;
 }

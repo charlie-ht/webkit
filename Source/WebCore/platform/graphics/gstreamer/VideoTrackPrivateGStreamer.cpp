@@ -58,6 +58,12 @@ VideoTrackPrivate::Kind VideoTrackPrivateGStreamer::kind() const
     if (m_stream.get() && gst_stream_get_stream_flags (m_stream.get()) & GST_STREAM_FLAG_SELECT)
         return VideoTrackPrivate::Kind::Main;
 
+    auto tags = gst_stream_get_tags (m_stream.get());
+
+    gint kind;
+    if (gst_tag_list_get_int(tags, "webkit-media-stream-kind", &kind))
+        return static_cast<VideoTrackPrivate::Kind>(kind);
+
     return VideoTrackPrivate::kind();
 }
 #endif

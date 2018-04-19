@@ -1758,14 +1758,16 @@ FloatSize MediaPlayerPrivateGStreamer::naturalSize() const
         stream = it->value->stream();
     }
 
-    if (WEBKIT_IS_MEDIA_STREAM(stream)) {
-        FloatSize size = webkit_media_stream_get_size(WEBKIT_MEDIA_STREAM(stream));
-        if (!size.isEmpty()) {
-            return size;
-        }
+    if (stream) {
+        auto tags = adoptGRef(gst_stream_get_tags (stream));
+        gint width, height;
+
+        if (gst_tag_list_get_int(tags.get(), WEBKIT_MEDIA_TRACK_TAG_WIDTH, &width) &&
+                gst_tag_list_get_int(tags.get(), WEBKIT_MEDIA_TRACK_TAG_HEIGHT, &height) &&
+                    width != 0 && height != 0)
+            return FloatSize(width, height);
     }
 
-    GST_ERROR ("Not my own");
     return MediaPlayerPrivateGStreamerBase::naturalSize();
 }
 #endif // GST_CHECK_VERSION(1, 10, 0) && ENABLE(MEDIA_STREAM)

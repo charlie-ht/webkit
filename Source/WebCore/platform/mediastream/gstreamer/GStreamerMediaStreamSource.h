@@ -35,8 +35,9 @@
 
 #include <gst/gst.h>
 
-#define WEBKIT_MEDIA_STREAM_TAG_CAPTURING_WIDTH "webkit-media-stream-width"
-#define WEBKIT_MEDIA_STREAM_TAG_CAPTURING_HEIGHT "webkit-media-stream-height"
+#define WEBKIT_MEDIA_TRACK_TAG_WIDTH  "webkit-media-stream-width"
+#define WEBKIT_MEDIA_TRACK_TAG_HEIGHT "webkit-media-stream-height"
+#define WEBKIT_MEDIA_TRACK_TAG_KIND  "webkit-media-stream-kind"
 
 namespace WebCore {
 
