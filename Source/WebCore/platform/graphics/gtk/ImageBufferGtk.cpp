@@ -92,7 +92,6 @@ String ImageBuffer::toDataURL(const String& mimeType, std::optional<double> qual
 
 Vector<uint8_t> ImageBuffer::toBGRAData() const
 {
-    GST_ERROR ("====== GO GO GO");
     auto pixbuf = adoptGRef(cairoSurfaceToGdkPixbuf(m_data.m_surface.get()));
     auto pixels = gdk_pixbuf_get_pixels (pixbuf.get());
 

@@ -52,7 +52,6 @@ public:
         gst_util_double_to_fraction(frameRate(), &fps_n, &fps_d);
         auto data = imageBuffer->toBGRAData();
         auto size = data.size();
-        GST_ERROR("Framerate is %f", frameRate());
         auto image_size = imageBuffer->internalSize();
         auto gstsample = gst_sample_new(gst_buffer_new_wrapped((guint8*)data.releaseBuffer().get(),
                                             size),

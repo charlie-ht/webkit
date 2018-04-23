@@ -189,7 +189,6 @@ private:
 #if GST_CHECK_VERSION(1, 10, 0)
     void updateTracks();
     void clearTracks();
-    FloatSize naturalSize() const override;
 #endif
 
 protected:
@@ -269,6 +268,7 @@ private:
     bool m_isLegacyPlaybin;
 #if GST_CHECK_VERSION(1, 10, 0)
     GRefPtr<GstStreamCollection> m_streamCollection;
+    FloatSize naturalSize() const;
 #endif
     String m_currentAudioStreamId;
     String m_currentVideoStreamId;

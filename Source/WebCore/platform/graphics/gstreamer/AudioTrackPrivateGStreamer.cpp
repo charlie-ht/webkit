@@ -48,6 +48,13 @@ AudioTrackPrivateGStreamer::AudioTrackPrivateGStreamer(WeakPtr<MediaPlayerPrivat
     : TrackPrivateBaseGStreamer(this, index, stream)
     , m_player(player)
 {
+    gint kind;
+    auto tags = gst_stream_get_tags(m_stream.get());
+
+    if (gst_tag_list_get_int(tags, "webkit-media-stream-kind", &kind)) {
+        GstStreamFlags stream_flags = gst_stream_get_stream_flags(stream.get());
+        gst_stream_set_stream_flags(stream.get(), (GstStreamFlags) (stream_flags | GST_STREAM_FLAG_SELECT));
+    }
     m_id = gst_stream_get_stream_id(stream.get());
     setActive(gst_stream_get_stream_flags(stream.get()) & GST_STREAM_FLAG_SELECT);
     notifyTrackOfActiveChanged();
@@ -57,11 +64,6 @@ AudioTrackPrivate::Kind AudioTrackPrivateGStreamer::kind() const
 {
     if (m_stream.get() && gst_stream_get_stream_flags (m_stream.get()) & GST_STREAM_FLAG_SELECT)
         return AudioTrackPrivate::Kind::Main;
-
-    auto tags = gst_stream_get_tags (m_stream.get());
-    gint kind;
-    if (gst_tag_list_get_int(tags, "webkit-media-stream-kind", &kind))
-        return static_cast<AudioTrackPrivate::Kind>(kind);
 
     return AudioTrackPrivate::kind();
 }

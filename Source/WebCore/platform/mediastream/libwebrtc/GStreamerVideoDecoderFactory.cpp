@@ -85,13 +85,14 @@ public:
 
     int32_t InitDecode(const webrtc::VideoCodec*, int32_t)
     {
-        m_src = makeElement("appsrc");
-        if (GStreamerVideoDecoderFactory::newSource(String::fromUTF8(m_stream_id.c_str()), m_src)) {
+        m_src = GStreamerVideoDecoderFactory::findSource(String::fromUTF8(m_stream_id.c_str()));
+        if (m_src.get()) {
             GST_INFO ("Let a mediastreamsrc handle the decoding!");
 
             return WEBRTC_VIDEO_CODEC_OK;
         }
 
+        m_src = adoptGRef(makeElement("appsrc"));
         m_capsfilter = CreateFilter();
         m_decoder = makeElement("decodebin");
         auto sinkpad = gst_element_get_static_pad(m_capsfilter, "sink");
@@ -104,8 +105,9 @@ public:
         gst_app_sink_set_emit_signals(GST_APP_SINK(m_sink), TRUE);
         g_signal_connect(m_sink, "new-sample", G_CALLBACK(newSampleCallbackTramp), this);
 
-        gst_bin_add_many(GST_BIN(m_pipeline.get()), m_src, m_decoder, m_capsfilter, m_sink, nullptr);
-        g_assert(gst_element_link_many(m_src, m_decoder, nullptr));
+        gst_bin_add_many(GST_BIN(m_pipeline.get()), GST_ELEMENT(gst_object_ref(m_src.get())),
+            m_decoder, m_capsfilter, m_sink, nullptr);
+        g_assert(gst_element_link_many(m_src.get(), m_decoder, nullptr));
         g_assert(gst_element_link_many(m_capsfilter, m_sink, nullptr));
 
         gst_element_set_state(m_pipeline.get(), GST_STATE_PLAYING);
@@ -145,7 +147,7 @@ public:
         int64_t render_time_ms) override
     {
         if (!GST_CLOCK_TIME_IS_VALID(m_firstBufferPts)) {
-            GRefPtr<GstPad> srcpad = adoptGRef(gst_element_get_static_pad(m_src, "src"));
+            GRefPtr<GstPad> srcpad = adoptGRef(gst_element_get_static_pad(m_src.get(), "src"));
             m_firstBufferPts = ((guint64)render_time_ms) * GST_MSECOND;
             m_firstBufferDts = ((guint64)input_image._timeStamp) * GST_MSECOND;
         }
@@ -159,7 +161,7 @@ public:
 
         GST_LOG("%ld Decoding: %" GST_PTR_FORMAT,
             render_time_ms, buffer);
-        switch (gst_app_src_push_sample(GST_APP_SRC(m_src),
+        switch (gst_app_src_push_sample(GST_APP_SRC(m_src.get()),
             gst_sample_new(buffer, GetCapsForFrame(input_image), nullptr, nullptr))) {
         case GST_FLOW_OK:
             return WEBRTC_VIDEO_CODEC_OK;
@@ -243,7 +245,7 @@ private:
     }
 
     GRefPtr<GstElement> m_pipeline;
-    GstElement* m_src;
+    GRefPtr<GstElement> m_src;
     GstElement* m_decoder;
     GstElement* m_capsfilter;
     GstElement* m_sink;
@@ -286,17 +288,15 @@ public:
 // FIME- Make MT safe!
 Vector<GStreamerVideoDecoderFactory::Observer*> OBSERVERS;
 
-bool GStreamerVideoDecoderFactory::newSource(String track_id, GstElement *source)
+GstElement* GStreamerVideoDecoderFactory::findSource(String track_id)
 {
-    GST_ERROR ("New decoder!");
     for (Observer* observer : OBSERVERS) {
-        GST_ERROR ("?? New decoder!");
-        if (observer->newSource(track_id, source))
-            return true;
+        auto source = observer->findSource(track_id);
+        if (source)
+            return source;
     }
-    GST_ERROR ("Nothing.");
 
-    return false;
+    return nullptr;
 }
 
 void GStreamerVideoDecoderFactory::addObserver(Observer& observer)

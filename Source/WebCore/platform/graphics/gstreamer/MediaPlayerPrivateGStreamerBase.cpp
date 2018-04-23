@@ -219,7 +219,9 @@ public:
         gst_video_frame_unmap(&m_videoFrame);
     }
 
-    const IntSize& size() const { return m_size; }
+    const IntSize& size() const {
+         return m_size;
+    }
     TextureMapperGL::Flags flags() const { return m_flags; }
     GLuint textureID() const { return m_textureID; }
     bool isValid() const { return m_isValid; }
@@ -326,9 +328,7 @@ bool MediaPlayerPrivateGStreamerBase::handleSyncMessage(GstMessage* message)
     if (GST_MESSAGE_TYPE(message) == GST_MESSAGE_ERROR) {
         GST_ERROR_OBJECT(pipeline(), "%" GST_PTR_FORMAT,
             gst_message_get_structure (message));
-        gst_debug_print_stack_trace();
     }
-        
 
     UNUSED_PARAM(message);
     if (GST_MESSAGE_TYPE(message) != GST_MESSAGE_NEED_CONTEXT)
@@ -336,7 +336,7 @@ bool MediaPlayerPrivateGStreamerBase::handleSyncMessage(GstMessage* message)
 
     const gchar* contextType;
     gst_message_parse_context_type(message, &contextType);
-    GST_ERROR_OBJECT(pipeline(), "Handling %s need-context message for %s", contextType, GST_MESSAGE_SRC_NAME(message));
+    GST_INFO_OBJECT(pipeline(), "Handling %s need-context message for %s", contextType, GST_MESSAGE_SRC_NAME(message));
 
 #if USE(GSTREAMER_GL)
     GRefPtr<GstContext> elementContext = adoptGRef(requestGLContext(contextType));
@@ -535,8 +535,9 @@ FloatSize MediaPlayerPrivateGStreamerBase::naturalSize() const
         return m_videoSize;
 
     WTF::GMutexLocker<GMutex> lock(m_sampleMutex);
-    if (!GST_IS_SAMPLE(m_sample.get()))
+    if (!GST_IS_SAMPLE(m_sample.get())) {
         return FloatSize();
+    }
 
     GstCaps* caps = gst_sample_get_caps(m_sample.get());
     if (!caps)

@@ -38,9 +38,11 @@ VideoTrackPrivateGStreamer::VideoTrackPrivateGStreamer(WeakPtr<MediaPlayerPrivat
     : TrackPrivateBaseGStreamer(this, index, pad)
     , m_player(player)
 {
+    gint kind;
+
     // FIXME: Get a real ID from the tkhd atom.
-    m_id = "V" + String::number(index);
     notifyTrackOfActiveChanged();
+    m_id = "V" + String::number(index);
 }
 
 #if GST_CHECK_VERSION(1, 10, 0)
@@ -48,6 +50,14 @@ VideoTrackPrivateGStreamer::VideoTrackPrivateGStreamer(WeakPtr<MediaPlayerPrivat
     : TrackPrivateBaseGStreamer(this, index, stream)
     , m_player(player)
 {
+    gint kind;
+    auto tags = gst_stream_get_tags(m_stream.get());
+
+    if (gst_tag_list_get_int(tags, "webkit-media-stream-kind", &kind)) {
+        GstStreamFlags stream_flags = gst_stream_get_stream_flags(stream.get());
+        gst_stream_set_stream_flags(stream.get(), (GstStreamFlags) (stream_flags | GST_STREAM_FLAG_SELECT));
+    }
+
     m_id = gst_stream_get_stream_id(stream.get());
     setActive(gst_stream_get_stream_flags(stream.get()) & GST_STREAM_FLAG_SELECT);
     notifyTrackOfActiveChanged();
@@ -57,12 +67,6 @@ VideoTrackPrivate::Kind VideoTrackPrivateGStreamer::kind() const
 {
     if (m_stream.get() && gst_stream_get_stream_flags (m_stream.get()) & GST_STREAM_FLAG_SELECT)
         return VideoTrackPrivate::Kind::Main;
-
-    auto tags = gst_stream_get_tags (m_stream.get());
-
-    gint kind;
-    if (gst_tag_list_get_int(tags, "webkit-media-stream-kind", &kind))
-        return static_cast<VideoTrackPrivate::Kind>(kind);
 
     return VideoTrackPrivate::kind();
 }

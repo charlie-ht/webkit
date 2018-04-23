@@ -652,15 +652,46 @@ void MediaPlayerPrivateGStreamer::clearTracks()
     CLEAR_TRACKS(m_textTracks, m_player->removeTextTrack);
 #endif
 }
-#undef CLEAR_TRACKS
 
 #if ENABLE(VIDEO_TRACK)
 #define CREATE_TRACK(type, Type)                                                                                     \
     if (!useMediaSource) {                                                                                           \
+        GST_ERROR("Here");                                                                                           \
         RefPtr<Type##TrackPrivateGStreamer> track = Type##TrackPrivateGStreamer::create(createWeakPtr(), i, stream); \
         m_##type##Tracks.add(track->id(), track);                                                                    \
         m_player->add##Type##Track(*track);                                                                          \
+        m_has##Type = true;                                                                                          \
+        if (gst_stream_get_stream_flags(stream.get()) & GST_STREAM_FLAG_SELECT) {                                    \
+            m_current##Type##StreamId = String(gst_stream_get_stream_id(stream.get()));                              \
+            GST_ERROR("SELECTING %s", gst_stream_get_stream_id(stream.get()));                                       \
+        }                                                                                                            \
     }
+
+FloatSize MediaPlayerPrivateGStreamer::naturalSize() const
+{
+    FloatSize size = MediaPlayerPrivateGStreamerBase::naturalSize();
+
+    if (!size.isEmpty())
+        return size;
+
+    if (!hasVideo() || m_isLegacyPlaybin || m_currentVideoStreamId.isEmpty())
+        return size;
+
+    RefPtr<VideoTrackPrivateGStreamer> videoTrack = m_videoTracks.get(m_currentVideoStreamId);
+    if (!videoTrack)
+        return size;
+
+    auto tags = gst_stream_get_tags(videoTrack->stream());
+    gint width, height;
+
+    if (gst_tag_list_get_int(tags, WEBKIT_MEDIA_TRACK_TAG_WIDTH, &width) &&
+        gst_tag_list_get_int(tags, WEBKIT_MEDIA_TRACK_TAG_HEIGHT, &height)) {
+
+        return FloatSize(width, height);
+    }
+
+    return size;
+}
 #else
 #define CREATE_TRACK(type, _id, tracks, method, stream)
 m_has##Type## = true;
@@ -1743,34 +1774,6 @@ void MediaPlayerPrivateGStreamer::sourceSetup(GstElement* sourceElement)
     }
     GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline.get()), GST_DEBUG_GRAPH_SHOW_ALL, "source-setup");
 }
-
-#if GST_CHECK_VERSION(1, 10, 0) && ENABLE(MEDIA_STREAM)
-FloatSize MediaPlayerPrivateGStreamer::naturalSize() const
-{
-    GstStream* stream = nullptr;
-
-    if (!m_currentVideoStreamId.isEmpty()) {
-        stream = m_videoTracks.get(m_currentVideoStreamId)->stream();
-    } else if (m_videoTracks.size() == 1) {
-        // FIXME - fast/mediastream/MediaStream-video-element.html checkes
-        // video size before a track is selected. This should not be required.
-        auto it = m_videoTracks.begin();
-        stream = it->value->stream();
-    }
-
-    if (stream) {
-        auto tags = adoptGRef(gst_stream_get_tags (stream));
-        gint width, height;
-
-        if (gst_tag_list_get_int(tags.get(), WEBKIT_MEDIA_TRACK_TAG_WIDTH, &width) &&
-                gst_tag_list_get_int(tags.get(), WEBKIT_MEDIA_TRACK_TAG_HEIGHT, &height) &&
-                    width != 0 && height != 0)
-            return FloatSize(width, height);
-    }
-
-    return MediaPlayerPrivateGStreamerBase::naturalSize();
-}
-#endif // GST_CHECK_VERSION(1, 10, 0) && ENABLE(MEDIA_STREAM)
 
 bool MediaPlayerPrivateGStreamer::hasSingleSecurityOrigin() const
 {
