@@ -669,28 +669,22 @@ void MediaPlayerPrivateGStreamer::clearTracks()
 
 FloatSize MediaPlayerPrivateGStreamer::naturalSize() const
 {
-    FloatSize size = MediaPlayerPrivateGStreamerBase::naturalSize();
+    if (!m_isLegacyPlaybin && !m_currentVideoStreamId.isEmpty()) {
+        RefPtr<VideoTrackPrivateGStreamer> videoTrack = m_videoTracks.get(m_currentVideoStreamId);
 
-    if (!size.isEmpty())
-        return size;
+        if (videoTrack) {
+            auto tags = gst_stream_get_tags(videoTrack->stream());
+            gint width, height;
 
-    if (!hasVideo() || m_isLegacyPlaybin || m_currentVideoStreamId.isEmpty())
-        return size;
+            if (gst_tag_list_get_int(tags, WEBKIT_MEDIA_TRACK_TAG_WIDTH, &width) &&
+                gst_tag_list_get_int(tags, WEBKIT_MEDIA_TRACK_TAG_HEIGHT, &height)) {
 
-    RefPtr<VideoTrackPrivateGStreamer> videoTrack = m_videoTracks.get(m_currentVideoStreamId);
-    if (!videoTrack)
-        return size;
-
-    auto tags = gst_stream_get_tags(videoTrack->stream());
-    gint width, height;
-
-    if (gst_tag_list_get_int(tags, WEBKIT_MEDIA_TRACK_TAG_WIDTH, &width) &&
-        gst_tag_list_get_int(tags, WEBKIT_MEDIA_TRACK_TAG_HEIGHT, &height)) {
-
-        return FloatSize(width, height);
+                return FloatSize(width, height);
+            }
+        }
     }
 
-    return size;
+    return MediaPlayerPrivateGStreamerBase::naturalSize();
 }
 #else
 #define CREATE_TRACK(type, _id, tracks, method, stream)
