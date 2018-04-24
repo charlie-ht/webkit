@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Igalia S.L. All rights reserved.
+ * Copyright (C) 2018 Igalia S.L. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -20,55 +20,34 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
  */
-
-
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
-
-#include "GStreamerCaptureDevice.h"
-#include "GStreamerCommon.h"
-#include "LibWebRTCMacros.h"
-
-#include <gst/gst.h>
 
 #pragma once
 
+#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+
+#include "GStreamerAudioCaptureSource.h"
+
 namespace WebCore {
 
-class GStreamerCapturer {
+class MockGStreamerAudioCaptureSource final : public GStreamerAudioCaptureSource, RealtimeMediaSource::Observer {
 public:
-    GStreamerCapturer(GStreamerCaptureDevice, GRefPtr<GstCaps>);
-    GStreamerCapturer(const char* sourceFactory, GRefPtr<GstCaps>);
-
-    void setupPipeline();
-    virtual void play();
-    virtual void stop();
-    GstCaps* caps();
-    bool addSink(GstElement *newSink);
-    GstElement* makeElement(const char* factoryName);
-    GstElement* createSource();
-    GstElement* source() { return m_src.get();  }
-    virtual const char* name() = 0;
-
-    GstElement* sink() const { return m_sink.get(); }
-    void setSink(GstElement* sink) { m_sink = adoptGRef(sink); };
-
-    GstElement* pipeline() const { return m_pipeline.get(); }
-    virtual GstElement* createConverter() = 0;
-
-protected:
-    GRefPtr<GstElement> m_sink;
-    GRefPtr<GstElement> m_src;
-    GRefPtr<GstElement> m_tee;
-    GRefPtr<GstElement> m_capsfilter;
-    GRefPtr<GstDevice> m_device;
-    GRefPtr<GstCaps> m_caps;
-    GRefPtr<GstElement> m_pipeline;
+    MockGStreamerAudioCaptureSource(const String& deviceID, const String& name);
+    ~MockGStreamerAudioCaptureSource();
+    std::optional<std::pair<String, String>> applyConstraints(const MediaConstraints&);
+    void applyConstraints(const MediaConstraints&, SuccessHandler&&, FailureHandler&&) final;
 
 private:
-    const char* m_sourceFactory;
+    void stopProducingData() final;
+    void startProducingData() final;
+    const RealtimeMediaSourceSettings& settings() const final;
+    const RealtimeMediaSourceCapabilities& capabilities() const final;
 
+    void captureFailed();
+    std::unique_ptr<RealtimeMediaSource> m_wrappedSource;
+
+    void videoSampleAvailable(MediaSample&) override {};
 };
 
 } // namespace WebCore

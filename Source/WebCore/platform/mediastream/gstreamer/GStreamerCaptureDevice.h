@@ -21,7 +21,7 @@
 #if ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 
 #include "CaptureDevice.h"
-#include "GRefPtrGStreamer.h"
+#include "GStreamerCommon.h"
 
 #include <gst/gst.h>
 
