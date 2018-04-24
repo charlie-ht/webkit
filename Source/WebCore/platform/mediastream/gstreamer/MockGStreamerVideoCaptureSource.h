@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Igalia S.L. All rights reserved.
+ * Copyright (C) 2018 Igalia S.L. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -20,52 +20,37 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
  */
-
-
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
-
-#include "GStreamerCaptureDevice.h"
-#include "GStreamerCommon.h"
-#include "LibWebRTCMacros.h"
-
-#include <gst/gst.h>
 
 #pragma once
 
+#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+
+#include "GStreamerVideoCaptureSource.h"
+#include "MockRealtimeMediaSource.h"
+
 namespace WebCore {
 
-class GStreamerCapturer {
+class WrappedMockRealtimeVideoSource;
+// We are subclassing GStreamerVideoCaptureSource and not MockRealtimeMediaSource
+// because the MediaPlayer expects GStreamerVideoCaptureSource to be able to properly
+// build the GStreamer pipeline. Still we make it so that it behaves as closely as possible
+// to the MockRealtimeMediaSource class by wrapping our own subclass of it.
+class MockGStreamerVideoCaptureSource final : public GStreamerVideoCaptureSource, RealtimeMediaSource::Observer {
 public:
-    GStreamerCapturer(GStreamerCaptureDevice, GRefPtr<GstCaps>);
-    GStreamerCapturer(const char* sourceFactory, GRefPtr<GstCaps>);
-
-    virtual void setupPipeline();
-    virtual void play();
-    virtual void stop();
-    GstCaps* caps();
-    bool addSink(GstElement *newSink);
-    GstElement* makeElement(const char* factoryName);
-    GstElement* createSource();
-    virtual const char* name() = 0;
-    GstElement* source() { return m_src.get(); }
-    GstElement* pipeline() { return m_pipeline.get(); }
-    GstElement* sink() { return m_sink.get(); }
-
-protected:
-    GRefPtr<GstElement> m_sink;
-    GRefPtr<GstElement> m_src;
-    GRefPtr<GstElement> m_tee;
-    GRefPtr<GstElement> m_capsfilter;
-    GRefPtr<GstDevice> m_device;
-    GRefPtr<GstCaps> m_caps;
-    GRefPtr<GstElement> m_pipeline;
+    MockGStreamerVideoCaptureSource(const String& deviceID, const String& name);
 
 private:
-    const char* m_sourceFactory;
+    void stopProducingData() final;
+    void startProducingData() final;
+    std::unique_ptr<RealtimeMediaSource> m_wrappedSource;
+    const RealtimeMediaSourceCapabilities& capabilities() const final;
+    void captureFailed() override;
 
+    void videoSampleAvailable(MediaSample&) override;
 };
 
 } // namespace WebCore
+
 #endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)

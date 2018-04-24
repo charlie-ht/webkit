@@ -48,8 +48,7 @@ GStreamerAudioCapturer::GStreamerAudioCapturer()
 
 void GStreamerAudioCapturer::setupPipeline()
 {
-    GUniquePtr<char> pipelineName(g_strdup_printf("AudioCapturer_%p", this));
-    m_pipeline = makeElement(pipelineName.get());
+    m_pipeline = makeElement("pipeline");
 
     GRefPtr<GstElement> source = createSource();
 

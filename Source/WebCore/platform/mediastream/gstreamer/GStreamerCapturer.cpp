@@ -29,6 +29,7 @@
 #include "GStreamerCapturer.h"
 
 #include <gst/app/gstappsink.h>
+#include <gst/app/gstappsrc.h>
 #include <mutex>
 #include <webrtc/api/mediastreaminterface.h>
 
@@ -66,9 +67,11 @@ GStreamerCapturer::GStreamerCapturer(const char* sourceFactory, GRefPtr<GstCaps>
 GstElement* GStreamerCapturer::createSource()
 {
     if (m_sourceFactory) {
-        m_src = adoptGRef(makeElement(m_sourceFactory));
-        ASSERT(m_src);
+        m_src = makeElement(m_sourceFactory);
+        if (GST_IS_APP_SRC(m_src.get()))
+            g_object_set(m_src.get(), "is-live", true, "format", GST_FORMAT_TIME, nullptr);
 
+        ASSERT(m_src);
         return m_src.get();
     }
 
@@ -107,45 +110,50 @@ GstElement* GStreamerCapturer::makeElement(const char* factoryName)
     return element;
 }
 
-void GStreamerCapturer::addSink(GstElement *newSink)
+bool GStreamerCapturer::addSink(GstElement* newSink)
 {
-    if (!m_pipeline || !m_tee)
-        return;
+    g_return_val_if_fail(m_pipeline.get(), false);
+    g_return_val_if_fail(m_tee.get(), false);
 
-    auto queue = adoptGRef(makeElement("queue"));
-    gst_bin_add_many(GST_BIN(pipeline()), queue.get(), newSink, nullptr);
-    gst_element_sync_state_with_parent(queue.get());
+    auto queue = makeElement("queue");
+    gst_bin_add_many(GST_BIN(m_pipeline.get()), queue, newSink, nullptr);
+    gst_element_sync_state_with_parent(queue);
     gst_element_sync_state_with_parent(newSink);
 
-    if (!gst_element_link_pads(m_tee.get(), "src_%u", queue.get(), "sink"))
-        ASSERT_NOT_REACHED();
+    if (!gst_element_link(queue, newSink)) {
+        GST_ERROR_OBJECT(m_pipeline.get(),
+            "Could not link %" GST_PTR_FORMAT " and %" GST_PTR_FORMAT,
+            queue, newSink);
+        return false;
+    }
 
-    if (!gst_element_link(queue.get(), newSink))
-        ASSERT_NOT_REACHED();
+    if (!gst_element_link_pads(m_tee.get(), "src_%u", queue, "sink")) {
+        GST_ERROR_OBJECT(m_pipeline.get(),
+            "Could not link %" GST_PTR_FORMAT " and %" GST_PTR_FORMAT,
+            m_tee.get(), queue);
+        return false;
+    }
 
-    if (newSink == sink()) {
-        GST_INFO_OBJECT(pipeline(), "Setting queue as leaky upstream",
-            " so that the player can set the sink as to PAUSED without "
+    if (newSink == m_sink.get()) {
+        GST_INFO_OBJECT(m_pipeline.get(), "Setting queue as leaky upstream",
+            " so that the player can set the sink to PAUSED without "
             " setting the whole capturer to PAUSED");
-        g_object_set(queue.get(), "leaky", 2 /* upstream */, nullptr);
+        g_object_set(queue, "leaky", 2 /* upstream */, nullptr);
     }
 
     GST_INFO_OBJECT(pipeline(), "Adding sink: %" GST_PTR_FORMAT, newSink);
 
     GUniquePtr<char> dumpName(g_strdup_printf("%s_sink_%s_added", GST_OBJECT_NAME(pipeline()), GST_OBJECT_NAME(newSink)));
     GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(pipeline()), GST_DEBUG_GRAPH_SHOW_ALL, dumpName.get());
+
+    return true;
 }
 
 void GStreamerCapturer::play()
 {
     ASSERT(m_pipeline);
 
-    GST_ERROR_OBJECT((gpointer) pipeline(), "Going to PLAYING!");
-
-    gst_element_set_state(pipeline(), GST_STATE_PLAYING);
-    GstState state;
-    GST_ERROR_OBJECT((gpointer) pipeline(), "STATE: %s", gst_element_state_get_name(state));
-    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(pipeline()), GST_DEBUG_GRAPH_SHOW_ALL, gst_element_state_get_name(state));
+    gst_element_set_state(m_pipeline.get(), GST_STATE_PLAYING);
 }
 
 void GStreamerCapturer::stop()

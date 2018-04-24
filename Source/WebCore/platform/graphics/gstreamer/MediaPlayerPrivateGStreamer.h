@@ -74,7 +74,7 @@ public:
     bool hasVideo() const override { return m_hasVideo; }
     bool hasAudio() const override { return m_hasAudio; }
 
-    void load(const String &url) override;
+    void load(const String& url) override;
 #if ENABLE(MEDIA_SOURCE)
     void load(const String& url, MediaSourcePrivateClient*) override;
 #endif
@@ -129,9 +129,14 @@ public:
     AudioSourceProvider* audioSourceProvider() override;
 #endif
 
-    bool isLiveStream() const override { return m_isStreaming; }
+    bool isLiveStream() const override
+    {
+        return m_isStreaming;
+    }
 
     void enableTrack(TrackPrivateBaseGStreamer::TrackType, unsigned index);
+
+    bool handleSyncMessage(GstMessage*) override;
 
 private:
     static void getSupportedTypes(HashSet<String, ASCIICaseInsensitiveHash>&);
@@ -177,9 +182,11 @@ private:
     static void downloadBufferFileCreatedCallback(MediaPlayerPrivateGStreamer*);
 
     void setPlaybinURL(const URL& urlString);
+    void loadFull(const String& url, const gchar *playbinName);
 
 #if GST_CHECK_VERSION(1, 10, 0)
     void updateTracks();
+    void clearTracks();
 #endif
 
 protected:
@@ -259,6 +266,7 @@ private:
     bool m_isLegacyPlaybin;
 #if GST_CHECK_VERSION(1, 10, 0)
     GRefPtr<GstStreamCollection> m_streamCollection;
+    FloatSize naturalSize() const;
 #endif
     String m_currentAudioStreamId;
     String m_currentVideoStreamId;
@@ -278,7 +286,15 @@ private:
     HashMap<AtomicString, RefPtr<InbandMetadataTextTrackPrivateGStreamer>> m_metadataTracks;
 #endif
 #endif
-    virtual bool isMediaSource() const { return false; }
+
+#if ENABLE(MEDIA_STREAM)
+    RefPtr<MediaStreamPrivate> m_streamPrivate;
+#endif
+
+    virtual bool isMediaSource() const
+    {
+        return false;
+    }
 };
 }
 

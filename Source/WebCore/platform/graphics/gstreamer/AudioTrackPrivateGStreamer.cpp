@@ -26,7 +26,6 @@
 #include "config.h"
 
 #if ENABLE(VIDEO) && USE(GSTREAMER) && ENABLE(VIDEO_TRACK)
-
 #include "AudioTrackPrivateGStreamer.h"
 
 #include "MediaPlayerPrivateGStreamer.h"

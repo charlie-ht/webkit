@@ -71,6 +71,10 @@
 #include <epoxy/gl.h>
 #endif
 
+#if ENABLE(MEDIA_STREAM) && GST_CHECK_VERSION(1, 10, 0)
+#include "gstreamer/GStreamerMediaStreamSource.h"
+#endif
+
 #define GST_USE_UNSTABLE_API
 #include <gst/gl/gl.h>
 #undef GST_USE_UNSTABLE_API
@@ -132,6 +136,9 @@ void registerWebKitGStreamerElements()
     GRefPtr<GstElementFactory> clearKeyDecryptorFactory = adoptGRef(gst_element_factory_find("webkitclearkey"));
     if (!clearKeyDecryptorFactory)
         gst_element_register(nullptr, "webkitclearkey", GST_RANK_PRIMARY + 100, WEBKIT_TYPE_MEDIA_CK_DECRYPT);
+#endif
+#if ENABLE(MEDIA_STREAM) && GST_CHECK_VERSION(1,10,0)
+    gst_element_register(nullptr, "mediastreamsrc", GST_RANK_PRIMARY, WEBKIT_TYPE_MEDIA_STREAM_SRC);
 #endif
 }
 
@@ -210,7 +217,10 @@ public:
         gst_video_frame_unmap(&m_videoFrame);
     }
 
-    const IntSize& size() const { return m_size; }
+    const IntSize& size() const
+    {
+        return m_size;
+    }
     TextureMapperGL::Flags flags() const { return m_flags; }
     GLuint textureID() const { return m_textureID; }
     bool isValid() const { return m_isValid; }
@@ -1117,8 +1127,17 @@ GstElement* MediaPlayerPrivateGStreamerBase::createVideoSink()
     if (!m_videoSink) {
         m_usingFallbackVideoSink = true;
         m_videoSink = webkitVideoSinkNew();
+        auto sinkbin = gst_bin_new(nullptr);
+        auto convert = gst_element_factory_make("videoconvert", nullptr);
+
+        gst_bin_add_many(GST_BIN(sinkbin), convert, m_videoSink.get(), NULL);
+        gst_element_link(convert, m_videoSink.get());
+        gst_element_add_pad(GST_ELEMENT(sinkbin), gst_ghost_pad_new("sink", gst_element_get_static_pad(convert, "sink")));
+
         g_signal_connect_swapped(m_videoSink.get(), "repaint-requested", G_CALLBACK(repaintCallback), this);
         g_signal_connect_swapped(m_videoSink.get(), "repaint-cancelled", G_CALLBACK(repaintCancelledCallback), this);
+
+        m_videoSink = GST_ELEMENT(sinkbin);
     }
 
     GstElement* videoSink = nullptr;

@@ -37,27 +37,30 @@ public:
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
     WEBCORE_EXPORT static VideoCaptureFactory& factory();
 
-    const RealtimeMediaSourceCapabilities& capabilities() const final;
-    const RealtimeMediaSourceSettings& settings() const final;
+    const RealtimeMediaSourceCapabilities& capabilities() const override;
+    const RealtimeMediaSourceSettings& settings() const override;
+    GstElement* pipeline() { return m_capturer->pipeline(); }
+    GStreamerCapturer* capturer() { return m_capturer.get(); }
+
+
+protected:
+    GStreamerVideoCaptureSource(const String& deviceID, const String& name, const gchar * source_factory);
+    GStreamerVideoCaptureSource(GStreamerCaptureDevice);
+    virtual ~GStreamerVideoCaptureSource();
+    void startProducingData() override;
+    void stopProducingData() override;
+
+    mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
+    mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
 
 private:
-    GStreamerVideoCaptureSource(const String& deviceID, const String& name, const gchar * source_factory);
-    virtual ~GStreamerVideoCaptureSource();
-
-    GStreamerVideoCaptureSource(GStreamerCaptureDevice);
-
     static GstFlowReturn newSampleCallback(GstElement*, GStreamerVideoCaptureSource*);
-
-    void startProducingData() final;
-    void stopProducingData() final;
 
     bool isCaptureSource() const final { return true; }
     bool applySize(const IntSize&) final;
     bool applyFrameRate(double) final;
     bool applyAspectRatio(double) final { return true; }
 
-    mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
-    mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
     std::unique_ptr<GStreamerVideoCapturer> m_capturer;
 };
 

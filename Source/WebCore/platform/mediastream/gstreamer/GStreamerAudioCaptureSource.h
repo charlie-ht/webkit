@@ -38,27 +38,31 @@ public:
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
     WEBCORE_EXPORT static AudioCaptureFactory& factory();
 
-    const RealtimeMediaSourceCapabilities& capabilities() const final;
-    const RealtimeMediaSourceSettings& settings() const final;
+    const RealtimeMediaSourceCapabilities& capabilities() const override;
+    const RealtimeMediaSourceSettings& settings() const override;
 
-private:
+    GstElement* pipeline() { return m_capturer->pipeline(); }
+    GStreamerCapturer* capturer() { return m_capturer.get(); }
+
+protected:
     GStreamerAudioCaptureSource(GStreamerCaptureDevice);
     GStreamerAudioCaptureSource(const String& deviceID, const String& name);
     virtual ~GStreamerAudioCaptureSource();
+    void startProducingData() override;
+    void stopProducingData() override;
 
+    mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
+    mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
+
+private:
     bool applySampleRate(int) final;
     bool isCaptureSource() const final { return true; }
-    void startProducingData() final;
-    void stopProducingData() final;
     bool applyVolume(double) final { return true; }
 
     std::unique_ptr<GStreamerAudioCapturer> m_capturer;
 
     static GstFlowReturn newSampleCallback(GstElement*, GStreamerAudioCaptureSource*);
     void triggerSampleAvailable(GstSample*);
-
-    mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
-    mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
 };
 
 } // namespace WebCore

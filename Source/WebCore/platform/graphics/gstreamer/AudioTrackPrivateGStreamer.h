@@ -48,7 +48,6 @@ public:
     {
         return adoptRef(*new AudioTrackPrivateGStreamer(player, index, stream));
     }
-
     Kind kind() const final;
 #endif
 
