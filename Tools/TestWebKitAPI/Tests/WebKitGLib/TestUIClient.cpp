@@ -231,6 +231,25 @@ public:
         return TRUE;
     }
 
+    static gboolean permissionCheck(WebKitWebView*, WebKitPermissionRequest* request, UIClientTest* test)
+    {
+        g_assert(WEBKIT_IS_PERMISSION_REQUEST(request));
+        test->assertObjectIsDeletedWhenTestFinishes(G_OBJECT(request));
+
+        if (test->m_verifyMediaTypes && WEBKIT_IS_USER_MEDIA_PERMISSION_REQUEST(request)) {
+            WebKitUserMediaPermissionRequest* userMediaRequest = WEBKIT_USER_MEDIA_PERMISSION_REQUEST(request);
+            g_assert(webkit_user_media_permission_is_for_audio_device(userMediaRequest) == test->m_expectedAudioMedia);
+            g_assert(webkit_user_media_permission_is_for_video_device(userMediaRequest) == test->m_expectedVideoMedia);
+        }
+
+        if (test->m_allowPermissionRequests)
+            webkit_permission_request_resolve_check(request, "lalala", true);
+        else
+            webkit_permission_request_resolve_check(request, "lalala", false);
+
+        return TRUE;
+    }
+
     static void permissionResultMessageReceivedCallback(WebKitUserContentManager* userContentManager, WebKitJavascriptResult* javascriptResult, UIClientTest* test)
     {
         test->m_permissionResult.reset(WebViewTest::javascriptResultToCString(javascriptResult));
@@ -251,6 +270,7 @@ public:
         g_signal_connect(m_webView, "script-dialog", G_CALLBACK(scriptDialog), this);
         g_signal_connect(m_webView, "mouse-target-changed", G_CALLBACK(mouseTargetChanged), this);
         g_signal_connect(m_webView, "permission-request", G_CALLBACK(permissionRequested), this);
+        g_signal_connect(m_webView, "permission-check", G_CALLBACK(permissionCheck), this);
         webkit_user_content_manager_register_script_message_handler(m_userContentManager.get(), "permission");
         g_signal_connect(m_userContentManager.get(), "script-message-received::permission", G_CALLBACK(permissionResultMessageReceivedCallback), this);
     }
@@ -835,6 +855,8 @@ static void testWebViewUserMediaPermissionRequests(UIClientTest* test, gconstpoi
         "    navigator.webkitGetUserMedia({audio: true, video: true},"
         "                                 function(s) { document.title = \"OK\" },"
         "                                 function(e) { document.title = e.name });"
+        "    navigator.mediaDevices.enumerateDevices().then(function(devices) {"
+        "    })"
         "  }"
         "  </script>"
         "  <body onload='runTest();'></body>"

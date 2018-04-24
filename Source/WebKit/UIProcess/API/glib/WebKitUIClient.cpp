@@ -194,8 +194,8 @@ private:
 
     bool checkUserMediaPermissionForOrigin(WebPageProxy&, WebFrameProxy&, API::SecurityOrigin& userMediaDocumentOrigin, API::SecurityOrigin& topLevelDocumentOrigin, UserMediaPermissionCheckProxy& permissionRequest) override
     {
-        // FIXME: Add permission request to get the devices, store salt per origin.
-        permissionRequest.setUserMediaAccessInfo(createCanonicalUUIDString(), false);
+        GRefPtr<WebKitUserMediaPermissionRequest> userMediaPermissionRequest = adoptGRef(webkitUserMediaPermissionCheckCreate(permissionRequest, userMediaDocumentOrigin, topLevelDocumentOrigin));
+        webkitWebViewMakePermissionCheck(m_webView, WEBKIT_PERMISSION_REQUEST(userMediaPermissionRequest.get()));
         return true;
     }
 
