@@ -179,6 +179,7 @@ private:
     static void downloadBufferFileCreatedCallback(MediaPlayerPrivateGStreamer*);
 
     void setPlaybinURL(const URL& urlString);
+    void loadFull(const String& url, const gchar *playbinName);
 
 #if GST_CHECK_VERSION(1, 10, 0)
     void updateTracks();
@@ -262,6 +263,7 @@ private:
     bool m_isLegacyPlaybin;
 #if GST_CHECK_VERSION(1, 10, 0)
     GRefPtr<GstStreamCollection> m_streamCollection;
+    FloatSize naturalSize() const;
 #endif
     String m_currentAudioStreamId;
     String m_currentVideoStreamId;
@@ -281,6 +283,11 @@ private:
     HashMap<AtomicString, RefPtr<InbandMetadataTextTrackPrivateGStreamer>> m_metadataTracks;
 #endif
 #endif
+
+#if ENABLE(MEDIA_STREAM)
+    RefPtr<MediaStreamPrivate> m_streamPrivate;
+#endif
+
     virtual bool isMediaSource() const { return false; }
 };
 }

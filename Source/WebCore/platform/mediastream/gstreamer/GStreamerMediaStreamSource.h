@@ -1,5 +1,6 @@
+
 /*
- * Copyright (C) 2017 Igalia S.L. All rights reserved.
+ * Copyright (C) 2018 Igalia S.L. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,54 +24,28 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#pragma once
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
 
-#include "GStreamerCaptureDevice.h"
-#include "GStreamerCommon.h"
-#include "LibWebRTCMacros.h"
+#include "MediaStreamPrivate.h"
+#include "MediaStreamTrackPrivate.h"
 
 #include <gst/gst.h>
 
-#pragma once
+#define WEBKIT_MEDIA_TRACK_TAG_WIDTH "webkit-media-stream-width"
+#define WEBKIT_MEDIA_TRACK_TAG_HEIGHT "webkit-media-stream-height"
+#define WEBKIT_MEDIA_TRACK_TAG_KIND "webkit-media-stream-kind"
 
 namespace WebCore {
 
-class GStreamerCapturer {
-public:
-    GStreamerCapturer(GStreamerCaptureDevice, GRefPtr<GstCaps>);
-    GStreamerCapturer(const char* sourceFactory, GRefPtr<GstCaps>);
+typedef struct _WebKitMediaStreamSrc WebKitMediaStreamSrc;
 
-    void setupPipeline();
-    virtual void play();
-    virtual void stop();
-    GstCaps* caps();
-    bool addSink(GstElement *newSink);
-    GstElement* makeElement(const char* factoryName);
-    GstElement* createSource();
-    GstElement* source() { return m_src.get();  }
-    virtual const char* name() = 0;
+#define WEBKIT_MEDIA_STREAM_SRC(o) (G_TYPE_CHECK_INSTANCE_CAST((o), WEBKIT_TYPE_MEDIA_STREAM_SRC, WebKitMediaStreamSrc))
+#define WEBKIT_IS_MEDIA_STREAM_SRC(o) (G_TYPE_CHECK_INSTANCE_TYPE((o), WEBKIT_TYPE_MEDIA_STREAM_SRC))
+#define WEBKIT_TYPE_MEDIA_STREAM_SRC (webkit_media_stream_src_get_type())
+GType webkit_media_stream_src_get_type(void) G_GNUC_CONST;
+gboolean webkitMediaStreamSrcSetStream(WebKitMediaStreamSrc*, MediaStreamPrivate*);
+} // WebCore
 
-    GstElement* sink() const { return m_sink.get(); }
-    void setSink(GstElement* sink) { m_sink = adoptGRef(sink); };
-
-    GstElement* pipeline() const { return m_pipeline.get(); }
-    virtual GstElement* createConverter() = 0;
-
-protected:
-    GRefPtr<GstElement> m_sink;
-    GRefPtr<GstElement> m_src;
-    GRefPtr<GstElement> m_tee;
-    GRefPtr<GstElement> m_capsfilter;
-    GRefPtr<GstDevice> m_device;
-    GRefPtr<GstCaps> m_caps;
-    GRefPtr<GstElement> m_pipeline;
-
-private:
-    const char* m_sourceFactory;
-
-};
-
-} // namespace WebCore
-
-#endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#endif // ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)

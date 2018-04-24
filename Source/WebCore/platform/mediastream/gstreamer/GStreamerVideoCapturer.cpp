@@ -85,7 +85,7 @@ bool GStreamerVideoCapturer::setFrameRate(double frameRate)
     }
 
     if (!numerator) {
-        GST_ERROR_OBJECT(m_pipeline.get(), "Do not force variable framerate");
+        GST_INFO_OBJECT(m_pipeline.get(), "Do not force variable framerate");
         return false;
     }
 
