@@ -182,7 +182,7 @@ struct _WebKitMediaStreamSrc {
     GstElement* audioSrc;
     GstElement* videoSrc;
 
-    WebKitMediaStreamTrackObserver* observer;
+    WebKitMediaStreamTrackObserver observer;
     String videoTrackID;
     volatile gint npads;
     gulong probeid;
@@ -302,10 +302,10 @@ webkit_media_stream_src_change_state(GstElement* element, GstStateChange transit
 
         GST_OBJECT_LOCK(self);
         for (auto& track : self->stream->tracks())
-            track->removeObserver(*self->observer);
+            track->removeObserver(&self->observer);
         GST_OBJECT_UNLOCK(self);
 
-        GStreamerVideoDecoderFactory::removeObserver(*self->observer);
+        GStreamerVideoDecoderFactory::removeObserver(self->observer);
     }
 
     res = GST_ELEMENT_CLASS(webkit_media_stream_src_parent_class)->change_state(element, transition);
@@ -350,7 +350,7 @@ webkit_media_stream_src_class_init(WebKitMediaStreamSrcClass* klass)
 static void
 webkit_media_stream_src_init(WebKitMediaStreamSrc* self)
 {
-    self->observer = new WebKitMediaStreamTrackObserver(self);
+    self->observer = WebKitMediaStreamTrackObserver(self);
     self->flow_combiner = gst_flow_combiner_new();
 }
 
@@ -447,7 +447,7 @@ webkit_media_stream_src_setup_src(WebKitMediaStreamSrc* self,
         });
 
     if (observe_track)
-        track->addObserver(*self->observer);
+        track->addObserver(self->observer);
 
     gst_element_sync_state_with_parent(element);
     return TRUE;
@@ -542,7 +542,7 @@ webkit_media_stream_src_set_stream(WebKitMediaStreamSrc* self, MediaStreamPrivat
                 self->videoTrackID = track->id();
                 webkit_media_stream_src_setup_app_src(self, track.get(),
                     &self->videoSrc, &encoded_video_src_template);
-                GStreamerVideoDecoderFactory::addObserver(*self->observer);
+                GStreamerVideoDecoderFactory::addObserver(self->observer);
             } else {
                 webkit_media_stream_src_setup_app_src(self, track.get(), &self->videoSrc,
                     &video_src_template);

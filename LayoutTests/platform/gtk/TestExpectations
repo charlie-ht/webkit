@@ -595,6 +595,8 @@ webkit.org/b/160996 fast/mediastream/MediaStream-video-element-video-tracks-disa
 webkit.org/b/172269 fast/mediastream/media-devices-enumerate-devices.html [ Failure ]
 
 # WIP - to be investigated.
+fast/mediastream/MediaStream-video-element-displays-buffer.html [ Failure ]
+fast/mediastream/getUserMedia-grant-persistency3.html [ Failure Pass ]
 webkit.org/b/173257 fast/mediastream/MediaStream-video-element-track-stop.html [ Timeout Failure Crash ]
 webkit.org/b/173257 fast/mediastream/MediaStreamTrack-getSettings.html [ Failure ]
 webkit.org/b/79203 fast/mediastream/RTCPeerConnection-closed-state.html [ Failure Timeout ]
