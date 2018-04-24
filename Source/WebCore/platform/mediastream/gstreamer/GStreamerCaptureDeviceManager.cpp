@@ -21,7 +21,7 @@
 #if ENABLE(MEDIA_STREAM) && USE(GSTREAMER)
 #include "GStreamerCaptureDeviceManager.h"
 
-#include "GStreamerUtilities.h"
+#include "GStreamerCommon.h"
 #include <wtf/glib/GUniquePtr.h>
 
 namespace WebCore {

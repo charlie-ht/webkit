@@ -28,7 +28,7 @@
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 #include "GStreamerVideoCapturer.h"
 
-#include "GStreamerUtilities.h"
+#include "GStreamerCommon.h"
 
 #include <gst/app/gstappsink.h>
 
