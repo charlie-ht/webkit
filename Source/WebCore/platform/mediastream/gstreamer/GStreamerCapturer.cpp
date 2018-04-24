@@ -28,8 +28,6 @@
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 #include "GStreamerCapturer.h"
 
-#include "GStreamerUtilities.h"
-
 #include <gst/app/gstappsink.h>
 #include <mutex>
 #include <webrtc/api/mediastreaminterface.h>

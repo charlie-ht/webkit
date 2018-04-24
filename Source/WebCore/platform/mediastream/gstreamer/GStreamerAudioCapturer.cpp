@@ -28,7 +28,7 @@
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 #include "GStreamerAudioCapturer.h"
 
-#include "GStreamerUtilities.h"
+#include "GStreamerCommon.h"
 #include "LibWebRTCAudioFormat.h"
 
 #include <gst/app/gstappsink.h>

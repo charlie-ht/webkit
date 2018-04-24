@@ -27,7 +27,7 @@
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 
-#include "GRefPtrGStreamer.h"
+#include "GStreamerCommon.h"
 
 #include "LibWebRTCMacros.h"
 #include "gstreamer/GStreamerCaptureDevice.h"
@@ -63,4 +63,3 @@ public:
 
 } // namespace WebCore
 #endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
-
