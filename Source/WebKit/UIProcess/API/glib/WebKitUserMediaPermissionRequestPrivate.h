@@ -22,3 +22,4 @@
 #include "WebKitUserMediaPermissionRequest.h"
 
 WebKitUserMediaPermissionRequest* webkitUserMediaPermissionRequestCreate(WebKit::UserMediaPermissionRequestProxy&, API::SecurityOrigin&, API::SecurityOrigin&);
+WebKitUserMediaPermissionRequest* webkitUserMediaPermissionCheckCreate(WebKit::UserMediaPermissionCheckProxy&, API::SecurityOrigin&, API::SecurityOrigin&);

@@ -596,6 +596,7 @@ webkit_download_get_type
 WebKitPermissionRequest
 webkit_permission_request_allow
 webkit_permission_request_deny
+webkit_permission_request_resolve_check
 
 <SUBSECTION Standard>
 WebKitPermissionRequestIface

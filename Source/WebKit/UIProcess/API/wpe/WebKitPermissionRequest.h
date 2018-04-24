@@ -42,6 +42,9 @@ struct _WebKitPermissionRequestIface {
 
     void (* allow) (WebKitPermissionRequest *request);
     void (* deny)  (WebKitPermissionRequest *request);
+    void (* resolve_check)  (WebKitPermissionRequest *request,
+                             const gchar* salt,
+                             gboolean allowed);
 };
 
 WEBKIT_API GType
@@ -52,6 +55,11 @@ webkit_permission_request_allow    (WebKitPermissionRequest *request);
 
 WEBKIT_API void
 webkit_permission_request_deny     (WebKitPermissionRequest *request);
+
+WEBKIT_API void
+webkit_permission_request_resolve_check (WebKitPermissionRequest *request,
+                                         const gchar* salt,
+                                         gboolean allowed);
 
 G_END_DECLS
 
