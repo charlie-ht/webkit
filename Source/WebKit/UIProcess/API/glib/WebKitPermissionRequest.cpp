@@ -90,7 +90,7 @@ void webkit_permission_request_deny(WebKitPermissionRequest* request)
  * origin for this kind of requests, using the
  * @salt parameter.
  */
-void webkit_permission_request_resolve_check (WebKitPermissionRequest *request, const gchar* mediaIdentifierHashSalt, gboolean allowed)
+void webkit_permission_request_resolve_check(WebKitPermissionRequest *request, const gchar* mediaIdentifierHashSalt, gboolean allowed)
 {
     g_return_if_fail(WEBKIT_IS_PERMISSION_REQUEST(request));
 

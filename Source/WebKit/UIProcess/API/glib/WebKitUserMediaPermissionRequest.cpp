@@ -132,7 +132,9 @@ static void webkitUserMediaPermissionRequestDispose(GObject* object)
  */
 gboolean webkit_user_media_permission_is_for_audio_device(WebKitUserMediaPermissionRequest* request)
 {
-    g_return_val_if_fail(request->priv->request, FALSE);
+    g_return_val_if_fail(request->priv->request || request->priv->checkRequest, FALSE);
+    if (request->priv->checkRequest)
+        return FALSE;
     return request->priv->request->requiresAudioCapture();
 }
 
@@ -146,7 +148,9 @@ gboolean webkit_user_media_permission_is_for_audio_device(WebKitUserMediaPermiss
  */
 gboolean webkit_user_media_permission_is_for_video_device(WebKitUserMediaPermissionRequest* request)
 {
-    g_return_val_if_fail(request->priv->request, FALSE);
+    g_return_val_if_fail(request->priv->request || request->priv->checkRequest, FALSE);
+    if (request->priv->checkRequest)
+        return FALSE;
     return request->priv->request->requiresVideoCapture();
 }
 

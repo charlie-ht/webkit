@@ -238,14 +238,14 @@ public:
 
         if (test->m_verifyMediaTypes && WEBKIT_IS_USER_MEDIA_PERMISSION_REQUEST(request)) {
             WebKitUserMediaPermissionRequest* userMediaRequest = WEBKIT_USER_MEDIA_PERMISSION_REQUEST(request);
-            g_assert(webkit_user_media_permission_is_for_audio_device(userMediaRequest) == test->m_expectedAudioMedia);
-            g_assert(webkit_user_media_permission_is_for_video_device(userMediaRequest) == test->m_expectedVideoMedia);
+            g_assert(!webkit_user_media_permission_is_for_audio_device(userMediaRequest));
+            g_assert(!webkit_user_media_permission_is_for_video_device(userMediaRequest));
         }
 
         if (test->m_allowPermissionRequests)
-            webkit_permission_request_resolve_check(request, "lalala", true);
+            webkit_permission_request_resolve_check(request, "randomHashSalt", true);
         else
-            webkit_permission_request_resolve_check(request, "lalala", false);
+            webkit_permission_request_resolve_check(request, "randomHashSalt", false);
 
         return TRUE;
     }
@@ -838,6 +838,43 @@ static void testWebViewGeolocationPermissionRequests(UIClientTest* test, gconstp
 #endif // ENABLE(GEOLOCATION)
 
 #if ENABLE(MEDIA_STREAM)
+static void testWebViewUserMediaEnumerateDevicesPermissionCheck(UIClientTest* test, gconstpointer)
+{
+    WebKitSettings* settings = webkit_web_view_get_settings(test->m_webView);
+    gboolean enabled = webkit_settings_get_enable_media_stream(settings);
+    webkit_settings_set_enable_media_stream(settings, TRUE);
+
+#if PLATFORM(GTK)
+    test->showInWindowAndWaitUntilMapped();
+#endif
+    static const char* userMediaRequestHTML =
+        "<html>"
+        "  <script>"
+        "  function runTest()"
+        "  {"
+        "    navigator.mediaDevices.enumerateDevices().then("
+        "                                function(devices) { devices.forEach( function(device) { if (device.label) document.title = \"OK\"; else document.title = \"Permission denied\"; })"
+        "    })"
+        "  }"
+        "  </script>"
+        "  <body onload='runTest();'></body>"
+        "</html>";
+
+    test->m_verifyMediaTypes = TRUE;
+
+    // Test denying a permission request.
+    test->m_allowPermissionRequests = false;
+    test->loadHtml(userMediaRequestHTML, nullptr);
+    test->waitUntilTitleChangedTo("Permission denied");
+
+    // Test allowing a permission request.
+    test->m_allowPermissionRequests = true;
+    test->loadHtml(userMediaRequestHTML, nullptr);
+    test->waitUntilTitleChangedTo("OK");
+
+    webkit_settings_set_enable_media_stream(settings, enabled);
+}
+
 static void testWebViewUserMediaPermissionRequests(UIClientTest* test, gconstpointer)
 {
     WebKitSettings* settings = webkit_web_view_get_settings(test->m_webView);
@@ -855,8 +892,6 @@ static void testWebViewUserMediaPermissionRequests(UIClientTest* test, gconstpoi
         "    navigator.webkitGetUserMedia({audio: true, video: true},"
         "                                 function(s) { document.title = \"OK\" },"
         "                                 function(e) { document.title = e.name });"
-        "    navigator.mediaDevices.enumerateDevices().then(function(devices) {"
-        "    })"
         "  }"
         "  </script>"
         "  <body onload='runTest();'></body>"
@@ -1162,6 +1197,7 @@ void beforeAll()
     UIClientTest::add("WebKitWebView", "geolocation-permission-requests", testWebViewGeolocationPermissionRequests);
 #endif
 #if ENABLE(MEDIA_STREAM)
+    UIClientTest::add("WebKitWebView", "usermedia-enumeratedevices-permission-check", testWebViewUserMediaEnumerateDevicesPermissionCheck);
     UIClientTest::add("WebKitWebView", "usermedia-permission-requests", testWebViewUserMediaPermissionRequests);
     UIClientTest::add("WebKitWebView", "audio-usermedia-permission-request", testWebViewAudioOnlyUserMediaPermissionRequests);
 #endif

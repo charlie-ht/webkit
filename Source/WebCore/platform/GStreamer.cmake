@@ -42,8 +42,8 @@ if (ENABLE_VIDEO OR ENABLE_WEB_AUDIO)
         platform/mediastream/gstreamer/GStreamerVideoCapturer.cpp
         platform/mediastream/gstreamer/RealtimeMediaSourceCenterLibWebRTC.cpp
 
-        platform/mock/MockRealtimeMediaSourceCenter.cpp
         platform/mock/MockRealtimeMediaSource.cpp
+        platform/mock/MockRealtimeMediaSourceCenter.cpp
     )
 
     list(APPEND WebCore_SYSTEM_INCLUDE_DIRECTORIES
