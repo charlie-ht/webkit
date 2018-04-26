@@ -31,7 +31,6 @@
 #include "WebKitWindowPropertiesPrivate.h"
 #include "WebPageProxy.h"
 #include "WebProcessProxy.h"
-#include <wtf/UUID.h>
 #include <wtf/glib/GRefPtr.h>
 
 #if PLATFORM(GTK)

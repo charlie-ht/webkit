@@ -72,6 +72,7 @@
 #include <wtf/SetForScope.h>
 #include <wtf/glib/GRefPtr.h>
 #include <wtf/glib/WTFGType.h>
+#include <wtf/HexNumber.h>
 #include <wtf/text/CString.h>
 #include <wtf/text/StringBuilder.h>
 #include <wtf/CryptographicallyRandomNumber.h>
@@ -214,7 +215,7 @@ struct _WebKitWebViewPrivate {
     CString title;
     CString customTextEncoding;
     CString activeURI;
-    CString mediaIdentifierHashSalt;
+    String mediaIdentifierHashSalt;
     bool isLoading;
     bool isEphemeral;
     bool isControlledByAutomation;
@@ -435,12 +436,19 @@ static gboolean webkitWebViewPermissionCheck(WebKitWebView* webView, WebKitPermi
 {
     WebKitWebViewPrivate* priv = webView->priv;
     if (priv->mediaIdentifierHashSalt.isNull()) {
-        char randomData[16];
+        static int hashSaltSize = 128;
+        static int randomDataSize = hashSaltSize / 16;
+        uint64_t randomData[randomDataSize];
         cryptographicallyRandomValues(reinterpret_cast<unsigned char*>(randomData), sizeof(randomData));
-        priv->mediaIdentifierHashSalt = CString(randomData);
+
+        StringBuilder builder;
+        builder.reserveCapacity(128);
+        for (int i = 0; i < randomDataSize; i++)
+            appendUnsigned64AsHex(randomData[0], builder);
+        priv->mediaIdentifierHashSalt = builder.toString();
     }
 
-    webkit_permission_request_resolve_check(request, priv->mediaIdentifierHashSalt.data(), false);
+    webkit_permission_request_resolve_check(request, priv->mediaIdentifierHashSalt.utf8().data(), false);
     return TRUE;
 }
 

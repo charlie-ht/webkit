@@ -215,7 +215,6 @@ WebKitUserMediaPermissionRequest* webkitUserMediaPermissionCheckCreate(UserMedia
 {
     WebKitUserMediaPermissionRequest* usermediaPermissionRequest = WEBKIT_USER_MEDIA_PERMISSION_REQUEST(g_object_new(WEBKIT_TYPE_USER_MEDIA_PERMISSION_REQUEST, nullptr));
 
-    // FIXME: store SecurityOrigins
     UNUSED_PARAM(userMediaDocumentOrigin);
     UNUSED_PARAM(topLevelDocumentOrigin);
 
