@@ -323,51 +323,44 @@ bool gstRegistryHasElementForMediaType(GList* elementFactories, const char* caps
 
 static void simpleBusMessageCallback(GstBus*, GstMessage* message, GstBin* pipeline)
 {
+#if (!(LOG_DISABLED || defined(GST_DISABLE_GST_DEBUG)))
     switch (GST_MESSAGE_TYPE(message)) {
     case GST_MESSAGE_ERROR:
         GST_ERROR_OBJECT(pipeline, "Got message: %" GST_PTR_FORMAT, message);
-
-        gchar* dumpName;
-        dumpName = g_strdup_printf("%s_error", GST_OBJECT_NAME(pipeline));
-        GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(pipeline, GST_DEBUG_GRAPH_SHOW_ALL,
-            dumpName);
-        g_free(dumpName);
+        {
+            WTF::String dotFileName = String::format("%s_error", GST_OBJECT_NAME(pipeline));
+            GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(pipeline, GST_DEBUG_GRAPH_SHOW_ALL, dotFileName.utf8().data());
+        }
         break;
     case GST_MESSAGE_STATE_CHANGED:
         if (GST_MESSAGE_SRC(message) == GST_OBJECT(pipeline)) {
-            GstState oldstate, newstate, pending;
-            gchar* dumpName;
-
-            gst_message_parse_state_changed(message, &oldstate, &newstate,
-                &pending);
+            GstState oldState, newState, pending;
+            gst_message_parse_state_changed(message, &oldState, &newState, &pending);
 
             GST_INFO_OBJECT(pipeline, "State changed (old: %s, new: %s, pending: %s)",
-                gst_element_state_get_name(oldstate),
-                gst_element_state_get_name(newstate),
+                gst_element_state_get_name(oldState),
+                gst_element_state_get_name(newState),
                 gst_element_state_get_name(pending));
 
-            dumpName = g_strdup_printf("%s_%s_%s",
+            WTF::String dotFileName = String::format("%s_%s_%s",
                 GST_OBJECT_NAME(pipeline),
-                gst_element_state_get_name(oldstate),
-                gst_element_state_get_name(newstate));
+                gst_element_state_get_name(oldState),
+                gst_element_state_get_name(newState));
 
-            GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(pipeline),
-                GST_DEBUG_GRAPH_SHOW_ALL, dumpName);
-
-            g_free(dumpName);
+            GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, dotFileName.utf8().data());
         }
         break;
     default:
         break;
     }
+#endif
 }
 
 void connectSimpleBusMessageCallback(GstElement *pipeline)
 {
     GRefPtr<GstBus> bus = adoptGRef(gst_pipeline_get_bus(GST_PIPELINE(pipeline)));
     gst_bus_add_signal_watch_full(bus.get(), RunLoopSourcePriority::RunLoopDispatcher);
-    g_signal_connect(bus.get(), "message", G_CALLBACK(simpleBusMessageCallback),
-        pipeline);
+    g_signal_connect(bus.get(), "message", G_CALLBACK(simpleBusMessageCallback), pipeline);
 }
 
 }
