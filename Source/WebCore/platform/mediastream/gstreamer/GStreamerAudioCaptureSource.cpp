@@ -26,23 +26,18 @@
 
 #include "config.h"
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 #include "GStreamerAudioCaptureSource.h"
 
 #include "GStreamerAudioData.h"
 #include "GStreamerAudioStreamDescription.h"
 #include "GStreamerCaptureDeviceManager.h"
-#include "RealtimeMediaSourceCenterLibWebRTC.h"
 
 #include <gst/app/gstappsink.h>
 #include <gst/gst.h>
 #include <wtf/NeverDestroyed.h>
 
 GST_DEBUG_CATEGORY(webkit_audio_capture_source_debug);
-#ifdef GST_CAT_DEFAULT
-#undef GST_CAT_DEFAULT
-#endif
-
 #define GST_CAT_DEFAULT webkit_audio_capture_source_debug
 
 namespace WebCore {
@@ -51,8 +46,7 @@ static void initializeGStreamerDebug()
 {
     static std::once_flag debugRegisteredFlag;
     std::call_once(debugRegisteredFlag, [] {
-        GST_DEBUG_CATEGORY_INIT(webkit_audio_capture_source_debug, "webkitaudiocapturesource", 0,
-            "WebKit Audio Capture Source.");
+        GST_DEBUG_CATEGORY_INIT(webkit_audio_capture_source_debug, "webkitaudiocapturesource", 0, "WebKit Audio Capture Source.");
     });
 }
 
@@ -73,8 +67,10 @@ static GStreamerAudioCaptureSourceFactory& libWebRTCAudioCaptureSourceFactory()
 CaptureSourceOrError GStreamerAudioCaptureSource::create(const String& deviceID, const MediaConstraints* constraints)
 {
     auto device = GStreamerAudioCaptureDeviceManager::singleton().gstreamerDeviceWithUID(deviceID);
-    if (!device)
-        return { };
+    if (!device) {
+        auto errorMessage = String::format("GStreamerAudioCaptureSource::create(): GStreamer did not find the device: %s.", deviceID.utf8().data());
+        return CaptureSourceOrError(WTFMove(errorMessage));
+    }
 
     auto source = adoptRef(*new GStreamerAudioCaptureSource(
         static_cast<GStreamerCaptureDevice>(device.value())));
@@ -112,11 +108,6 @@ GStreamerAudioCaptureSource::~GStreamerAudioCaptureSource()
 
 void GStreamerAudioCaptureSource::startProducingData()
 {
-    webrtc::PeerConnectionFactoryInterface* peerConnectionFactory = RealtimeMediaSourceCenterLibWebRTC::singleton().factory();
-
-    // FIXME - This does not sound 100% right
-    m_audioTrack = peerConnectionFactory->CreateAudioTrack("audio", peerConnectionFactory->CreateAudioSource(nullptr));
-
     m_capturer->setupPipeline();
     g_signal_connect(m_capturer->m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
     m_capturer->play();
@@ -147,15 +138,26 @@ const RealtimeMediaSourceCapabilities& GStreamerAudioCaptureSource::capabilities
 {
     if (!m_capabilities) {
         GRefPtr<GstCaps> caps = m_capturer->getCaps();
-        gint minSamplerate = 0, maxSamplerate = 0;
-        guint i;
+        int minSampleRate = 0, maxSampleRate = 0;
+        uint i;
 
         for (i = 0; i < gst_caps_get_size(caps.get()); i++) {
+            int capabilityMinSampleRate = 0, capabilityMaxSampleRate = 0;
             GstStructure* str = gst_caps_get_structure(caps.get(), i);
 
-            if (gst_structure_has_name(str, "audio/x-raw")) {
-                g_assert(gst_structure_get(str, "rate", GST_TYPE_INT_RANGE, &minSamplerate, &maxSamplerate, nullptr));
-                break;
+            // Only accept raw audio for now.
+            if (!gst_structure_has_name(str, "video/x-raw"))
+                continue;
+
+            gst_structure_get(str, "rate", GST_TYPE_INT_RANGE, &capabilityMinSampleRate, &capabilityMaxSampleRate, nullptr);
+            if (i > 0) {
+                if (capabilityMinSampleRate < minSampleRate)
+                    minSampleRate = capabilityMinSampleRate;
+                if (capabilityMaxSampleRate > maxSampleRate)
+                    maxSampleRate = capabilityMaxSampleRate;
+            } else {
+                minSampleRate = capabilityMinSampleRate;
+                maxSampleRate = capabilityMaxSampleRate;
             }
         }
 
@@ -163,7 +165,7 @@ const RealtimeMediaSourceCapabilities& GStreamerAudioCaptureSource::capabilities
         capabilities.setDeviceId(id());
         capabilities.setEchoCancellation(RealtimeMediaSourceCapabilities::EchoCancellation::ReadWrite);
         capabilities.setVolume(CapabilityValueOrRange(0.0, 1.0));
-        capabilities.setSampleRate(CapabilityValueOrRange(minSamplerate, maxSamplerate));
+        capabilities.setSampleRate(CapabilityValueOrRange(minSampleRate, maxSampleRate));
         m_capabilities = WTFMove(capabilities);
     }
     return m_capabilities.value();
@@ -197,4 +199,4 @@ const RealtimeMediaSourceSettings& GStreamerAudioCaptureSource::settings() const
 
 } // namespace WebCore
 
-#endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)

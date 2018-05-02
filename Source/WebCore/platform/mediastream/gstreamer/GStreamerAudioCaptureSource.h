@@ -26,17 +26,11 @@
 
 #pragma once
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 
 #include "GStreamerAudioCapturer.h"
 #include "GStreamerCaptureDevice.h"
 #include "RealtimeMediaSource.h"
-
-#include "webrtc/api/mediastreaminterface.h"
-
-namespace WTF {
-class MediaTime;
-}
 
 namespace WebCore {
 
@@ -45,21 +39,13 @@ public:
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
     WEBCORE_EXPORT static AudioCaptureFactory& factory();
 
-    GstElement *Pipeline() { return m_capturer->m_pipeline.get(); }
-    GStreamerCapturer *Capturer() { return m_capturer.get(); }
-
-protected:
-    GStreamerAudioCaptureSource(const String& deviceID, const String& name);
-    virtual ~GStreamerAudioCaptureSource();
-
     const RealtimeMediaSourceCapabilities& capabilities() const override;
     const RealtimeMediaSourceSettings& settings() const override;
 
-    mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
-    mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
-
 private:
     GStreamerAudioCaptureSource(GStreamerCaptureDevice);
+    GStreamerAudioCaptureSource(const String& deviceID, const String& name);
+    virtual ~GStreamerAudioCaptureSource();
 
     friend class GStreamerAudioCaptureSourceFactory;
 
@@ -69,13 +55,15 @@ private:
     void stopProducingData() final;
     bool applyVolume(double) final { return true; }
 
-    rtc::scoped_refptr<webrtc::AudioTrackInterface> m_audioTrack;
     std::unique_ptr<GStreamerAudioCapturer> m_capturer;
 
     static GstFlowReturn newSampleCallback(GstElement*, GStreamerAudioCaptureSource*);
     void triggerSampleAvailable(GstSample*);
+
+    mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
+    mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
 };
 
 } // namespace WebCore
 
-#endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
