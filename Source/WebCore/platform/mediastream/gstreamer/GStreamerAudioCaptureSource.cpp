@@ -39,7 +39,7 @@
 
 namespace WebCore {
 
-const static double defaultVolume= 0.2;
+const static double defaultVolume= 1.0;
 
 const static CapabilityValueOrRange defaultVolumeCapability = CapabilityValueOrRange(0.0, 1.0);
 const static RealtimeMediaSourceCapabilities::EchoCancellation defaultEchoCancellationCapability = RealtimeMediaSourceCapabilities::EchoCancellation::ReadWrite;

@@ -39,8 +39,8 @@ public:
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
     WEBCORE_EXPORT static AudioCaptureFactory& factory();
 
-    const RealtimeMediaSourceCapabilities& capabilities() const override;
-    const RealtimeMediaSourceSettings& settings() const override;
+    const RealtimeMediaSourceCapabilities& capabilities() const final;
+    const RealtimeMediaSourceSettings& settings() const final;
 
 private:
     GStreamerAudioCaptureSource(GStreamerCaptureDevice);

@@ -58,6 +58,20 @@ static void initializeGStreamerDebug()
     });
 }
 
+class GStreamerVideoCaptureSourceFactory final : public RealtimeMediaSource::VideoCaptureFactory {
+public:
+    CaptureSourceOrError createVideoCaptureSource(const CaptureDevice& device, const MediaConstraints* constraints) final
+    {
+        return GStreamerVideoCaptureSource::create(device.persistentId(), constraints);
+    }
+};
+
+RealtimeMediaSource::VideoCaptureFactory& libWebRTCVideoCaptureSourceFactory()
+{
+    static NeverDestroyed<GStreamerVideoCaptureSourceFactory> factory;
+    return factory.get();
+}
+
 CaptureSourceOrError GStreamerVideoCaptureSource::create(const String& deviceID, const MediaConstraints* constraints)
 {
     auto device = GStreamerVideoCaptureDeviceManager::singleton().gstreamerDeviceWithUID(deviceID);
@@ -75,6 +89,11 @@ CaptureSourceOrError GStreamerVideoCaptureSource::create(const String& deviceID,
             return WTFMove(result.value().first);
     }
     return CaptureSourceOrError(WTFMove(source));
+}
+
+RealtimeMediaSource::VideoCaptureFactory& GStreamerVideoCaptureSource::factory()
+{
+    return libWebRTCVideoCaptureSourceFactory();
 }
 
 GStreamerVideoCaptureSource::GStreamerVideoCaptureSource(const String& deviceID, const String& name, const gchar *source_factory)
@@ -97,8 +116,8 @@ GStreamerVideoCaptureSource::~GStreamerVideoCaptureSource()
 
 bool GStreamerVideoCaptureSource::applySize(const IntSize &size)
 {
-    m_currentSettings->setWidth(size().width());
-    m_currentSettings->setHeight(size().height());
+    m_currentSettings->setWidth(size.width());
+    m_currentSettings->setHeight(size.height());
 
     m_capturer->setSize(size.width(), size.height());
 

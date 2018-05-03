@@ -42,20 +42,6 @@
 
 namespace WebCore {
 
-class GStreamerVideoCaptureSourceFactory final : public RealtimeMediaSource::VideoCaptureFactory {
-public:
-    CaptureSourceOrError createVideoCaptureSource(const CaptureDevice& device, const MediaConstraints* constraints) final
-    {
-        return GStreamerVideoCaptureSource::create(device.persistentId(), constraints);
-    }
-};
-
-RealtimeMediaSource::VideoCaptureFactory& RealtimeMediaSourceCenterLibWebRTC::videoCaptureSourceFactory()
-{
-    static NeverDestroyed<GStreamerVideoCaptureSourceFactory> factory;
-    return factory.get();
-}
-
 RealtimeMediaSource::AudioCaptureFactory& RealtimeMediaSourceCenterLibWebRTC::audioCaptureSourceFactory()
 {
     return RealtimeMediaSourceCenterLibWebRTC::singleton().audioFactory();
@@ -92,7 +78,7 @@ RealtimeMediaSource::AudioCaptureFactory& RealtimeMediaSourceCenterLibWebRTC::au
 
 RealtimeMediaSource::VideoCaptureFactory& RealtimeMediaSourceCenterLibWebRTC::videoFactory()
 {
-    return videoCaptureSourceFactory();
+    return GStreamerVideoCaptureSource::factory();
 }
 
 CaptureDeviceManager& RealtimeMediaSourceCenterLibWebRTC::audioCaptureDeviceManager()

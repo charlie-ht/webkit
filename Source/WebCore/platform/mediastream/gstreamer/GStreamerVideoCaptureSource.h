@@ -26,54 +26,43 @@
 
 #pragma once
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
-
+#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 #include "GStreamerVideoCapturer.h"
 #include "RealtimeMediaSource.h"
-
-#include <webrtc/api/mediastreaminterface.h>
-
-namespace WTF {
-class MediaTime;
-}
 
 namespace WebCore {
 
 class GStreamerVideoCaptureSource : public RealtimeMediaSource {
 public:
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
-    GstElement *Pipeline() { return m_capturer->m_pipeline.get(); }
-    GStreamerCapturer *Capturer() { return m_capturer.get(); }
+    WEBCORE_EXPORT static VideoCaptureFactory& factory();
 
-    void startProducingData() override;
-    void stopProducingData() override;
+    const RealtimeMediaSourceCapabilities& capabilities() const;
+    const RealtimeMediaSourceSettings& settings() const override;
 
-protected:
+private:
     GStreamerVideoCaptureSource(const String& deviceID, const String& name, const gchar * source_factory);
     virtual ~GStreamerVideoCaptureSource();
 
-    const RealtimeMediaSourceSettings& settings() const override;
-    const RealtimeMediaSourceCapabilities& capabilities() const;
-
-    mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
-    mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
-    std::unique_ptr<GStreamerVideoCapturer> m_capturer;
-
-private:
     GStreamerVideoCaptureSource(GStreamerCaptureDevice);
 
     friend class GStreamerVideoCaptureSourceFactory;
 
     static GstFlowReturn newSampleCallback(GstElement*, GStreamerVideoCaptureSource*);
 
+    void startProducingData() final;
+    void stopProducingData() final;
+
     bool isCaptureSource() const final { return true; }
     bool applySize(const IntSize&) final;
     bool applyFrameRate(double) final;
     bool applyAspectRatio(double) final { return true; }
 
-    rtc::scoped_refptr<webrtc::VideoTrackInterface> m_videoTrack;
+    mutable std::optional<RealtimeMediaSourceCapabilities> m_capabilities;
+    mutable std::optional<RealtimeMediaSourceSettings> m_currentSettings;
+    std::unique_ptr<GStreamerVideoCapturer> m_capturer;
 };
 
 } // namespace WebCore
 
-#endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
