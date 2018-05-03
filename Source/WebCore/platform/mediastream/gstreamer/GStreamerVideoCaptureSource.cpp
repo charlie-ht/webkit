@@ -26,7 +26,7 @@
 
 #include "config.h"
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 #include "GStreamerVideoCaptureSource.h"
 
 #include "GStreamerCaptureDeviceManager.h"
@@ -61,8 +61,10 @@ static void initializeGStreamerDebug()
 CaptureSourceOrError GStreamerVideoCaptureSource::create(const String& deviceID, const MediaConstraints* constraints)
 {
     auto device = GStreamerVideoCaptureDeviceManager::singleton().gstreamerDeviceWithUID(deviceID);
-    if (!device)
-        return { };
+    if (!device) {
+        auto errorMessage = String::format("GStreamerVideoCaptureSource::create(): GStreamer did not find the device: %s.", deviceID.utf8().data());
+        return CaptureSourceOrError(WTFMove(errorMessage));
+    }
 
     auto source = adoptRef(*new GStreamerVideoCaptureSource(
         static_cast<GStreamerCaptureDevice>(device.value())));
@@ -95,6 +97,9 @@ GStreamerVideoCaptureSource::~GStreamerVideoCaptureSource()
 
 bool GStreamerVideoCaptureSource::applySize(const IntSize &size)
 {
+    m_currentSettings->setWidth(size().width());
+    m_currentSettings->setHeight(size().height());
+
     m_capturer->setSize(size.width(), size.height());
 
     return true;
@@ -102,6 +107,8 @@ bool GStreamerVideoCaptureSource::applySize(const IntSize &size)
 
 bool GStreamerVideoCaptureSource::applyFrameRate(double framerate)
 {
+    m_currentSettings->setFrameRate(frameRate());
+
     m_capturer->setFrameRate(framerate);
 
     return true;
@@ -109,13 +116,13 @@ bool GStreamerVideoCaptureSource::applyFrameRate(double framerate)
 
 void GStreamerVideoCaptureSource::startProducingData()
 {
-    m_capturer->setupPipeline();
-
-    m_capturer->setSize(size().width(), size().height());
-    m_capturer->setFrameRate(frameRate());
     m_currentSettings->setWidth(size().width());
     m_currentSettings->setHeight(size().height());
     m_currentSettings->setFrameRate(frameRate());
+
+    m_capturer->setupPipeline();
+    m_capturer->setSize(size().width(), size().height());
+    m_capturer->setFrameRate(frameRate());
     g_signal_connect(m_capturer->m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
     m_capturer->play();
 }
@@ -138,8 +145,8 @@ void GStreamerVideoCaptureSource::stopProducingData()
     m_capturer->stop();
 
     GST_INFO("Reset height and width after stopping source");
-    setHeight(0);
-    setWidth(0);
+    setHeight(defaultHeight);
+    setWidth(defaultWidth);
 }
 
 const RealtimeMediaSourceCapabilities& GStreamerVideoCaptureSource::capabilities() const
@@ -147,8 +154,6 @@ const RealtimeMediaSourceCapabilities& GStreamerVideoCaptureSource::capabilities
     if (!m_capabilities) {
         RealtimeMediaSourceCapabilities capabilities(settings().supportedConstraints());
         GRefPtr<GstCaps> caps = adoptGRef(m_capturer->getCaps());
-        capabilities.setDeviceId(id());
-
         int32_t minWidth = G_MAXINT32, minHeight = G_MAXINT32, minFramerate = G_MAXINT32;
         int32_t maxWidth = G_MININT32, maxHeight = G_MININT32, maxFramerate = G_MININT32;
 
@@ -194,20 +199,31 @@ const RealtimeMediaSourceCapabilities& GStreamerVideoCaptureSource::capabilities
                     tmpMinFramerate = std::min(tmpMinFramerate, framerate);
                     tmpMaxFramerate = std::max(tmpMaxFramerate, framerate);
                 }
+
+                if (i > 0) {
+                    minWidth = std::min(tmpMinWidth, minWidth);
+                    minHeight = std::min(tmpMinHeight, minHeight);
+                    minFramerate = std::min(tmpMinFramerate, minFramerate);
+
+                    maxWidth = std::max(tmpMaxWidth, maxWidth);
+                    maxHeight = std::max(tmpMaxHeight, maxHeight);
+                    maxFramerate = std::max(tmpMaxFramerate, maxFramerate);
+                } else {
+                    minWidth = tmpMinWidth;
+                    minHeight = tmpMinHeight;
+                    minFramerate = tmpMinFramerate;
+
+                    maxWidth = tmpMaxWidth;
+                    maxHeight = tmpMaxHeight;
+                    maxFramerate = tmpMaxFramerate;
+                }
             }
-
-            minWidth = std::min(tmpMinWidth, minWidth);
-            minHeight = std::min(tmpMinHeight, minHeight);
-            minFramerate = std::min(tmpMinFramerate, minFramerate);
-
-            maxWidth = std::max(tmpMaxWidth, maxWidth);
-            maxHeight = std::max(tmpMaxHeight, maxHeight);
-            maxFramerate = std::max(tmpMaxFramerate, maxFramerate);
 
             m_currentSettings->setWidth(minWidth);
             m_currentSettings->setHeight(minHeight);
             m_currentSettings->setFrameRate(maxFramerate);
 
+            capabilities.setDeviceId(id());
             capabilities.setWidth(CapabilityValueOrRange(minWidth, maxWidth));
             capabilities.setHeight(CapabilityValueOrRange(minHeight, maxHeight));
             capabilities.setFrameRate(CapabilityValueOrRange(minFramerate, maxFramerate));

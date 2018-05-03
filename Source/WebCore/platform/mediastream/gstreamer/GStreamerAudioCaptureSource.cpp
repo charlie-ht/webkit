@@ -37,10 +37,15 @@
 #include <gst/gst.h>
 #include <wtf/NeverDestroyed.h>
 
+namespace WebCore {
+
+const static double defaultVolume= 0.2;
+
+const static CapabilityValueOrRange defaultVolumeCapability = CapabilityValueOrRange(0.0, 1.0);
+const static RealtimeMediaSourceCapabilities::EchoCancellation defaultEchoCancellationCapability = RealtimeMediaSourceCapabilities::EchoCancellation::ReadWrite;
+
 GST_DEBUG_CATEGORY(webkit_audio_capture_source_debug);
 #define GST_CAT_DEFAULT webkit_audio_capture_source_debug
-
-namespace WebCore {
 
 static void initializeGStreamerDebug()
 {
@@ -108,7 +113,12 @@ GStreamerAudioCaptureSource::~GStreamerAudioCaptureSource()
 
 void GStreamerAudioCaptureSource::startProducingData()
 {
+    setSampleRate(m_currentSettings->sampleRate());
+    setEchoCancellation(m_currentSettings->echoCancellation());
+    setVolume(m_currentSettings->volume());
+
     m_capturer->setupPipeline();
+    m_capturer->setSampleRate(sampleRate());
     g_signal_connect(m_capturer->m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
     m_capturer->play();
 }
@@ -151,20 +161,22 @@ const RealtimeMediaSourceCapabilities& GStreamerAudioCaptureSource::capabilities
 
             gst_structure_get(str, "rate", GST_TYPE_INT_RANGE, &capabilityMinSampleRate, &capabilityMaxSampleRate, nullptr);
             if (i > 0) {
-                if (capabilityMinSampleRate < minSampleRate)
-                    minSampleRate = capabilityMinSampleRate;
-                if (capabilityMaxSampleRate > maxSampleRate)
-                    maxSampleRate = capabilityMaxSampleRate;
+                minSampleRate = std::min(minSampleRate, capabilityMinSampleRate);
+                maxSampleRate = std::max(maxSampleRate, capabilityMaxSampleRate);
             } else {
                 minSampleRate = capabilityMinSampleRate;
                 maxSampleRate = capabilityMaxSampleRate;
             }
         }
 
+        m_currentSettings->setEchoCancellation(true);
+        m_currentSettings->setVolume(defaultVolume);
+        m_currentSettings->setSampleRate(maxSampleRate);
+
         RealtimeMediaSourceCapabilities capabilities(settings().supportedConstraints());
         capabilities.setDeviceId(id());
-        capabilities.setEchoCancellation(RealtimeMediaSourceCapabilities::EchoCancellation::ReadWrite);
-        capabilities.setVolume(CapabilityValueOrRange(0.0, 1.0));
+        capabilities.setEchoCancellation(defaultEchoCancellationCapability);
+        capabilities.setVolume(defaultVolumeCapability);
         capabilities.setSampleRate(CapabilityValueOrRange(minSampleRate, maxSampleRate));
         m_capabilities = WTFMove(capabilities);
     }
@@ -173,6 +185,8 @@ const RealtimeMediaSourceCapabilities& GStreamerAudioCaptureSource::capabilities
 
 bool GStreamerAudioCaptureSource::applySampleRate(int sampleRate)
 {
+    m_currentSettings->setSampleRate(sampleRate);
+
     return m_capturer->setSampleRate(sampleRate);
 }
 
