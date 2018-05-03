@@ -37,16 +37,14 @@ public:
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
     WEBCORE_EXPORT static VideoCaptureFactory& factory();
 
-    const RealtimeMediaSourceCapabilities& capabilities() const;
-    const RealtimeMediaSourceSettings& settings() const override;
+    const RealtimeMediaSourceCapabilities& capabilities() const final;
+    const RealtimeMediaSourceSettings& settings() const final;
 
 private:
     GStreamerVideoCaptureSource(const String& deviceID, const String& name, const gchar * source_factory);
     virtual ~GStreamerVideoCaptureSource();
 
     GStreamerVideoCaptureSource(GStreamerCaptureDevice);
-
-    friend class GStreamerVideoCaptureSourceFactory;
 
     static GstFlowReturn newSampleCallback(GstElement*, GStreamerVideoCaptureSource*);
 

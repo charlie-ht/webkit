@@ -27,14 +27,13 @@
 #pragma once
 
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
-
 #include "GStreamerAudioCapturer.h"
 #include "GStreamerCaptureDevice.h"
 #include "RealtimeMediaSource.h"
 
 namespace WebCore {
 
-class GStreamerAudioCaptureSource: public RealtimeMediaSource {
+class GStreamerAudioCaptureSource : public RealtimeMediaSource {
 public:
     static CaptureSourceOrError create(const String& deviceID, const MediaConstraints*);
     WEBCORE_EXPORT static AudioCaptureFactory& factory();
@@ -46,8 +45,6 @@ private:
     GStreamerAudioCaptureSource(GStreamerCaptureDevice);
     GStreamerAudioCaptureSource(const String& deviceID, const String& name);
     virtual ~GStreamerAudioCaptureSource();
-
-    friend class GStreamerAudioCaptureSourceFactory;
 
     bool applySampleRate(int) final;
     bool isCaptureSource() const final { return true; }

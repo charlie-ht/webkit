@@ -28,7 +28,6 @@
 #if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
 #include "GStreamerAudioCapturer.h"
 
-#include "GStreamerCommon.h"
 #include "LibWebRTCAudioFormat.h"
 
 #include <gst/app/gstappsink.h>
@@ -38,26 +37,24 @@ namespace WebCore {
 GStreamerAudioCapturer::GStreamerAudioCapturer(GStreamerCaptureDevice device)
     : GStreamerCapturer(device, gst_caps_new_empty_simple("audio/x-raw"))
 {
-    m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", "rate",
-        G_TYPE_INT, LibWebRTCAudioFormat::sampleRate, nullptr));
+    m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", "rate", G_TYPE_INT, LibWebRTCAudioFormat::sampleRate, nullptr));
 }
 
 GStreamerAudioCapturer::GStreamerAudioCapturer()
     : GStreamerCapturer("audiotestsrc", gst_caps_new_empty_simple("audio/x-raw"))
 {
-    m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", "rate",
-        G_TYPE_INT, LibWebRTCAudioFormat::sampleRate, nullptr));
+    m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", "rate", G_TYPE_INT, LibWebRTCAudioFormat::sampleRate, nullptr));
 }
 
 void GStreamerAudioCapturer::setupPipeline()
 {
-    auto name = g_strdup_printf("AudioCapturer_%p", this);
-    m_pipeline = makeElement("pipeline");
-    g_free(name);
+    GUniquePtr<char> pipelineName(g_strdup_printf("AudioCapturer_%p", this));
+    m_pipeline = makeElement(pipelineName.get());
 
     GRefPtr<GstElement> source = createSource();
-    GRefPtr<GstElement> converter = gst_parse_bin_from_description("audioconvert ! audioresample",
-        TRUE, nullptr); // FIXME Handle errors.
+
+    // FIXME Handle errors.
+    GRefPtr<GstElement> converter = gst_parse_bin_from_description("audioconvert ! audioresample", TRUE, nullptr);
     m_capsfilter = makeElement("capsfilter");
     m_tee = makeElement("tee");
     m_sink = makeElement("appsink");
@@ -65,8 +62,7 @@ void GStreamerAudioCapturer::setupPipeline()
     gst_app_sink_set_emit_signals(GST_APP_SINK(m_sink.get()), TRUE);
     g_object_set(m_capsfilter.get(), "caps", m_caps.get(), nullptr);
 
-    gst_bin_add_many(GST_BIN(m_pipeline.get()), source.get(), converter.get(),
-        m_capsfilter.get(), m_tee.get(), nullptr);
+    gst_bin_add_many(GST_BIN(m_pipeline.get()), source.get(), converter.get(), m_capsfilter.get(), m_tee.get(), nullptr);
     gst_element_link_many(source.get(), converter.get(), m_capsfilter.get(), m_tee.get(), NULL);
     addSink(m_sink.get());
 
@@ -77,16 +73,14 @@ bool GStreamerAudioCapturer::setSampleRate(int sampleRate)
 {
     GST_INFO_OBJECT(m_pipeline.get(), "Setting SampleRate %d", sampleRate);
 
-    m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", "rate",
-        G_TYPE_INT, sampleRate, nullptr));
+    m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", "rate", G_TYPE_INT, sampleRate, nullptr));
 
-    if (m_capsfilter.get()) {
-        g_object_set(m_capsfilter.get(), "caps", m_caps.get(), nullptr);
+    if (!m_capsfilter.get())
+        return false;
 
-        return true;
-    }
+    g_object_set(m_capsfilter.get(), "caps", m_caps.get(), nullptr);
 
-    return false;
+    return true;
 }
 
 } // namespace WebCore
