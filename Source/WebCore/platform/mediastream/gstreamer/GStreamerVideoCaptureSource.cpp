@@ -142,7 +142,7 @@ void GStreamerVideoCaptureSource::startProducingData()
     m_capturer->setupPipeline();
     m_capturer->setSize(size().width(), size().height());
     m_capturer->setFrameRate(frameRate());
-    g_signal_connect(m_capturer->m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
+    g_signal_connect(m_capturer->sink(), "new-sample", G_CALLBACK(newSampleCallback), this);
     m_capturer->play();
 }
 
@@ -172,7 +172,7 @@ const RealtimeMediaSourceCapabilities& GStreamerVideoCaptureSource::capabilities
 {
     if (!m_capabilities) {
         RealtimeMediaSourceCapabilities capabilities(settings().supportedConstraints());
-        GRefPtr<GstCaps> caps = adoptGRef(m_capturer->getCaps());
+        GRefPtr<GstCaps> caps = adoptGRef(m_capturer->caps());
         int32_t minWidth = G_MAXINT32, minHeight = G_MAXINT32, minFramerate = G_MAXINT32;
         int32_t maxWidth = G_MININT32, maxHeight = G_MININT32, maxFramerate = G_MININT32;
 

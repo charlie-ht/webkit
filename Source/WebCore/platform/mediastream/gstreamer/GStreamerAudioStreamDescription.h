@@ -70,7 +70,7 @@ public:
     bool operator==(const GStreamerAudioStreamDescription& other) { return gst_audio_info_is_equal (&m_info, &other.m_info); }
     bool operator!=(const GStreamerAudioStreamDescription& other) { return !operator == (other); }
 
-    GstCaps* getCaps() { return m_caps.get(); }
+    GstCaps* caps() { return m_caps.get(); }
     GstAudioInfo* getInfo() { return &m_info; }
 
 private:

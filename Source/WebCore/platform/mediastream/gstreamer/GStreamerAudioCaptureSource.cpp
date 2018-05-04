@@ -119,7 +119,7 @@ void GStreamerAudioCaptureSource::startProducingData()
 
     m_capturer->setupPipeline();
     m_capturer->setSampleRate(sampleRate());
-    g_signal_connect(m_capturer->m_sink.get(), "new-sample", G_CALLBACK(newSampleCallback), this);
+    g_signal_connect(m_capturer->sink(), "new-sample", G_CALLBACK(newSampleCallback), this);
     m_capturer->play();
 }
 
@@ -147,7 +147,7 @@ void GStreamerAudioCaptureSource::stopProducingData()
 const RealtimeMediaSourceCapabilities& GStreamerAudioCaptureSource::capabilities() const
 {
     if (!m_capabilities) {
-        GRefPtr<GstCaps> caps = m_capturer->getCaps();
+        GRefPtr<GstCaps> caps = m_capturer->caps();
         int minSampleRate = 0, maxSampleRate = 0;
         uint i;
 
