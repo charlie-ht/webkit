@@ -1,3 +1,23 @@
+2018-05-10  Thibault Saunier  <tsaunier@igalia.com>
+
+        [GStreamer] Fix style issue in MediaPlayerPrivateGStreamerBase
+        https://bugs.webkit.org/show_bug.cgi?id=185510
+
+        Reviewed by NOBODY (OOPS!).
+
+        [GStreamer] Fix style issue in MediaPlayerPrivateGStreamerBase
+
+        ERROR: Source/WebCore/platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.cpp:629:  More than one command on the same line  [whitespace/newline] [4]
+        ERROR: Source/WebCore/platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.cpp:684:  More than one command on the same line  [whitespace/newline] [4]
+        ERROR: Source/WebCore/platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.cpp:807:  More than one command on the same line  [whitespace/newline] [4]
+
+        Indentation and style issue fixed only.
+
+        * platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.cpp:
+        (WebCore::MediaPlayerPrivateGStreamerBase::volumeChangedCallback):
+        (WebCore::MediaPlayerPrivateGStreamerBase::muteChangedCallback):
+        (WebCore::MediaPlayerPrivateGStreamerBase::triggerRepaint):
+
 2018-05-10  Eric Carlson  <eric.carlson@apple.com>
 
         Log missing cues correctly
