@@ -75,6 +75,8 @@ void ChildProcessProxy::getLaunchOptions(ProcessLauncher::LaunchOptions& launchO
     case ProcessLauncher::ProcessType::Storage:
         varname = "STORAGE_PROCESS_CMD_PREFIX";
         break;
+    default:
+        ASSERT_NOT_REACHED();
     }
     const char* processCmdPrefix = getenv(varname);
     if (processCmdPrefix && *processCmdPrefix)
