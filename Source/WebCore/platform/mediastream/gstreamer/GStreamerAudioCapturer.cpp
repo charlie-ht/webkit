@@ -52,12 +52,14 @@ GstElement* GStreamerAudioCapturer::createConverter()
 
 bool GStreamerAudioCapturer::setSampleRate(int sampleRate)
 {
-    GST_INFO_OBJECT(m_pipeline.get(), "Setting SampleRate %d", sampleRate);
 
-    if (sampleRate > 0)
+    if (sampleRate > 0) {
+        GST_INFO_OBJECT(m_pipeline.get(), "Setting SampleRate %d", sampleRate);
         m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", "rate", G_TYPE_INT, sampleRate, nullptr));
-    else
-        m_caps = adoptGRef(gst_caps_new_simple("audio/x-raw", nullptr, nullptr));
+    } else {
+        GST_INFO_OBJECT(m_pipeline.get(), "Not forcing sample rate");
+        m_caps = adoptGRef(gst_caps_new_empty_simple("audio/x-raw"));
+    }
 
     if (!m_capsfilter.get())
         return false;

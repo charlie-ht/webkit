@@ -149,7 +149,7 @@ const RealtimeMediaSourceCapabilities& GStreamerAudioCaptureSource::capabilities
             GstStructure* str = gst_caps_get_structure(caps.get(), i);
 
             // Only accept raw audio for now.
-            if (!gst_structure_has_name(str, "video/x-raw"))
+            if (!gst_structure_has_name(str, "audio/x-raw"))
                 continue;
 
             gst_structure_get(str, "rate", GST_TYPE_INT_RANGE, &capabilityMinSampleRate, &capabilityMaxSampleRate, nullptr);

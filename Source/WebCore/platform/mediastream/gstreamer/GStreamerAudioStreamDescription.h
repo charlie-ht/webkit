@@ -60,9 +60,28 @@ public:
         return m_platformDescription;
     }
 
-    WEBCORE_EXPORT PCMFormat format() const final { return Int16; } // FIXME
+    WEBCORE_EXPORT PCMFormat format() const final {
+        switch (GST_AUDIO_INFO_FORMAT(&m_info)) {
+        case GST_AUDIO_FORMAT_S16LE:
+        case GST_AUDIO_FORMAT_S16BE:
+            return Int16;
+        case GST_AUDIO_FORMAT_S32LE:
+        case GST_AUDIO_FORMAT_S32BE:
+            return Int32;
+        case GST_AUDIO_FORMAT_F32LE:
+        case GST_AUDIO_FORMAT_F32BE:
+            return Float32;
+        case GST_AUDIO_FORMAT_F64LE:
+        case GST_AUDIO_FORMAT_F64BE:
+            return Float64;
+        default:
+            break;
+        }
+        return None;
+    }
+
     double sampleRate() const final { return GST_AUDIO_INFO_RATE (&m_info); }
-    bool isPCM() const final { return true; }
+    bool isPCM() const final { return format() != None; }
     bool isInterleaved() const final { return GST_AUDIO_INFO_LAYOUT (&m_info) == GST_AUDIO_LAYOUT_INTERLEAVED; }
     bool isSignedInteger() const final { return GST_AUDIO_INFO_IS_INTEGER (&m_info); }
     bool isNativeEndian() const final { return GST_AUDIO_INFO_ENDIANNESS (&m_info) == G_BYTE_ORDER; }

@@ -6,11 +6,11 @@
         Reviewed by NOBODY (OOPS!).
 
         We are adding all the required classes to make the
-        enumerateDevices work, that means the our own
+        enumerateDevices work, that means our own
         RealtimeMediaSourceCenterLibWebRTC for the platform, the
         GStreamerCaptureDeviceManager, the audio/video capturers and their
         respective audio/video sources. We are using the GstDeviceMonitor
-        monitor to make the request the information from the system.
+        monitor to request the information from the system.
 
         Unskipped the relevant tests for the enumerateDevices.
 
@@ -24,7 +24,7 @@
         the GStreamerAudioData class.
         * platform/graphics/gstreamer/GStreamerCommon.cpp:
         (WebCore::simpleBusMessageCallback): This function and the next
-        one help us to connect a monitoring callback to a pipeline for
+        one help us connect a bus message callback to a pipeline for
         debugging.
         (WebCore::connectSimpleBusMessageCallback): Ditto.
         * platform/graphics/gstreamer/GStreamerCommon.h: Ditto.

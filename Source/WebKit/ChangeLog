@@ -10,16 +10,16 @@
         list of devices in the system we added some new APIs for the GTK
         and WPE ports. We have extended the
         WebKitUserMediaPermissionRequest class to support a new kind of
-        the request, the checkRequest. With this addition WebKit can
+        request, the checkRequest. With this addition WebKit can
         create a WebKitUserMediaPermissionRequest with a permission check
         proxy, if that is the case the WebKitWebView widget launches
         WebKitWebView::permission-check signal and the browser can
-        connnect to it to revolve it with the new
+        connnect to it to resolve it with the new
         webkit_permission_request_resolve_check API, adding the hash salt
         and the decision about allowing access to the devices. Main point
-        about this API is make sure the user can control the webpages
-        don't get smart trying to fingerprint the system. There is a
-        default implementation in the widget that that basically always
+        of this API is to make sure that the user can control the webpages
+        and that they don't get smart trying to fingerprint the system. There is a
+        default implementation in the widget that basically always
         denies access and generates a random hashsalt.
 
         * UIProcess/API/glib/WebKitPermissionRequest.cpp:
@@ -52,7 +52,7 @@
         (webkit_web_view_class_init): Set the default implementation for
         the permission-check signal.
         (webkitWebViewMakePermissionCheck): Added new API to launch ask
-        for permission check, this is private used by the engine.
+        for permission check, this is private and used by the engine.
         * UIProcess/API/glib/WebKitWebViewPrivate.h: Define the new
         private API webkitWebViewMakePermissionCheck.
         * UIProcess/API/gtk/WebKitPermissionRequest.h: Added the new API
