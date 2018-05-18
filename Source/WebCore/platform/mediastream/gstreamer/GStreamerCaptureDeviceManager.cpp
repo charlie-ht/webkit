@@ -109,8 +109,6 @@ void GStreamerCaptureDeviceManager::refreshCaptureDevices()
         if (type == CaptureDevice::DeviceType::Camera) {
             GRefPtr<GstCaps> caps = adoptGRef(gst_caps_new_empty_simple("video/x-raw"));
             gst_device_monitor_add_filter(m_deviceMonitor.get(), "Video/Source", caps.get());
-            GRefPtr<GstCaps> compressedCaps = adoptGRef(gst_caps_new_empty_simple("video/x-h264"));
-            gst_device_monitor_add_filter(m_deviceMonitor.get(), "Video/Source", compressedCaps.get());
         } else if (type == CaptureDevice::DeviceType::Microphone) {
             GRefPtr<GstCaps> caps = adoptGRef(gst_caps_new_empty_simple("audio/x-raw"));
             gst_device_monitor_add_filter(m_deviceMonitor.get(), "Audio/Source", caps.get());

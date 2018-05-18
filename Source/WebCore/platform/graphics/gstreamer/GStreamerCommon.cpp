@@ -323,7 +323,6 @@ bool gstRegistryHasElementForMediaType(GList* elementFactories, const char* caps
 
 static void simpleBusMessageCallback(GstBus*, GstMessage* message, GstBin* pipeline)
 {
-#if (!(LOG_DISABLED || defined(GST_DISABLE_GST_DEBUG)))
     switch (GST_MESSAGE_TYPE(message)) {
     case GST_MESSAGE_ERROR:
         GST_ERROR_OBJECT(pipeline, "Got message: %" GST_PTR_FORMAT, message);
@@ -353,7 +352,6 @@ static void simpleBusMessageCallback(GstBus*, GstMessage* message, GstBin* pipel
     default:
         break;
     }
-#endif
 }
 
 void connectSimpleBusMessageCallback(GstElement *pipeline)

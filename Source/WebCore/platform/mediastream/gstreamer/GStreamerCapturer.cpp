@@ -149,10 +149,8 @@ void GStreamerCapturer::addSink(GstElement *newSink)
 
     GST_INFO_OBJECT(pipeline(), "Adding sink: %" GST_PTR_FORMAT, newSink);
 
-#if (!(LOG_DISABLED || defined(GST_DISABLE_GST_DEBUG)))
     GUniquePtr<char> dumpName(g_strdup_printf("%s_sink_%s_added", GST_OBJECT_NAME(pipeline()), GST_OBJECT_NAME(newSink)));
     GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(pipeline()), GST_DEBUG_GRAPH_SHOW_ALL, dumpName.get());
-#endif
 }
 
 void GStreamerCapturer::play()
@@ -162,13 +160,6 @@ void GStreamerCapturer::play()
     GST_INFO_OBJECT((gpointer) pipeline(), "Going to PLAYING!");
 
     gst_element_set_state(pipeline(), GST_STATE_PLAYING);
-
-#if (!(LOG_DISABLED || defined(GST_DISABLE_GST_DEBUG)))
-    GstState state;
-    gst_element_get_state(pipeline(), &state, nullptr, 250 * GST_NSECOND);
-    GST_DEBUG_OBJECT(pipeline(), "STATE: %s", gst_element_state_get_name(state));
-    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(pipeline()), GST_DEBUG_GRAPH_SHOW_ALL, gst_element_state_get_name(state));
-#endif
 }
 
 void GStreamerCapturer::stop()
@@ -177,6 +168,8 @@ void GStreamerCapturer::stop()
 
     GST_INFO_OBJECT((gpointer) pipeline(), "Tearing down!");
 
+    // Make sure to remove sync handler before tearing down, avoiding
+    // possible deadlocks.
     GRefPtr<GstBus> bus = adoptGRef(gst_pipeline_get_bus(GST_PIPELINE(pipeline())));
     gst_bus_set_sync_handler(bus.get(), nullptr, nullptr, nullptr);
 
