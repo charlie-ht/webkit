@@ -1,3 +1,14 @@
+2018-05-18  Thibault Saunier  <tsaunier@igalia.com>
+
+        [GTK][WPE] Start implementing MediaStream API
+        https://bugs.webkit.org/show_bug.cgi?id=185787
+
+        Reviewed by NOBODY (OOPS!).
+
+        * platform/gtk/TestExpectations: Reactivate MediaStream tests and enable all tests
+        related to the mediaDevice.enumerateDevices and MediaStream (not RTCPeerConnection nor
+        webaudio).
+
 2018-05-31  Per Arne Vollan  <pvollan@apple.com>
 
         Skip http/tests/security/referrer-policy-header.html on Windows.
