@@ -44,4 +44,24 @@ bool LibWebRTCProvider::webRTCAvailable()
     return true;
 }
 
+#if USE(LIBWEBRTC) && USE(GSTREAMER)
+std::unique_ptr<webrtc::VideoDecoderFactory> LibWebRTCProviderGlib::createDecoderFactory()
+{
+    ASSERT(!m_decoderFactory);
+    auto decoderFactory = std::make_unique<GStreamerVideoDecoderFactory>();
+    m_decoderFactory = decoderFactory.get();
+
+    return WTFMove(decoderFactory);
+}
+
+std::unique_ptr<webrtc::VideoEncoderFactory> LibWebRTCProviderGlib::createEncoderFactory()
+{
+    ASSERT(!m_encoderFactory);
+    auto encoderFactory = std::make_unique<GStreamerVideoEncoderFactory>();
+    m_encoderFactory = encoderFactory.get();
+
+    return WTFMove(encoderFactory);
+}
+#endif // USE(LIBWEBRTC) && USE(GSTREAMER)
+
 } // namespace WebCore

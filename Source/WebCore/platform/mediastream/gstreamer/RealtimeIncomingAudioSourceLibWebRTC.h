@@ -27,9 +27,15 @@
 
 #pragma once
 
+#include "config.h"
+
 #if USE(LIBWEBRTC) && USE(GSTREAMER)
 
 #include "RealtimeIncomingAudioSource.h"
+#include "GStreamerCommon.h"
+
+#include <gst/audio/audio.h>
+#include <gst/gst.h>
 
 namespace WebCore {
 
@@ -42,9 +48,10 @@ private:
 
     // webrtc::AudioTrackSinkInterface API
     void OnData(const void* audioData, int bitsPerSample, int sampleRate, size_t numberOfChannels, size_t numberOfFrames) final;
+
+    uint64_t m_numberOfFrames { 0 };
 };
 
 } // namespace WebCore
 
 #endif // USE(LIBWEBRTC)
-

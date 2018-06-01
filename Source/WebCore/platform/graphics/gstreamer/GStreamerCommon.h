@@ -28,6 +28,20 @@
 #include <gst/video/video-info.h>
 #include <wtf/MediaTime.h>
 
+#if USE(LIBWEBRTC)
+#include <gst/video/video.h>
+
+#include "GRefPtrGStreamer.h"
+#include "webrtc/api/video/video_frame.h"
+#include "webrtc/common_video/include/video_frame_buffer.h"
+#include "webrtc/api/video/video_frame.h"
+#include "webrtc/api/video/i420_buffer.h"
+#include "webrtc/common_video/include/video_frame_buffer.h"
+
+#include "LibWebRTCMacros.h"
+#include <webrtc/common_video/include/i420_buffer_pool.h>
+#endif
+
 namespace WebCore {
 
 class IntSize;
@@ -84,6 +98,58 @@ inline GstClockTime toGstClockTime(const MediaTime &mediaTime)
 bool gstRegistryHasElementForMediaType(GList* elementFactories, const char* capsString);
 void connectSimpleBusMessageCallback(GstElement *pipeline);
 void disconnectSimpleBusMessageCallback(GstElement *pipeline);
+
+#if USE(LIBWEBRTC)
+
+GstSample * GStreamerSampleFromVideoFrame(const webrtc::VideoFrame& frame);
+webrtc::VideoFrame *GStreamerVideoFrameFromBuffer(GstSample *sample, webrtc::VideoRotation rotation);
+
+class GStreamerVideoFrame : public webrtc::VideoFrameBuffer {
+public:
+    GStreamerVideoFrame(GstSample * sample, GstVideoInfo info)
+        : m_sample(adoptGRef(sample))
+        , m_info(info) {
+    }
+
+    static GStreamerVideoFrame * Create(GstSample * sample) {
+        GstVideoInfo info;
+
+        g_assert (gst_video_info_from_caps (&info, gst_sample_get_caps (sample)));
+
+        return new GStreamerVideoFrame (sample, info);
+    }
+
+    GstSample *GetSample();
+    rtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() final;
+
+    // Reference count; implementation copied from rtc::RefCountedObject.
+    // FIXME- Should we rely on GStreamer Buffer refcounting here?!
+    void AddRef() const override {
+        rtc::AtomicOps::Increment(&ref_count_);
+    }
+
+    rtc::RefCountReleaseStatus Release() const {
+        int count = rtc::AtomicOps::Decrement(&ref_count_);
+        if (!count) {
+            delete this;
+
+            return rtc::RefCountReleaseStatus::kDroppedLastRef;
+        }
+
+        return rtc::RefCountReleaseStatus::kOtherRefsRemained;
+    }
+
+    int width() const override { return GST_VIDEO_INFO_WIDTH (&m_info); }
+    int height() const override { return GST_VIDEO_INFO_HEIGHT (&m_info); }
+
+private:
+    webrtc::VideoFrameBuffer::Type type() const override;
+    mutable volatile int ref_count_ = 0;
+    GRefPtr<GstSample> m_sample;
+    GstVideoInfo m_info;
+    webrtc::I420BufferPool m_bufferPool;
+};
+#endif // USE(LIBWEBRTC)
 
 }
 

@@ -367,6 +367,99 @@ void connectSimpleBusMessageCallback(GstElement *pipeline)
     g_signal_connect(bus.get(), "message", G_CALLBACK(simpleBusMessageCallback), pipeline);
 }
 
+#if USE(LIBWEBRTC)
+GstSample * GStreamerSampleFromVideoFrame(const webrtc::VideoFrame& frame)
+{
+    g_return_val_if_fail (frame.video_frame_buffer()->type() == webrtc::VideoFrameBuffer::Type::kNative, nullptr);
+
+    auto framebuffer = static_cast<GStreamerVideoFrame*>(frame.video_frame_buffer().get());
+    auto gstsample = framebuffer->GetSample();
+    GST_INFO ("Reusing native GStreamer buffer! %p", gstsample);
+
+    return gstsample;
+
+    auto webrtcbuffer = frame.video_frame_buffer().get()->ToI420();
+    auto buffer = gst_buffer_new();
+    // FIXME - Check lifetime of those buffers.
+    const uint8_t* comps[3] = {
+        webrtcbuffer->DataY(),
+        webrtcbuffer->DataU(),
+        webrtcbuffer->DataV()
+    };
+
+    GstVideoInfo info;
+    gst_video_info_set_format(&info, GST_VIDEO_FORMAT_I420, frame.width(),
+        frame.height());
+    for (gint i = 0; i < 3; i++) {
+        gsize compsize = GST_VIDEO_INFO_COMP_STRIDE(&info, i) * GST_VIDEO_INFO_COMP_HEIGHT(&info, i);
+
+        GstMemory* comp = gst_memory_new_wrapped(GST_MEMORY_FLAG_PHYSICALLY_CONTIGUOUS,
+            (gpointer)comps[i], compsize, 0, compsize, webrtcbuffer, nullptr);
+        gst_buffer_append_memory(buffer, comp);
+    }
+
+    auto caps = gst_video_info_to_caps (&info);
+    auto sample = gst_sample_new (buffer, caps, nullptr, nullptr);
+    gst_caps_unref (caps);
+    return sample;
 }
 
+webrtc::VideoFrame *GStreamerVideoFrameFromBuffer(GstSample *sample, webrtc::VideoRotation rotation)
+{
+    rtc::scoped_refptr<webrtc::VideoFrameBuffer> framebuf(GStreamerVideoFrame::Create(sample));
+
+    auto buffer = gst_sample_get_buffer (sample);
+    auto frame = new webrtc::VideoFrame(framebuf,
+        GST_BUFFER_DTS (buffer),
+        GST_BUFFER_PTS (buffer),
+        rotation);
+    return frame;
+}
+
+webrtc::VideoFrameBuffer::Type GStreamerVideoFrame::type() const {
+  return Type::kNative;
+}
+
+GstSample *GStreamerVideoFrame::GetSample() {
+    return gst_sample_ref (m_sample.get());
+}
+
+rtc::scoped_refptr<webrtc::I420BufferInterface> GStreamerVideoFrame::ToI420() {
+    GstVideoInfo info;
+    GstVideoFrame frame;
+
+    g_assert (gst_video_info_from_caps (&info, gst_sample_get_caps (m_sample.get())));
+    g_return_val_if_fail (GST_VIDEO_INFO_FORMAT(&info) == GST_VIDEO_FORMAT_I420, nullptr);
+
+    GstBuffer* buf = gst_sample_get_buffer(m_sample.get());
+    gst_video_frame_map(&frame, &info, buf, GST_MAP_READ);
+
+    auto newBuffer = m_bufferPool.CreateBuffer(GST_VIDEO_FRAME_WIDTH(&frame),
+        GST_VIDEO_FRAME_HEIGHT(&frame));
+    ASSERT(newBuffer);
+    if (!newBuffer) {
+        gst_video_frame_unmap(&frame);
+        GST_INFO("RealtimeOutgoingVideoSourceGStreamer::videoSampleAvailable unable to allocate buffer for conversion to YUV");
+        return nullptr;
+    }
+
+
+    newBuffer->Copy(
+        GST_VIDEO_FRAME_WIDTH (&frame),
+        GST_VIDEO_FRAME_HEIGHT (&frame),
+        GST_VIDEO_FRAME_COMP_DATA (&frame, 0),
+        GST_VIDEO_FRAME_COMP_STRIDE(&frame, 0),
+        GST_VIDEO_FRAME_COMP_DATA (&frame, 1),
+        GST_VIDEO_FRAME_COMP_STRIDE(&frame, 1),
+        GST_VIDEO_FRAME_COMP_DATA (&frame, 2),
+        GST_VIDEO_FRAME_COMP_STRIDE(&frame, 2)
+    );
+    gst_video_frame_unmap(&frame);
+
+    return newBuffer;
+}
+
+#endif // USE(LIBWEBRTC)
+
+}
 #endif // USE(GSTREAMER)

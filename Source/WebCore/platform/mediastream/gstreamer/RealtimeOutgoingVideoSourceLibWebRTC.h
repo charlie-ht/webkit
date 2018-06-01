@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include "config.h"
+
 #if USE(LIBWEBRTC) && USE(GSTREAMER)
 
 #include "RealtimeOutgoingVideoSource.h"

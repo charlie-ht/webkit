@@ -28,9 +28,12 @@
 
 #pragma once
 
+#include "config.h"
+
 #if USE(LIBWEBRTC) && USE(GSTREAMER)
 
 #include "RealtimeIncomingVideoSource.h"
+#include "GStreamerCommon.h"
 
 namespace WebCore {
 
@@ -40,9 +43,13 @@ public:
 
 private:
     RealtimeIncomingVideoSourceLibWebRTC(rtc::scoped_refptr<webrtc::VideoTrackInterface>&&, String&&);
+    void processNewSample(GstSample* sample);
 
     // rtc::VideoSinkInterface
     void OnFrame(const webrtc::VideoFrame&) final;
+    void setCapsFromSettings();
+    GRefPtr<GstCaps> m_caps;
+    GstVideoInfo m_info;
 };
 
 } // namespace WebCore

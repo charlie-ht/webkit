@@ -29,7 +29,11 @@
 #include "config.h"
 
 #if USE(LIBWEBRTC) && USE(GSTREAMER)
+
+#include "MediaSampleGStreamer.h"
 #include "RealtimeIncomingVideoSourceLibWebRTC.h"
+#include "Logging.h"
+#include <gst/video/video.h>
 
 namespace WebCore {
 
@@ -48,11 +52,31 @@ Ref<RealtimeIncomingVideoSourceLibWebRTC> RealtimeIncomingVideoSourceLibWebRTC::
 RealtimeIncomingVideoSourceLibWebRTC::RealtimeIncomingVideoSourceLibWebRTC(rtc::scoped_refptr<webrtc::VideoTrackInterface>&& videoTrack, String&& videoTrackId)
     : RealtimeIncomingVideoSource(WTFMove(videoTrack), WTFMove(videoTrackId))
 {
+    gst_video_info_init (&m_info);
 }
 
-void RealtimeIncomingVideoSourceLibWebRTC::OnFrame(const webrtc::VideoFrame&)
+void RealtimeIncomingVideoSourceLibWebRTC::OnFrame(const webrtc::VideoFrame& frame)
 {
+    if (!isProducingData())
+        return;
+
+    auto sample = GStreamerSampleFromVideoFrame(frame);
+    callOnMainThread([protectedThis = makeRef(*this), sample] {
+        protectedThis->processNewSample(sample);
+    });
 }
+
+void RealtimeIncomingVideoSourceLibWebRTC::processNewSample(GstSample * sample)
+{
+    // FIXME - handle setting changes!
+    // if (width != m_currentSettings.width() || height != m_currentSettings.height()) {
+    //     m_currentSettings.setWidth(width);
+    //     m_currentSettings.setHeight(height);
+    //     settingsDidChange();
+    // }
+
+    videoSampleAvailable(MediaSampleGStreamer::create(sample, WebCore::FloatSize(), String()));
+    gst_sample_unref (sample);}
 
 } // namespace WebCore
 
