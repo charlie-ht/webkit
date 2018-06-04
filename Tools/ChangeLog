@@ -1,3 +1,68 @@
+2018-06-18  Thibault Saunier  <tsaunier@igalia.com>
+
+        [WPE]: Add a script to setup a development environment based on flatpak
+        https://bugs.webkit.org/show_bug.cgi?id=186771
+
+        Reviewed by NOBODY (OOPS!).
+
+        This patch introduces a script (webkit-flatpak) to setup and work with a development environment
+        based on flatpak[0] and flatpak-builder.
+
+        The worflow works as follow:
+
+        1. Building WebKit
+
+          # No arguments, setup a WPE environment on the first run, and launch MiniBrowser once done (use `--gtk` to build WebKitGTK)
+          $ webkit-flatpak
+
+          # Build anything required to build WebKit itself if needed, it builds only WebKit itself when nothing specified
+          $ webkit-flatpak --build-app
+
+        When building webkit, we mount `WebKit/` sources into `/app/webkit` inside the sandbox to have a more reproducible build and so that
+        we can potentially rsync content of `WebKitBuild` from a build server without problem. The `build-webkit` script is used inside the sandbox,
+        (at /app/webkit/Tools/Script/build-webkit) and the same `--cmarkargs` and `--makeargs` are exposed.
+
+        Also `WebKitBuild/WPE/Release` is mounted on `/app/webkit/WebKitBuild/Release` so that we can build several ports in the same worktree.
+
+        To be able to run layout tests, the httpd server is built inside the sandbox and Xvfb is built for the GTK port.
+
+        2. Running Layout tests
+
+        We reuse the run-webkit-tests script and all arguments after `--test` are passed to that script.
+
+          $ webkit-flatpak [--gtk] [--debug] --tests ...
+
+        3. Retrieve stacktrace
+
+        Since everything runs inside a flatpak sandbox, gdb needs to be run from within the sandbox, the script exposes a way to do it
+        easily with the `--gdb` option:
+
+          $ webkit-flatpak --gdb [-m COREDUMPCTL MATCHES]
+
+        The Layout test `GDBCrashLogGenerator` has been taugth how to use that and is able to retrieve stacktrace as with the jhbuild based workflow.
+
+        [0] https://flatpak.org/
+
+        * Scripts/webkit-flatpak: Added.
+        * Scripts/webkitpy/port/base.py:
+        (Port._path_to_apache):
+        (Port._is_flatpak):
+        (Port._apache_config_file_name_for_platform):
+        * Scripts/webkitpy/port/gtk.py:
+        (GtkPort.setup_environ_for_server):
+        * Scripts/webkitpy/port/linux_get_crash_log.py:
+        (GDBCrashLogGenerator._get_trace_from_systemd):
+        (GDBCrashLogGenerator.generate_crash_log):
+        * Scripts/webkitpy/port/wpe.py:
+        (WPEPort.setup_environ_for_server):
+        * flatpak/files/default.xkm: Added. Required to avoid needing to generate it when launching Xvfb.
+        * flatpak/files/httpd-autogen.sh: Added.
+        * flatpak/org.webkit.GTK.yaml: Added. WebKitGTK specific dependencies build definitions.
+        * flatpak/org.webkit.WPE.yaml: Added. WPE specific dependencies build definitions.
+        * flatpak/org.webkit.WebKit.yaml: Added. Port independent dependencies build definitions.
+        * flatpak/patches/httpd-0001-configure-use-pkg-config-for-PCRE-detection.patch: Added.
+        * flatpak/patches/xvfb-0001-HACK-Avoid-compiling-a-kbm-file.patch: Added.
+
 2018-06-12  Darin Adler  <darin@apple.com>
 
         [Cocoa] Make some RetainPtr refinements to get more ready for ARC

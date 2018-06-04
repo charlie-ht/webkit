@@ -16,10 +16,19 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
+# Make sure port "WPE" is detected.
+push(@ARGV, "--wpe");
+
 use warnings;
 use FindBin;
 use lib $FindBin::Bin;
 use webkitdirs;
+
+if (-e getFlatpakPath() or checkForArgumentAndRemoveFromARGV("--flatpak")) {
+    my @command = (File::Spec->catfile(sourceDir(), "Tools", "Scripts", "webkit-flatpak"));
+
+    exec @command, "--wpe", "--update", @ARGV or die;
+}
 
 my $scriptsDir = relativeScriptsDir();
 system("perl", "$scriptsDir/update-webkit-libs-jhbuild", "--wpe", @ARGV) == 0 or die $!;

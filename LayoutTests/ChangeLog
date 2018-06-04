@@ -1,3 +1,12 @@
+2018-06-18  Thibault Saunier  <tsaunier@igalia.com>
+
+        [WPE]: Add a way to setup our development environment inside flatpak
+        https://bugs.webkit.org/show_bug.cgi?id=186771
+
+        Reviewed by NOBODY (OOPS!).
+
+        * http/conf/flatpak-httpd.conf: Added. Apache configuration file to be used inside flaptak.
+
 2018-06-18  Zan Dobersek  <zdobersek@igalia.com>
 
         Unreviewed WPE gardening. Manage the current set of CSS3 Filters and
