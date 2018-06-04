@@ -82,7 +82,7 @@
 #endif // USE(LIBEPOXY)
 
 #if ENABLE(MEDIA_STREAM) && GST_CHECK_VERSION(1, 10, 0)
-#include "gstreamer/GStreamerMediaStreamSource.h"
+#include "GStreamerMediaStreamSource.h"
 #endif
 
 #define GST_USE_UNSTABLE_API

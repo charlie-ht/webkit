@@ -1766,8 +1766,6 @@ void MediaPlayerPrivateGStreamer::sourceSetup(GstElement* sourceElement)
 #if ENABLE(MEDIA_STREAM) && GST_CHECK_VERSION(1, 10, 0)
     } else if (WEBKIT_IS_MEDIA_STREAM_SRC(sourceElement)) {
         auto stream = m_streamPrivate.get();
-        // gst_object_ref(sourceElement);
-        GST_ERROR_OBJECT(sourceElement, "ref %d", GST_OBJECT_REFCOUNT(sourceElement));
         ASSERT(stream);
         webkitMediaStreamSrcSetStream(WEBKIT_MEDIA_STREAM_SRC(sourceElement), stream);
 #endif

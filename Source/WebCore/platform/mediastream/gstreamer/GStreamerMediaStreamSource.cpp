@@ -21,7 +21,11 @@
 
 #include "config.h"
 
-#if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)
+#if USE(GSTREAMER)
+#include <gst/gst.h>
+#endif
+
+#if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER) && GST_CHECK_VERSION(1, 10, 0)
 #include "GStreamerMediaStreamSource.h"
 
 #include "AudioTrackPrivate.h"
@@ -29,18 +33,12 @@
 #include "GStreamerVideoCaptureSource.h"
 #include "MediaSampleGStreamer.h"
 #include "VideoTrackPrivate.h"
-#include "gstreamer/GStreamerAudioData.h"
+#include "GStreamerAudioData.h"
 
 #include <gst/app/gstappsrc.h>
 #include <gst/base/gstflowcombiner.h>
 
-#if GST_CHECK_VERSION(1, 10, 0)
-
 namespace WebCore {
-
-#define WEBKIT_MEDIA_STREAM_SRC_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), WEBKIT_TYPE_MEDIA_STREAM_SRC, WebKitMediaStreamSrcClass))
-#define WEBKIT_IS_MEDIA_STREAM_SRC_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), WEBKIT_TYPE_MEDIA_STREAM_SRC))
-#define WEBKIT_MEDIA_STREAM_SRC_GET_CLASS(o) (G_TYPE_INSTANCE_GET_CLASS((o), WEBKIT_TYPE_MEDIA_STREAM_SRC, WebKitMediaStreamSrcClass))
 
 static void webkitMediaStreamSrcPushVideoSample(WebKitMediaStreamSrc* self, GstSample* gstsample);
 static void webkitMediaStreamSrcPushAudioSample(WebKitMediaStreamSrc* self, GstSample* gstsample);
@@ -161,8 +159,8 @@ struct _WebKitMediaStreamSrc {
     gulong probeid;
     RefPtr<MediaStreamPrivate> stream;
 
-    GstFlowCombiner* flow_combiner;
-    GRefPtr<GstStreamCollection> stream_collection;
+    GstFlowCombiner* flowCombiner;
+    GRefPtr<GstStreamCollection> streamCollection;
 };
 
 struct _WebKitMediaStreamSrcClass {
@@ -274,7 +272,7 @@ static void webkitMediaStreamSrcFinalize(GObject* object)
     GST_OBJECT_UNLOCK(self);
 
     g_clear_pointer(&self->uri, g_free);
-    gst_flow_combiner_free(self->flow_combiner);
+    gst_flow_combiner_free(self->flowCombiner);
 }
 
 static GstStateChangeReturn webkitMediaStreamSrcChangeState(GstElement* element, GstStateChange transition)
@@ -308,15 +306,9 @@ static void webkit_media_stream_src_class_init(WebKitMediaStreamSrcClass* klass)
     gobject_class->get_property = webkitMediaStreamSrcGetProperty;
     gobject_class->set_property = webkitMediaStreamSrcSetProperty;
 
-    /**
-     * WebKitMediaStreamSrcClass::is-live:
-     *
-     * Instruct the source to behave like a live source. This includes that it
-     * will only push out buffers in the PLAYING state.
-     */
     g_object_class_install_property(gobject_class, PROP_IS_LIVE,
         g_param_spec_boolean("is-live", "Is Live",
-            "Let playbin3 we are a live source.",
+            "Let playbin3 know we are a live source.",
             TRUE, (GParamFlags)(G_PARAM_READABLE | G_PARAM_STATIC_STRINGS)));
 
     gstelement_klass->change_state = webkitMediaStreamSrcChangeState;
@@ -329,7 +321,7 @@ static void webkit_media_stream_src_class_init(WebKitMediaStreamSrcClass* klass)
 static void webkit_media_stream_src_init(WebKitMediaStreamSrc* self)
 {
     self->observer = std::make_unique<WebKitMediaStreamTrackObserver>(self);
-    self->flow_combiner = gst_flow_combiner_new();
+    self->flowCombiner = gst_flow_combiner_new();
 }
 
 typedef struct {
@@ -343,7 +335,7 @@ static GstFlowReturn webkitMediaStreamSrcChain(GstPad* pad, GstObject* object, G
     GstFlowReturn result;
     GRefPtr<WebKitMediaStreamSrc> self = adoptGRef(WEBKIT_MEDIA_STREAM_SRC(gst_object_get_parent(object)));
 
-    result = gst_flow_combiner_update_pad_flow(self.get()->flow_combiner, pad,
+    result = gst_flow_combiner_update_pad_flow(self.get()->flowCombiner, pad,
         gst_proxy_pad_chain_default(pad, GST_OBJECT(self.get()), buffer));
 
     return result;
@@ -387,7 +379,7 @@ static GstPadProbeReturn webkitMediaStreamSrcPadProbeCb(GstPad* pad, GstPadProbe
         gst_event_unref(event);
 
         gst_pad_push_event(pad, stream_start);
-        gst_pad_push_event(pad, gst_event_new_stream_collection(self->stream_collection.get()));
+        gst_pad_push_event(pad, gst_event_new_stream_collection(self->streamCollection.get()));
         gst_pad_push_event(pad, gst_event_new_tag(mediaStreamTrackPrivateGetTags(data->track.get())));
 
         webkitMediaStreamSrcAddPad(self, pad, data->pad_template);
@@ -441,16 +433,16 @@ static gboolean webkitMediaStreamSrcSetupAppSrc(WebKitMediaStreamSrc* self,
 static void webkitMediaStreamSrcPostStreamCollection(WebKitMediaStreamSrc* self, MediaStreamPrivate* stream)
 {
     GST_OBJECT_LOCK(self);
-    self->stream_collection = adoptGRef(gst_stream_collection_new(stream->id().utf8().data()));
+    self->streamCollection = adoptGRef(gst_stream_collection_new(stream->id().utf8().data()));
     for (auto& track : stream->tracks()) {
         auto gststream = webkitMediaStreamNew(track.get());
 
-        gst_stream_collection_add_stream(self->stream_collection.get(), gststream);
+        gst_stream_collection_add_stream(self->streamCollection.get(), gststream);
     }
     GST_OBJECT_UNLOCK(self);
 
     gst_element_post_message(GST_ELEMENT(self),
-        gst_message_new_stream_collection(GST_OBJECT(self), self->stream_collection.get()));
+        gst_message_new_stream_collection(GST_OBJECT(self), self->streamCollection.get()));
 }
 
 gboolean webkitMediaStreamSrcSetStream(WebKitMediaStreamSrc* self, MediaStreamPrivate* stream)
@@ -536,6 +528,4 @@ static void webkitMediaStreamSrcTrackEnded(WebKitMediaStreamSrc* self,
 }
 
 } // WebCore
-
-#endif // GST_CHECK_VERSION(1, 10, 0)
 #endif // ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC)

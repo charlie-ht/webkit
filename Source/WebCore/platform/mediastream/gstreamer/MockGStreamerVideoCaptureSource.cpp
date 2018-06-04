@@ -50,7 +50,7 @@ public:
         auto data = imageBuffer->toBGRAData();
         auto size = data.size();
         auto image_size = imageBuffer->internalSize();
-        auto gstsample = gst_sample_new(gst_buffer_new_wrapped((guint8*)data.releaseBuffer().get(), size),
+        auto gstsample = gst_sample_new(gst_buffer_new_wrapped(static_cast<guint8*>(data.releaseBuffer().get()), size),
             adoptGRef(gst_caps_new_simple("video/x-raw",
                 "format", G_TYPE_STRING, "BGRA",
                 "width", G_TYPE_INT, image_size.width(),

@@ -39,7 +39,7 @@ public:
     }
 
     GstCaps* caps() const { return gst_device_get_caps(m_device.get()); }
-    GstDevice * device() { return m_device.get(); }
+    GstDevice* device() { return m_device.get(); }
 
 private:
     GRefPtr<GstDevice> m_device;

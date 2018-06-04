@@ -160,8 +160,8 @@ const RealtimeMediaSourceCapabilities& GStreamerVideoCaptureSource::capabilities
 
     RealtimeMediaSourceCapabilities capabilities(settings().supportedConstraints());
     GRefPtr<GstCaps> caps = adoptGRef(m_capturer->caps());
-    int32_t minWidth = G_MAXINT32, minHeight = G_MAXINT32, minFramerate = G_MAXINT32;
-    int32_t maxWidth = G_MININT32, maxHeight = G_MININT32, maxFramerate = G_MININT32;
+    int32_t minWidth = G_MAXINT32, maxWidth = 0, minHeight = G_MAXINT32, maxHeight = 0;
+    double minFramerate = G_MAXDOUBLE, maxFramerate = G_MINDOUBLE;
 
     for (guint i = 0; i < gst_caps_get_size(caps.get()); i++) {
         GstStructure* str = gst_caps_get_structure(caps.get(), i);
@@ -170,40 +170,42 @@ const RealtimeMediaSourceCapabilities& GStreamerVideoCaptureSource::capabilities
         if (!gst_structure_has_name(str, "video/x-raw"))
             continue;
 
-        int32_t tmpMinWidth, tmpMinHeight, tmpMinFPSNumerator, tmpMinFPSDenominator, tmpMinFramerate;
-        int32_t tmpMaxWidth, tmpMaxHeight, tmpMaxFPSNumerator, tmpMaxFPSDenominator, tmpMaxFramerate;
+        int32_t tmpMinWidth, tmpMinHeight, tmpMinFPSNumerator, tmpMinFPSDenominator;
+        int32_t tmpMaxWidth, tmpMaxHeight, tmpMaxFPSNumerator, tmpMaxFPSDenominator;
+        double tmpMinFramerate = G_MAXDOUBLE, tmpMaxFramerate = G_MINDOUBLE;
 
         if (!gst_structure_get(str, "width", GST_TYPE_INT_RANGE, &tmpMinWidth, &tmpMaxWidth, "height", GST_TYPE_INT_RANGE, &tmpMinHeight, &tmpMaxHeight, nullptr)) {
-
             g_assert(gst_structure_get(str, "width", G_TYPE_INT, &tmpMinWidth, "height", G_TYPE_INT, &tmpMinHeight, nullptr));
             tmpMaxWidth = tmpMinWidth;
             tmpMaxHeight = tmpMinHeight;
         }
 
         if (gst_structure_get(str, "framerate", GST_TYPE_FRACTION_RANGE, &tmpMinFPSNumerator, &tmpMinFPSDenominator, &tmpMaxFPSNumerator, &tmpMaxFPSDenominator, nullptr)) {
-            tmpMinFramerate = (int)(tmpMinFPSNumerator / tmpMinFPSDenominator);
-            tmpMaxFramerate = (int)(tmpMaxFPSNumerator / tmpMaxFPSDenominator);
+            gst_util_fraction_to_double (tmpMinFPSNumerator, tmpMinFPSDenominator, &tmpMinFramerate);
+            gst_util_fraction_to_double (tmpMaxFPSNumerator, tmpMaxFPSDenominator, &tmpMaxFramerate);
         } else if (gst_structure_get(str,
             "framerate", GST_TYPE_FRACTION, &tmpMinFPSNumerator, &tmpMinFPSDenominator, nullptr)) {
             tmpMaxFPSNumerator = tmpMinFPSNumerator;
             tmpMaxFPSDenominator = tmpMinFPSDenominator;
-            tmpMinFramerate = (int)(tmpMinFPSNumerator / tmpMinFPSDenominator);
-            tmpMaxFramerate = (int)(tmpMaxFPSNumerator / tmpMaxFPSDenominator);
+            gst_util_fraction_to_double (tmpMinFPSNumerator, tmpMinFPSDenominator, &tmpMinFramerate);
+            gst_util_fraction_to_double (tmpMaxFPSNumerator, tmpMaxFPSDenominator, &tmpMaxFramerate);
         } else {
             const GValue* frameRates(gst_structure_get_value(str, "framerate"));
-            tmpMinFramerate = G_MAXINT;
-            tmpMaxFramerate = 0;
+            tmpMinFramerate = G_MAXDOUBLE;
+            tmpMaxFramerate = 0.0;
 
             guint frameRatesLength = static_cast<guint>(gst_value_list_get_size(frameRates)) - 1;
 
             for (guint i = 0; i < frameRatesLength; i++) {
+                double tmpFrameRate;
                 const GValue* val = gst_value_list_get_value(frameRates, i);
 
                 g_assert(G_VALUE_TYPE(val) == GST_TYPE_FRACTION);
-                gint framerate = (int)(gst_value_get_fraction_numerator(val) / gst_value_get_fraction_denominator(val));
+                gst_util_fraction_to_double (gst_value_get_fraction_numerator(val),
+                    gst_value_get_fraction_denominator(val), &tmpFrameRate);
 
-                tmpMinFramerate = std::min(tmpMinFramerate, framerate);
-                tmpMaxFramerate = std::max(tmpMaxFramerate, framerate);
+                tmpMinFramerate = std::min(tmpMinFramerate, tmpFrameRate);
+                tmpMaxFramerate = std::max(tmpMaxFramerate, tmpFrameRate);
             }
 
             if (i > 0) {

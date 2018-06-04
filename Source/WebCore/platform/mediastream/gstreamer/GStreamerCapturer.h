@@ -35,6 +35,7 @@ class GStreamerCapturer {
 public:
     GStreamerCapturer(GStreamerCaptureDevice, GRefPtr<GstCaps>);
     GStreamerCapturer(const char* sourceFactory, GRefPtr<GstCaps>);
+    ~GStreamerCapturer();
 
     void setupPipeline();
     virtual void play();

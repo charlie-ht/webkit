@@ -354,6 +354,12 @@ static void simpleBusMessageCallback(GstBus*, GstMessage* message, GstBin* pipel
     }
 }
 
+void disconnectSimpleBusMessageCallback(GstElement *pipeline)
+{
+    GRefPtr<GstBus> bus = adoptGRef(gst_pipeline_get_bus(GST_PIPELINE(pipeline)));
+    g_signal_handlers_disconnect_by_func(bus.get(), reinterpret_cast<gpointer>(simpleBusMessageCallback), pipeline);
+}
+
 void connectSimpleBusMessageCallback(GstElement *pipeline)
 {
     GRefPtr<GstBus> bus = adoptGRef(gst_pipeline_get_bus(GST_PIPELINE(pipeline)));

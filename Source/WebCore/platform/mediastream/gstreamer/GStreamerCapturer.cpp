@@ -21,7 +21,11 @@
 
 #include "config.h"
 
-#if ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#if USE(GSTREAMER)
+#include <gst/gst.h>
+#endif
+
+#if ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER) && GST_CHECK_VERSION(1, 10, 0)
 #include "GStreamerCapturer.h"
 
 #include <gst/app/gstappsink.h>
@@ -60,6 +64,12 @@ GStreamerCapturer::GStreamerCapturer(const char* sourceFactory, GRefPtr<GstCaps>
     initializeGStreamerAndDebug();
 }
 
+GStreamerCapturer::~GStreamerCapturer()
+{
+    if (m_pipeline)
+        disconnectSimpleBusMessageCallback(pipeline());
+}
+
 GstElement* GStreamerCapturer::createSource()
 {
     if (m_sourceFactory) {
@@ -94,6 +104,9 @@ GstCaps* GStreamerCapturer::caps()
 
 void GStreamerCapturer::setupPipeline()
 {
+    if (m_pipeline)
+        disconnectSimpleBusMessageCallback(pipeline());
+
     m_pipeline = makeElement("pipeline");
 
     GRefPtr<GstElement> source = createSource();
@@ -107,7 +120,7 @@ void GStreamerCapturer::setupPipeline()
     g_object_set(m_capsfilter.get(), "caps", m_caps.get(), nullptr);
 
     gst_bin_add_many(GST_BIN(m_pipeline.get()), source.get(), converter.get(), m_capsfilter.get(), m_tee.get(), nullptr);
-    gst_element_link_many(source.get(), converter.get(), m_capsfilter.get(), m_tee.get(), NULL);
+    gst_element_link_many(source.get(), converter.get(), m_capsfilter.get(), m_tee.get(), nullptr);
 
     addSink(m_sink.get());
 
@@ -182,4 +195,4 @@ void GStreamerCapturer::stop()
 
 } // namespace WebCore
 
-#endif // ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER)
+#endif // ENABLE(VIDEO) && ENABLE(MEDIA_STREAM) && USE(LIBWEBRTC) && USE(GSTREAMER) && GST_CHECK_VERSION(1, 10, 0)
