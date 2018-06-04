@@ -1,0 +1,136 @@
+app-id: org.webkit.WPE
+runtime: org.gnome.Platform
+runtime-version: "3.28"
+sdk: org.gnome.Sdk
+command: dyz
+tags:
+  - nightly
+finish-args:
+  # Basically no sandboxing, the goal here is to make it flexible
+  # for developers, not really to isolate (openning all devices
+  # to allow acces video cameras until we have a portal at least).
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  - --device=all
+  - --share=network
+  - --socket=pulseaudio
+  - --system-talk-name=org.freedesktop.GeoClue2
+  - --filesystem=host
+  - --talk-name=ca.desrt.dconf
+  - --talk-name=org.freedesktop.secrets
+  - --talk-name=org.freedesktop.Notifications
+build-options:
+  cflags: -O2 -g
+  cxxflags: -O2 -g
+  strip: false
+  no-debuginfo: true
+  env:
+    V: '1'
+modules:
+  - name: apr
+    sources:
+      - type: archive
+        url: https://www.apache.org/dist/apr/apr-1.6.3.tar.bz2
+        sha256: 131f06d16d7aabd097fa992a33eec2b6af3962f93e6d570a9bd4d85e95993172
+  - name: apr-util
+    sources:
+      - type: archive
+        url: https://www.apache.org/dist/apr/apr-util-1.6.1.tar.bz2
+        sha512: "40eff8a37c0634f7fdddd6ca5e596b38de15fd10767a34c30bbe49c632816e8f3e1e230678034f578dd5816a94f246fb5dfdf48d644829af13bf28de3225205d"
+    config-opts:
+      - --with-apr=/app/bin/apr-1-config
+  - name: pcre
+    sources:
+      - type: archive
+        url: https://ftp.pcre.org/pub/pcre/pcre-8.42.tar.bz2
+        sha256: 2cd04b7c887808be030254e8d77de11d3fe9d4505c39d4b15d2664ffe8bf9301
+  - name: httpd
+    sources:
+      - type: archive
+        url: https://www.apache.org/dist/httpd/httpd-2.4.33.tar.bz2
+        sha256: de02511859b00d17845b9abdd1f975d5ccb5d0b280c567da5bf2ad4b70846f05
+    config-opts:
+      - --enable-mpms-shared=all
+      - --enable-modules=all
+      - --with-apr=/app/bin/apr-1-config
+      - --with-apr-util=/app/bin/apu-1-config
+      - --with-pcre=/app
+      - --enable-authnz-fcgi
+      - --enable-cgi
+      - --enable-cgid
+  - name: php
+    sources:
+      - type: archive
+        url: https://php.net/distributions/php-7.2.6.tar.xz
+        sha512: da86b1ff2df3b9e2d46e59a80296b940d81132975b621bdec9602f8b4c8d91a3fdcd4ffd7cb982d63d3ec974b3a12a7854e42a73b7f2cc8eefade14335aa7c71
+    config-opts:
+      - --disable-xml
+      - --disable-dom
+      - --disable-libxml
+      - --disable-simplexml
+      - --disable-xmlreader
+      - --disable-xmlwriter
+      - --without-pear
+      - --with-apxs2
+  - name: wpebackend
+    buildsystem: cmake-ninja
+    sources:
+      - type: git
+        url: https://github.com/WebPlatformForEmbedded/WPEBackend.git
+        branch: 761496dff51b6962200294b4fe2bc9529da731a8
+  - name: wpebackend-fdo
+    buildsystem: cmake-ninja
+    sources:
+      - type: git
+        url: https://github.com/Igalia/WPEBackend-fdo.git
+        branch: bdd46870b1dc3c92005343e3161bdd24f620b11d
+  - name: lua
+    buildsystem: simple
+    build-commands:
+      - make MYCFLAGS="$CFLAGS -fPIC -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1" linux
+      - make install INSTALL_TOP=/app INSTALL_MAN=/app/share/man/man1 INSTALL_DATA='cp -d'
+    sources:
+      - type: archive
+        url: https://www.lua.org/ftp/lua-5.3.4.tar.gz
+        sha1: 79790cfd40e09ba796b01a571d4d63b52b1cd950
+  - name: luajit
+    buildsystem: simple
+    build-commands:
+      - make amalg PREFIX=/app
+      - make install PREFIX=/app
+    sources:
+      - type: archive
+        url: https://luajit.org/download/LuaJIT-2.0.5.tar.gz
+        md5: 48353202cbcacab84ee41a5a70ea0a2c
+  - name: dyz
+    sources:
+      - type: git
+        url: https://github.com/Igalia/dyz.git
+        branch: 4f196778c82ed72095e72c9d401cd2ff8ba36c60
+  - name: libevent
+    sources:
+      - type: git
+        url: https://github.com/libevent/libevent.git
+        branch: e7ff4ef # 2.1.8
+    config-opts:
+      - --disable-libevent-regress
+  - name: webkitgtk-test-fonts
+    no-autogen: true
+    sources:
+      - type: git
+        url: https://github.com/WebKitGTK/webkitgtk-test-fonts.git
+    buildsystem: simple
+    build-commands:
+      # FIXME: Make ActivateFontWPE smarter.
+      - make install DESTDIR=/app/WebKitBuild/DependenciesWPE/Root
+  - ../gstreamer/org.freedesktop.gstreamer.yaml
+  - name: webkitWPE
+    sources:
+      - type: git
+        url: https://github.com/WebKit/WebKit.git
+        branch: mediastream-minus-enumerateDevices
+    buildsystem: simple
+    build-commands:
+      # - Tools/Scripts/update-webkitwpe-libs
+      - Tools/Scripts/build-webkit --wpe --debug --prefix=/app --makeargs=install

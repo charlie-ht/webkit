@@ -1219,7 +1219,7 @@ class Port(object):
         This is needed only by ports that use the apache_http_server module."""
         # The Apache binary path can vary depending on OS and distribution
         # See http://wiki.apache.org/httpd/DistrosDefaultLayout
-        for path in ["/usr/sbin/httpd", "/usr/sbin/apache2"]:
+        for path in ["/usr/sbin/httpd", "/usr/sbin/apache2", "/app/bin/httpd"]:
             if self._filesystem.exists(path):
                 return path
         _log.error("Could not find apache. Not installed or unknown path.")
@@ -1282,6 +1282,8 @@ class Port(object):
                 return 'debian-httpd-' + self._apache_version() + self._debian_php_version() + '.conf'
             if self._is_arch_based():
                 return 'archlinux-httpd.conf'
+            if sys_platform == 'linux2':
+                return 'flatpak-httpd.conf'
         # All platforms use apache2 except for CYGWIN (and Mac OS X Tiger and prior, which we no longer support).
         return 'apache' + self._apache_version() + '-httpd.conf'
 

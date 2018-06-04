@@ -1,0 +1,17 @@
+  - name: libvpx
+    no-autogen: true
+    sources:
+      - type: git
+        url: https://chromium.googlesource.com/webm/libvpx
+        branch: v1.7.0
+    config-opts:
+      - --enable-pic
+      - --as=yasm
+      - --disable-unit-tests
+      - --size-limit=16384x16384
+      - --enable-postproc
+      - --enable-multi-res-encoding
+      - --enable-temporal-denoising
+      - --enable-vp9-temporal-denoising
+      - --enable-vp9-postproc
+      - --enable-shared
