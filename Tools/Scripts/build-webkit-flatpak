@@ -309,13 +309,14 @@ class FlatpakRepo(FlatpakObject):  # pylint: disable=too-few-public-methods
 class FlatpakPackage(FlatpakObject):
     """A flatpak app."""
 
-    def __init__(self, name, branch, repo, arch, user=True):  # pylint: disable=too-many-arguments
+    def __init__(self, name, branch, repo, arch, user=True, hash=None):  # pylint: disable=too-many-arguments
         FlatpakObject.__init__(self, user=user)
 
         self.name = name
         self.branch = str(branch)
         self.repo = repo
         self.arch = arch
+        self.hash = hash
 
     def __str__(self):
         return "%s/%s/%s %s" % (self.name, self.arch, self.branch, self.repo.name)
@@ -343,12 +344,21 @@ class FlatpakPackage(FlatpakObject):
                      comment="Installing from " + self.repo.name + " " +
                              self.name + " " + self.arch + " " + self.branch)
 
+    def checkout(self):
+        command = ["flatpak-bisect", "-r", self.name, "-b", self.branch, "checkout", self.hash]
+        Console.message("%s: checking out %s" % (self.name, self.hash))
+
+        return subprocess.check_output(command).decode("utf-8")
+
     def update(self):
         if not self.is_installed(self.branch):
             return self.install()
 
-        self.flatpak("update", self.name, self.branch, show_output=True,
-                     comment="Updating %s" % self.name)
+        if self.hash is None:
+            self.flatpak("update", self.name, self.branch, show_output=True,
+                        comment="Updating %s" % self.name)
+        else:
+            self.checkout()
 
     def run_app(self, *args):
         """Starts the app represented by this instance."""
@@ -516,21 +526,17 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
             exit(1)
 
         self.sdk_branch = manifest["runtime-version"]
-        self.sdk_hash = manifest.get("sdk-hash")
-        if self.sdk_hash:
-            del manifest["sdk-hash"]
-        self.runtime_hash = manifest.get("runtime-hash")
-        if self.runtime_hash:
-            del manifest["runtime-hash"]
         self.finish_args = manifest.get("finish-args", [])
         self.finish_args = remove_extension_points(self.finish_args)
         self.dbus_id = manifest["app-id"]
         self.runtime = FlatpakPackage("org.gnome.Platform", self.sdk_branch,
-                                      self.sdk_repo, "x86_64")
+                                      self.sdk_repo, "x86_64",
+                                      hash=manifest.get("runtime-hash"))
         self.locale = FlatpakPackage("org.gnome.Platform.Locale",
                                      self.sdk_branch, self.sdk_repo, "x86_64")
         self.sdk = FlatpakPackage("org.gnome.Sdk", self.sdk_branch,
-                                  self.sdk_repo, "x86_64")
+                                  self.sdk_repo, "x86_64",
+                                  hash=manifest.get("sdk-hash"))
         self.app = FlatpakPackage(self.dbus_id, "master", None, "x86_64")
         self.packs = [self.runtime, self.locale]
 
@@ -630,14 +636,13 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
             self.run_in_sandbox(*self.args, exit_on_failure=True)
 
     def install_all(self):
-        for m in self.packs:
-            if not m.is_installed(self.sdk_branch):
-                m.install()
+        for package in self.packs:
+            if not package.is_installed(self.sdk_branch):
+                package.install()
 
     def update_all(self):
-        for m in self.packs:
-            m.update()
-
+        for package in [self.runtime, self.sdk]:
+            package.update()
 
 def remove_extension_points(array):
     result_args = []
