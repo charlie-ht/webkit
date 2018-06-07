@@ -127,6 +127,11 @@ modules:
       # FIXME: Make ActivateFontWPE smarter.
       - make install DESTDIR=/app/WebKitBuild/DependenciesWPE/Root
   - ../gstreamer/org.freedesktop.gstreamer.yaml
+  - name: patchelf
+      sources:
+        - type: git
+          url: https://github.com/NixOS/patchelf.git
+          branch: 44b7f95
   - name: webkitWPE
     sources:
       - type: git
