@@ -509,7 +509,7 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
 
     def run_in_sandbox(self, *args, exit_on_failure=False, cwd=None):
         with tempfile.NamedTemporaryFile(mode="w") as tmpscript:
-            flatpak_command = ["flatpak", "build", "--bind-mount=%s=%s" % (tmpscript.name, "/tmpscript"),
+            flatpak_command = ["flatpak", "build", "--bind-mount=%s=%s" % (tempfile.gettempdir(), tempfile.gettempdir()),
                 "--bind-mount=%s=%s" % (self.webkit_path, self.app_path)]
 
             forwarded = {
@@ -539,7 +539,7 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
             print(shell_string, file=tmpscript)
             Console.message("Running in sandbox: %s %s" %(' '.join(flatpak_command), shell_string))
 
-            flatpak_command.extend(['sh', '/tmpscript'])
+            flatpak_command.extend(['sh', tmpscript.name])
             try:
                 subprocess.check_call(flatpak_command)
             except subprocess.CalledProcessError as e:
