@@ -424,7 +424,7 @@ class FlatpakModule(FlatpakObject):
                 self.flatpak_app.run_in_sandbox(
                     "sh", tmp_install_script.name, exit_on_failure=True,
                     cwd=self.source_path,
-                    extra_finish_args=["--filesystem=%s" % self.source_path])
+                    extra_finish_args=["--filesystem=host"])
 
         with open(install_data_file, 'wb') as pickled_install_file:
             pickle.dump(install_data, pickled_install_file)
