@@ -368,7 +368,7 @@ class FlatpakPackage(FlatpakObject):
 
 class FlatpakModule(FlatpakObject):
 
-    def __init__(self, flatpak_app, manifest_path, module_name):
+    def __init__(self, flatpak_app, manifest_path, module_name, prefix):
         self.flatpak_app = flatpak_app
 
         manifest = load_manifest(manifest_path)
@@ -378,6 +378,7 @@ class FlatpakModule(FlatpakObject):
         for module in manifest["modules"]:
             if module["name"] == module_name:
                 break
+        self.prefix = prefix
         self.source_path = module["sources"][0]["url"]
         assert urlparse(self.source_path).scheme == "file"
         self.source_path = urlparse(self.source_path).path
@@ -402,10 +403,11 @@ class FlatpakModule(FlatpakObject):
         except OSError:
             install_data = {} 
         for dir in dirs:
-            files = glob.glob(dir, recursive=True)
+            files = glob.glob(os.path.join(self.prefix, dir), recursive=True)
             common = os.path.commonpath(files)
             basedir = os.path.abspath(os.path.join(common, os.path.pardir))
             for file in files:
+                
                 if os.path.isdir(file):
                     continue
 
@@ -422,8 +424,7 @@ class FlatpakModule(FlatpakObject):
         with tempfile.NamedTemporaryFile(prefix=os.path.join(builddir, "tmpinstallscript")) as tmp_install_script:
             with open(tmp_install_script.name, "w") as tmp_install_script_file:
                 print(install_script_string, file=tmp_install_script_file)
-                self.flatpak_app.run_in_sandbox(
-                    "sh", tmp_install_script.name, exit_on_failure=True)
+                self.flatpak_app.run_in_sandbox("sh", tmp_install_script.name, exit_on_failure=True)
 
         with open(install_data_file, 'wb') as pickled_install_file:
             pickle.dump(install_data, pickled_install_file)
@@ -672,7 +673,8 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
             if not expand_manifest(self.manifest_path, self.manifest_generated_path,
                                    self.name, self.webkit_path):
                 exit(1)
-            self.app_module = FlatpakModule(self, self.manifest_generated_path, self.name)
+            self.app_module = FlatpakModule(self, self.manifest_generated_path, self.name,
+                self.prefix)
             self.app_module.run(self.state_path)
         else:
             Console.message("Using %s prefix in %s", self.name, self.prefix)
