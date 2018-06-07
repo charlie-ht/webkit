@@ -436,11 +436,7 @@ class FlatpakModule(FlatpakObject):
                 if command[0] == "webkit-install-dir":
                     self.webkit_install(command[1:], builddir)
                 else:
-                    self.flatpak_app.run_in_sandbox(
-                        *command, exit_on_failure=True,
-                        cwd=self.source_path)
-
-
+                    self.flatpak_app.run_in_sandbox(*command, exit_on_failure=True)
         else:
             self.configure()
             self.compile()
