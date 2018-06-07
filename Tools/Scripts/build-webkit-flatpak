@@ -20,6 +20,7 @@
 
 import argparse
 import configparser
+import glob
 import json
 import os
 import shlex
@@ -386,14 +387,39 @@ class FlatpakModule(FlatpakObject):
         self.use_builddir = module.get("builddir", "false")
         self.build_commands = module.get("build-commands", [])
 
+    def install_file(self, src, dest):
+        self.flatpak_app.run_in_sandbox("install", src, dest,
+            exit_on_failure=True, cwd=self.source_path,
+            extra_finish_args=["--filesystem=%s" % self.source_path],
+            verbose=False)
+        self.flatpak_app.run_in_sandbox("patchelf", "--remove-rpath", dest, verbose=False)
+
+    def webkit_install(self, dirs):
+        install_root = "/app"
+        for dir in dirs:
+            if dir.endswith('/'):
+                basedir = os.path.basename(dir[:-1])
+                for root, dirs, files in os.walk(os.path.join(dir)):
+                    cdir = root.replace(os.path.commonprefix([dir, root]), "")
+                    for file in files:
+                        self.install_file(os.path.join(root, file), os.path.join(install_root, basedir, cdir, file))
+
+            else:
+                print(glob.glob(dir))
+
     def run(self):
         if self.build_system == "simple":
             for command in self.build_commands:
                 command = shlex.split(command)
-                self.flatpak_app.run_in_sandbox(
-                    *command, exit_on_failure=True,
-                    cwd=self.source_path,
-                    extra_finish_args=["--filesystem=%s" % self.source_path])
+                if command[0] == "webkit-install-dir":
+                    self.webkit_install(command[1:])
+                else:
+                    self.flatpak_app.run_in_sandbox(
+                        *command, exit_on_failure=True,
+                        cwd=self.source_path,
+                        extra_finish_args=["--filesystem=%s" % self.source_path])
+
+
         else:
             self.configure()
             self.compile()
@@ -541,7 +567,8 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
         self.manifest_generated_path = os.path.join(self.prefix,
                                                     self.build_name + ".json")
 
-    def run_in_sandbox(self, *args, exit_on_failure=False, cwd=None, extra_finish_args=[]):
+    def run_in_sandbox(self, *args, exit_on_failure=False, cwd=None, extra_finish_args=[],
+            verbose=True):
         flatpak_command = ["flatpak", "build"]
 
         forwarded = {
@@ -567,7 +594,8 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
                 print('echo "\n-> Entering %s environment\n"\n\nbash' % self.name, file=out_file)
             flatpak_command.extend(['sh', os.path.join(self.state_path, 'enter_env.sh')])
 
-        Console.message("Running in sandbox: " + ' '.join(flatpak_command))
+        if verbose:
+            Console.message("Running in sandbox: " + ' '.join(flatpak_command))
         try:
             subprocess.check_call(flatpak_command, cwd=cwd)
         except subprocess.CalledProcessError as e:
