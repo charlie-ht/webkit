@@ -501,7 +501,9 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
 
         self.gtk = False
         self.wpe = True
+        self.clean = False
         self.app_path = os.path.abspath(os.path.join(scriptdir, '../../'))
+        self.webkit_path = "/app/webkit"
 
         self.sdk_branch = None
         self.port = "WPE"
@@ -589,10 +591,11 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
         self.packs.append(self.sdk)
         self.manifest_generated_path = os.path.join(self.prefix,
                                                     self.build_name + ".json")
+        self.install_data_file = os.path.join(self.state_path, "install_data")
 
     def run_in_sandbox(self, *args, exit_on_failure=False, cwd=None, extra_finish_args=[],
             verbose=True):
-        flatpak_command = ["flatpak", "build"]
+        flatpak_command = ["flatpak", "build", "--bind-mount=%s=%s" % (self.webkit_path, self.app_path)]
 
         forwarded = {
             "WEBKIT_TOP_LEVEL": "/app/",
@@ -631,6 +634,8 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
                 shutil.rmtree(self.build_path)
             if os.path.exists(self.prefix):
                 shutil.rmtree(self.prefix)
+            if os.path.exists(self.install_data_file):
+                os.remove(self.install_data_file)
 
         if self.update:
             if not self.no_flatpak_update:
@@ -651,7 +656,7 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
             # Create environment dirs if necessary
             os.makedirs(os.path.dirname(self.manifest_generated_path), exist_ok=True)
             if not expand_manifest(self.manifest_path, self.manifest_generated_path,
-                                   self.name, self.app_path):
+                                   self.name, self.webkit_path):
                 exit(1)
 
             builder_args = ["flatpak-builder", "--disable-rofiles-fuse", "--state-dir",
@@ -673,7 +678,7 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
 
         if self.build_app:
             if not expand_manifest(self.manifest_path, self.manifest_generated_path,
-                                   self.name, self.app_path):
+                                   self.name, self.webkit_path):
                 exit(1)
             self.app_module = FlatpakModule(self, self.manifest_generated_path, self.name)
             self.app_module.run(self.state_path)
@@ -681,7 +686,7 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
             Console.message("Using %s prefix in %s", self.name, self.prefix)
 
         if self.run_tests:
-            test_launcher = [os.path.join(self.app_path, 'Tools/Scripts/run-webkit-tests'), '--debug', '--' + self.port.lower()] + self.args
+            test_launcher = [os.path.join(self.webkit_path, 'Tools/Scripts/run-webkit-tests'), '--debug', '--' + self.port.lower()] + self.args
             self.run_in_sandbox(*test_launcher, exit_on_failure=True)
         elif not self.update and not (self.build_app and not self.args):
             self.run_in_sandbox(*self.args, exit_on_failure=True)
