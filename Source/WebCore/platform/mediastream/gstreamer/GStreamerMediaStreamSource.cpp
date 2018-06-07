@@ -65,10 +65,10 @@ static GstTagList* mediaStreamTrackPrivateGetTags(MediaStreamTrackPrivate* track
 
     if (track->type() == RealtimeMediaSource::Type::Audio) {
         gst_tag_list_add(taglist, GST_TAG_MERGE_APPEND, WEBKIT_MEDIA_TRACK_TAG_KIND,
-            (gint)AudioTrackPrivate::Kind::Main, nullptr);
+            static_cast<int>(AudioTrackPrivate::Kind::Main), nullptr);
     } else if (track->type() == RealtimeMediaSource::Type::Video) {
         gst_tag_list_add(taglist, GST_TAG_MERGE_APPEND, WEBKIT_MEDIA_TRACK_TAG_KIND,
-            (gint)VideoTrackPrivate::Kind::Main, nullptr);
+            static_cast<int>(VideoTrackPrivate::Kind::Main), nullptr);
 
         if (track->isCaptureTrack()) {
             GStreamerVideoCaptureSource& source = static_cast<GStreamerVideoCaptureSource&>(
@@ -299,7 +299,7 @@ static GstStateChangeReturn webkitMediaStreamSrcChangeState(GstElement* element,
 static void webkit_media_stream_src_class_init(WebKitMediaStreamSrcClass* klass)
 {
     GObjectClass* gobject_class = G_OBJECT_CLASS(klass);
-    GstElementClass* gstelement_klass = (GstElementClass*)klass;
+    GstElementClass* gstelement_klass = GST_ELEMENT_CLASS(klass);
 
     gobject_class->finalize = webkitMediaStreamSrcFinalize;
     gobject_class->dispose = webkitMediaStreamSrcDispose;
@@ -353,9 +353,9 @@ static void webkitMediaStreamSrcAddPad(WebKitMediaStreamSrc* self, GstPad* targe
 
     auto proxypad = adoptGRef(GST_PAD(gst_proxy_pad_get_internal(GST_PROXY_PAD(ghostpad))));
     gst_pad_set_chain_function(proxypad.get(),
-        (GstPadChainFunction)webkitMediaStreamSrcChain);
+        static_cast<GstPadChainFunction>(webkitMediaStreamSrcChain));
     gst_pad_set_active(ghostpad, TRUE);
-    g_assert(gst_element_add_pad(GST_ELEMENT(self), (GstPad*)ghostpad));
+    ASSERT(gst_element_add_pad(GST_ELEMENT(self), GST_PAD (ghostpad)));
 }
 
 static GstPadProbeReturn webkitMediaStreamSrcPadProbeCb(GstPad* pad, GstPadProbeInfo* info, ProbeData* data)

@@ -175,7 +175,9 @@ const RealtimeMediaSourceCapabilities& GStreamerVideoCaptureSource::capabilities
         double tmpMinFramerate = G_MAXDOUBLE, tmpMaxFramerate = G_MINDOUBLE;
 
         if (!gst_structure_get(str, "width", GST_TYPE_INT_RANGE, &tmpMinWidth, &tmpMaxWidth, "height", GST_TYPE_INT_RANGE, &tmpMinHeight, &tmpMaxHeight, nullptr)) {
-            g_assert(gst_structure_get(str, "width", G_TYPE_INT, &tmpMinWidth, "height", G_TYPE_INT, &tmpMinHeight, nullptr));
+            if (!gst_structure_get(str, "width", G_TYPE_INT, &tmpMinWidth, "height", G_TYPE_INT, &tmpMinHeight, nullptr))
+                continue;
+
             tmpMaxWidth = tmpMinWidth;
             tmpMaxHeight = tmpMinHeight;
         }
@@ -200,7 +202,7 @@ const RealtimeMediaSourceCapabilities& GStreamerVideoCaptureSource::capabilities
                 double tmpFrameRate;
                 const GValue* val = gst_value_list_get_value(frameRates, i);
 
-                g_assert(G_VALUE_TYPE(val) == GST_TYPE_FRACTION);
+                ASSERT(G_VALUE_TYPE(val) == GST_TYPE_FRACTION);
                 gst_util_fraction_to_double (gst_value_get_fraction_numerator(val),
                     gst_value_get_fraction_denominator(val), &tmpFrameRate);
 

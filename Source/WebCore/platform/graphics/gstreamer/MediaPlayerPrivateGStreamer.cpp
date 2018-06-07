@@ -52,7 +52,7 @@
 #include <wtf/text/CString.h>
 
 #if ENABLE(MEDIA_STREAM) && GST_CHECK_VERSION(1, 10, 0)
-#include "gstreamer/GStreamerMediaStreamSource.h"
+#include "GStreamerMediaStreamSource.h"
 #endif
 
 #if ENABLE(VIDEO_TRACK)

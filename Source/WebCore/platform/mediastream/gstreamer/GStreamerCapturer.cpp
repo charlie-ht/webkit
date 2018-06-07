@@ -174,7 +174,7 @@ void GStreamerCapturer::play()
 {
     ASSERT(m_pipeline);
 
-    GST_INFO_OBJECT((gpointer) pipeline(), "Going to PLAYING!");
+    GST_INFO_OBJECT(pipeline(), "Going to PLAYING!");
 
     gst_element_set_state(pipeline(), GST_STATE_PLAYING);
 }
@@ -183,7 +183,7 @@ void GStreamerCapturer::stop()
 {
     ASSERT(m_pipeline);
 
-    GST_INFO_OBJECT((gpointer) pipeline(), "Tearing down!");
+    GST_INFO_OBJECT(pipeline(), "Tearing down!");
 
     // Make sure to remove sync handler before tearing down, avoiding
     // possible deadlocks.
