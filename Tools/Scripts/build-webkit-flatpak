@@ -31,6 +31,7 @@ import tempfile
 import venv
 import re
 import fileinput
+import pickle
 
 try:
     import yaml
@@ -390,10 +391,16 @@ class FlatpakModule(FlatpakObject):
     def install_file(self, **kwargs):
         return "echo \"install %(src)s %(dest)s\"\ninstall -D %(src)s %(dest)s\npatchelf --remove-rpath %(dest)s 2>&1 |grep -v \"not an ELF\" || true\n" % (kwargs)
 
-    def webkit_install(self, dirs):
-        # FIXME, try to be smart and not copy when no required!
+    def webkit_install(self, dirs, builddir):
         install_script_string = "#!/bin/sh\n\n"
         install_root = "/app"
+
+        install_data_file = os.path.join(builddir, "install_data")
+        try:
+            with open(install_data_file, 'rb') as pickled_install_file:
+                install_data = pickle.load(pickled_install_file)
+        except OSError:
+            install_data = {} 
         for dir in dirs:
             files = glob.glob(dir, recursive=True)
             common = os.path.commonpath(files)
@@ -401,11 +408,17 @@ class FlatpakModule(FlatpakObject):
             for file in files:
                 if os.path.isdir(file):
                     continue
+
+                mtime = os.stat(file).st_mtime
+                if install_data.get(file) == mtime:
+                    continue
+
+                install_data[file] = mtime
                 relpath = os.path.relpath(file, basedir)
                 install_script_string += self.install_file(
                     src=file, dest=os.path.join(install_root, relpath))
 
-        with tempfile.NamedTemporaryFile(prefix=os.path.join(self.source_path, "tmpinstallscript")) as tmp_install_script:
+        with tempfile.NamedTemporaryFile(prefix=os.path.join(builddir, "tmpinstallscript")) as tmp_install_script:
             with open(tmp_install_script.name, "w") as tmp_install_script_file:
                 print(install_script_string, file=tmp_install_script_file)
                 self.flatpak_app.run_in_sandbox(
@@ -413,12 +426,15 @@ class FlatpakModule(FlatpakObject):
                     cwd=self.source_path,
                     extra_finish_args=["--filesystem=%s" % self.source_path])
 
-    def run(self):
+        with open(install_data_file, 'wb') as pickled_install_file:
+            pickle.dump(install_data, pickled_install_file)
+
+    def run(self, builddir):
         if self.build_system == "simple":
             for command in self.build_commands:
                 command = shlex.split(command)
                 if command[0] == "webkit-install-dir":
-                    self.webkit_install(command[1:])
+                    self.webkit_install(command[1:], builddir)
                 else:
                     self.flatpak_app.run_in_sandbox(
                         *command, exit_on_failure=True,
@@ -659,7 +675,7 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
                                    self.name, self.app_path):
                 exit(1)
             self.app_module = FlatpakModule(self, self.manifest_generated_path, self.name)
-            self.app_module.run()
+            self.app_module.run(self.state_path)
         else:
             Console.message("Using %s prefix in %s", self.name, self.prefix)
 
