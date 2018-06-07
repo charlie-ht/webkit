@@ -632,7 +632,7 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
         if self.run_tests:
             test_launcher = [os.path.join(self.app_path, 'Tools/Scripts/run-webkit-tests'), '--debug', '--' + self.port.lower()] + self.args
             self.run_in_sandbox(*test_launcher, exit_on_failure=True)
-        elif not self.update:
+        elif not self.update and not (self.build_app and not self.args):
             self.run_in_sandbox(*self.args, exit_on_failure=True)
 
     def install_all(self):
@@ -641,8 +641,8 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
                 package.install()
 
     def update_all(self):
-        for package in [self.runtime, self.sdk]:
-            package.update()
+        for m in [self.runtime, self.sdk]:
+            m.update()
 
 def remove_extension_points(array):
     result_args = []
