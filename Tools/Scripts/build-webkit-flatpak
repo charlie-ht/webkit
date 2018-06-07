@@ -344,21 +344,18 @@ class FlatpakPackage(FlatpakObject):
                      comment="Installing from " + self.repo.name + " " +
                              self.name + " " + self.arch + " " + self.branch)
 
-    def checkout(self):
-        command = ["flatpak-bisect", "-r", self.name, "-b", self.branch, "checkout", self.hash]
-        Console.message("%s: checking out %s" % (self.name, self.hash))
-
-        return subprocess.check_output(command).decode("utf-8")
-
     def update(self):
         if not self.is_installed(self.branch):
             return self.install()
 
-        if self.hash is None:
-            self.flatpak("update", self.name, self.branch, show_output=True,
-                        comment="Updating %s" % self.name)
-        else:
-            self.checkout()
+        extra_args = []
+        comment = "Updating %s" % self.name 
+        if self.hash:
+            extra_args = ["--commit", self.hash]
+            comment += " to %s" % self.hash
+
+        self.flatpak("update", self.name, self.branch, show_output=True,
+                    *extra_args, comment=comment)
 
     def run_app(self, *args):
         """Starts the app represented by this instance."""
@@ -547,10 +544,10 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
     def run_in_sandbox(self, *args, exit_on_failure=False, cwd=None, extra_finish_args=[]):
         flatpak_command = ["flatpak", "build"]
 
-        injected_bundle_filename = os.path.join(self.app_path, "WebKitBuild/Debug/lib/libTestRunnerInjectedBundle.so")
         forwarded = {
             "WEBKIT_TOP_LEVEL": "/app/",
-            "TEST_RUNNER_INJECTED_BUNDLE_FILENAME": injected_bundle_filename 
+            "LD_LIBRARY_PATH": "/app/lib",
+            "TEST_RUNNER_INJECTED_BUNDLE_FILENAME": "/app/webkit/lib/libTestRunnerInjectedBundle.so",
         }
 
         for envvar, value in os.environ.items():
@@ -624,6 +621,9 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
 
 
         if self.build_app:
+            if not expand_manifest(self.manifest_path, self.manifest_generated_path,
+                                   self.name, self.app_path):
+                exit(1)
             self.app_module = FlatpakModule(self, self.manifest_generated_path, self.name)
             self.app_module.run()
         else:

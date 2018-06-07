@@ -135,4 +135,9 @@ modules:
     buildsystem: simple
     build-commands:
       # - Tools/Scripts/update-webkitwpe-libs
-      - Tools/Scripts/build-webkit --wpe --debug --prefix=/app --makeargs=install
+      - Tools/Scripts/build-webkit --wpe --debug --prefix=/app
+      - mkdir -p /app/webkit
+      - cp -R WebKitBuild/Debug/bin /app/webkit/
+      - cp -R WebKitBuild/Debug/lib /app/webkit/
+      - cp -R WebKitBuild/Debug/Tools /app/webkit/
+      # - cp -R "WebKitBuild/Debug/*.ops" /app/webkit/
