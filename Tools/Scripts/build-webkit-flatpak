@@ -411,6 +411,7 @@ class FlatpakModule(FlatpakObject):
 
                 mtime = os.stat(file).st_mtime
                 if install_data.get(file) == mtime:
+                    print("%s already up to date." % file)
                     continue
 
                 install_data[file] = mtime
