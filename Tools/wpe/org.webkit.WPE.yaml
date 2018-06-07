@@ -1,6 +1,8 @@
 app-id: org.webkit.WPE
 runtime: org.gnome.Platform
 runtime-version: "3.28"
+sdk-hash: "cea71fe86d6961b4fe58046170f8dc8f8d4d04141ddf211e7cc6db44a18a0c49"
+runtime-hash: "9785cf7dc62290d76eef4bf0f5d25240fc5bb3d73128c25e95c4e4cb90bb3560"
 sdk: org.gnome.Sdk
 command: dyz
 tags:

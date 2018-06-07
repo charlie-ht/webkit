@@ -512,6 +512,8 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
             exit(1)
 
         self.sdk_branch = manifest["runtime-version"]
+        self.sdk_hash = manifest.get("sdk-hash")
+        self.runtime_hash = manifest.get("runtime-hash")
         self.finish_args = manifest.get("finish-args", [])
         self.finish_args = remove_extension_points(self.finish_args)
         self.dbus_id = manifest["app-id"]
