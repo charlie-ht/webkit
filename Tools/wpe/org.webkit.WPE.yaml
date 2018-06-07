@@ -139,6 +139,4 @@ modules:
         branch: mediastream-minus-enumerateDevices
     buildsystem: simple
     build-commands:
-      # - Tools/Scripts/update-webkitwpe-libs
       - Tools/Scripts/build-webkit --wpe --debug --prefix=/app
-      - webkit-install-dir bin/** lib/**/**.so*

@@ -392,91 +392,11 @@ class FlatpakModule(FlatpakObject):
     def install_file(self, **kwargs):
         return "echo \"install %(src)s %(dest)s\"\ninstall -D %(src)s %(dest)s\npatchelf --remove-rpath %(dest)s 2>&1 |grep -v \"not an ELF\" || true\n" % (kwargs)
 
-    def webkit_install(self, dirs, builddir):
-        install_script_string = "#!/bin/sh\n\n"
-        install_root = "/app"
-
-        install_data_file = os.path.join(builddir, "install_data")
-        try:
-            with open(install_data_file, 'rb') as pickled_install_file:
-                install_data = pickle.load(pickled_install_file)
-        except OSError:
-            install_data = {} 
-        for dir in dirs:
-            files = glob.glob(os.path.join(self.prefix, dir), recursive=True)
-            common = os.path.commonpath(files)
-            basedir = os.path.abspath(os.path.join(common, os.path.pardir))
-            for file in files:
-                
-                if os.path.isdir(file):
-                    continue
-
-                mtime = os.stat(file).st_mtime
-                if install_data.get(file) == mtime:
-                    print("%s already up to date." % file)
-                    continue
-
-                install_data[file] = mtime
-                relpath = os.path.relpath(file, basedir)
-                install_script_string += self.install_file(
-                    src=file, dest=os.path.join(install_root, relpath))
-
-        with tempfile.NamedTemporaryFile(prefix=os.path.join(builddir, "tmpinstallscript")) as tmp_install_script:
-            with open(tmp_install_script.name, "w") as tmp_install_script_file:
-                print(install_script_string, file=tmp_install_script_file)
-                self.flatpak_app.run_in_sandbox("sh", tmp_install_script.name, exit_on_failure=True)
-
-        with open(install_data_file, 'wb') as pickled_install_file:
-            pickle.dump(install_data, pickled_install_file)
-
     def run(self, builddir):
-        if self.build_system == "simple":
-            for command in self.build_commands:
-                command = shlex.split(command)
-                if command[0] == "webkit-install-dir":
-                    self.webkit_install(command[1:], builddir)
-                else:
-                    self.flatpak_app.run_in_sandbox(*command, exit_on_failure=True)
-        else:
-            self.configure()
-            self.compile()
-            self.install()
-
-    def configure(self):
-        cwd = self.source_path
-        if self.build_system == "meson":
-            configure_args = ["meson", "build"] + self.config_options + \
-                             ["--prefix=/app", "--libdir=/app/lib"]
-        elif self.build_system == "autotools" or self.build_system == None:
-            configure_args = ["./autogen.sh"] + self.config_options + \
-                             ["--prefix=/app", "--libdir=/app/lib"]
-        elif self.build_system == "cmake-ninja":
-            cwd = os.path.join(self.source_path, "build")
-            os.makedirs(cwd, exist_ok=True)
-            configure_args = ["cmake", "-G", "Ninja"] + self.config_options + \
-                             ["-DCMAKE_INSTALL_PREFIX:PATH=/app", "-DCMAKE_INSTALL_LIBDIR=lib", self.source_path]
-
-        self.flatpak_app.run_in_sandbox(*configure_args, exit_on_failure=True,
-                                        cwd=cwd)
-
-    def compile(self):
-        if self.build_system == "meson" or self.build_system == "cmake-ninja":
-            compile_args = ["ninja", "-C", "build"] + self.make_args
-        elif self.build_system == "autotools" or self.build_system == None:
-            compile_args = ["make"] + self.make_args
-
-        self.flatpak_app.run_in_sandbox(*compile_args, exit_on_failure=True,
-                                        cwd=self.source_path)
-
-    def install(self):
-        if self.build_system == "meson" or self.build_system == "cmake-ninja":
-            install_args = ["ninja", "-C", "build", "install"] + self.make_install_args
-        elif self.build_system == "autotools" or self.build_system == None:
-            install_args = ["make", "install"] + self.make_install_args
-
-        self.flatpak_app.run_in_sandbox(*install_args, exit_on_failure=True,
-                                        cwd=self.source_path)
-
+        for command in self.build_commands:
+            command = shlex.split(command)
+            self.flatpak_app.run_in_sandbox(*command, exit_on_failure=True,
+                cwd=self.source_path)
 
 class FlatpakDev:  # pylint: disable=too-many-instance-attributes
 
@@ -606,7 +526,10 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
         flatpak_command += self.finish_args + [self.build_path]
 
         if args:
-            flatpak_command.extend(args)
+            args = ' '.join(args)
+            if cwd:
+                args = 'cd %s && %s' % (cwd, args)
+            flatpak_command.append(args)
         else:
             os.makedirs(self.state_path, exist_ok=True)
             with open(os.path.join(self.state_path, 'enter_env.sh'), 'w') as out_file:
@@ -616,7 +539,7 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
         if verbose:
             Console.message("Running in sandbox: " + ' '.join(flatpak_command))
         try:
-            subprocess.check_call(flatpak_command, cwd=cwd)
+            subprocess.check_call(flatpak_command)
         except subprocess.CalledProcessError as e:
             if exit_on_failure:
                 exit(e.returncode)
