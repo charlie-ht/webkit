@@ -56,7 +56,7 @@ class WPEPort(Port):
         return multiplier * default_timeout
 
     def _build_path(self, *comps):
-        return self._filesystem.join('/app/webkit/', *comps)
+        return self._filesystem.join('/app/', *comps)
 
     def _built_executables_path(self, *path):
         return self._build_path(*(('bin',) + path))
