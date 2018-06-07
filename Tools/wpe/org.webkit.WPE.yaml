@@ -139,4 +139,4 @@ modules:
         branch: mediastream-minus-enumerateDevices
     buildsystem: simple
     build-commands:
-      - Tools/Scripts/build-webkit --wpe --debug --prefix=/app
+      - /app/webkit/Tools/Scripts/build-webkit --wpe --debug --prefix=/app
