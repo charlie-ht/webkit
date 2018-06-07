@@ -526,10 +526,9 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
         flatpak_command += self.finish_args + [self.build_path]
 
         if args:
-            args = ' '.join(args)
             if cwd:
-                args = 'cd %s && %s' % (cwd, args)
-            flatpak_command.append(args)
+                args = ['sh', '-e', 'cd %s && %s' % (cwd, ' '.join(args))]
+            flatpak_command.extend(args)
         else:
             os.makedirs(self.state_path, exist_ok=True)
             with open(os.path.join(self.state_path, 'enter_env.sh'), 'w') as out_file:
