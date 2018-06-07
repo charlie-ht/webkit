@@ -530,7 +530,7 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
             shell_string = ""
             if args:
                 if cwd:
-                    shell_string = 'cd %s && %s' % (cwd, ' '.join(args))
+                    shell_string = 'echo "cding" && cd %s && echo "Running" && %s' % (cwd, ' '.join(args))
                 else:
                     shell_string = '%s' % (' '.join(args))
             else:
