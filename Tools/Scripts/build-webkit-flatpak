@@ -387,25 +387,31 @@ class FlatpakModule(FlatpakObject):
         self.use_builddir = module.get("builddir", "false")
         self.build_commands = module.get("build-commands", [])
 
-    def install_file(self, src, dest):
-        self.flatpak_app.run_in_sandbox("install", src, dest,
-            exit_on_failure=True, cwd=self.source_path,
-            extra_finish_args=["--filesystem=%s" % self.source_path],
-            verbose=False)
-        self.flatpak_app.run_in_sandbox("patchelf", "--remove-rpath", dest, verbose=False)
+    def install_file(self, **kwargs):
+        return "echo \"install %(src)s %(dest)s\"\ninstall -D %(src)s %(dest)s\npatchelf --remove-rpath %(dest)s 2>&1 |grep -v \"not an ELF\" || true\n" % (kwargs)
 
     def webkit_install(self, dirs):
+        # FIXME, try to be smart and not copy when no required!
+        install_script_string = "#!/bin/sh\n\n"
         install_root = "/app"
         for dir in dirs:
-            if dir.endswith('/'):
-                basedir = os.path.basename(dir[:-1])
-                for root, dirs, files in os.walk(os.path.join(dir)):
-                    cdir = root.replace(os.path.commonprefix([dir, root]), "")
-                    for file in files:
-                        self.install_file(os.path.join(root, file), os.path.join(install_root, basedir, cdir, file))
+            files = glob.glob(dir, recursive=True)
+            common = os.path.commonpath(files)
+            basedir = os.path.abspath(os.path.join(common, os.path.pardir))
+            for file in files:
+                if os.path.isdir(file):
+                    continue
+                relpath = os.path.relpath(file, basedir)
+                install_script_string += self.install_file(
+                    src=file, dest=os.path.join(install_root, relpath))
 
-            else:
-                print(glob.glob(dir))
+        with tempfile.NamedTemporaryFile(prefix=os.path.join(self.source_path, "tmpinstallscript")) as tmp_install_script:
+            with open(tmp_install_script.name, "w") as tmp_install_script_file:
+                print(install_script_string, file=tmp_install_script_file)
+                self.flatpak_app.run_in_sandbox(
+                    "sh", tmp_install_script.name, exit_on_failure=True,
+                    cwd=self.source_path,
+                    extra_finish_args=["--filesystem=%s" % self.source_path])
 
     def run(self):
         if self.build_system == "simple":

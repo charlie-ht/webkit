@@ -140,5 +140,5 @@ modules:
     buildsystem: simple
     build-commands:
       # - Tools/Scripts/update-webkitwpe-libs
-      # - Tools/Scripts/build-webkit --wpe --debug --prefix=/app
-      - webkit-install-dir WebKitBuild/Debug/bin/ WebKitBuild/Debug/lib/**.so WebKitBuild/Debug/lib/**/*.so
+      - Tools/Scripts/build-webkit --wpe --debug --prefix=/app
+      - webkit-install-dir WebKitBuild/Debug/bin/** WebKitBuild/Debug/lib/**/**.so
