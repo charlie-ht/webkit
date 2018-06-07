@@ -507,7 +507,7 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
                                                     self.build_name + ".json")
         self.install_data_file = os.path.join(self.state_path, "install_data")
 
-    def run_in_sandbox(self, *args, exit_on_failure=False, cwd=None,):
+    def run_in_sandbox(self, *args, exit_on_failure=False, cwd=None):
         with tempfile.NamedTemporaryFile(mode="w") as tmpscript:
             flatpak_command = ["flatpak", "build", "--bin-mount=%s=%s" % (tmpscript.name, "/tmpscript"),
                 "--bind-mount=%s=%s" % (self.webkit_path, self.app_path)]
