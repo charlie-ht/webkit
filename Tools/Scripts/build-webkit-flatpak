@@ -105,6 +105,10 @@ def expand_manifest(manifest_path, outfile, app_name, app_path):
     if not manifest:
         return False
 
+    is "sdk-hash" in manifest
+        del manifest["sdk-hash"]
+    if "runtime-hash" in manifest
+        del manifest["runtime-hash"]
     i = 0
     modules = []
     for module in manifest["modules"]:
