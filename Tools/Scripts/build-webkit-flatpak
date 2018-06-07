@@ -536,7 +536,7 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
             else:
                 shell_string = 'echo "\n-> Entering %s environment && bash' % self.name
 
-            print(shell_string, file=tmpscript.name)
+            print(shell_string, file=tmpscript)
             Console.message("Running in sandbox: %s %s" %(' '.join(flatpak_command), shell_string))
 
             flatpak_command.extend(['sh', '/tmpscript'])
