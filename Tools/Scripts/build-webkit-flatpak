@@ -507,41 +507,44 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
                                                     self.build_name + ".json")
         self.install_data_file = os.path.join(self.state_path, "install_data")
 
-    def run_in_sandbox(self, *args, exit_on_failure=False, cwd=None, verbose=True):
-        flatpak_command = ["flatpak", "build", "--bind-mount=%s=%s" % (self.webkit_path, self.app_path)]
+    def run_in_sandbox(self, *args, exit_on_failure=False, cwd=None,):
+        with tempfile.NamedTemporaryFile(mode="w") as tmpscript:
+            flatpak_command = ["flatpak", "build", "--bin-mount=%s=%s" % (tmpscript.name, "/tmpscript"),
+                "--bind-mount=%s=%s" % (self.webkit_path, self.app_path)]
 
-        forwarded = {
-            "WEBKIT_TOP_LEVEL": "/app/",
-            "LD_LIBRARY_PATH": "/app/lib",
-            "TEST_RUNNER_INJECTED_BUNDLE_FILENAME": "/app/lib/libTestRunnerInjectedBundle.so",
-        }
+            forwarded = {
+                "WEBKIT_TOP_LEVEL": "/app/",
+                "LD_LIBRARY_PATH": "/app/lib",
+                "TEST_RUNNER_INJECTED_BUNDLE_FILENAME": "/app/lib/libTestRunnerInjectedBundle.so",
+            }
 
-        for envvar, value in os.environ.items():
-            if envvar in ["WAYLAND_DISPLAY", "DISPLAY", "LANG"]:
-                forwarded[envvar] = value
+            for envvar, value in os.environ.items():
+                if envvar in ["WAYLAND_DISPLAY", "DISPLAY", "LANG"]:
+                    forwarded[envvar] = value
 
-        for envvar, value in forwarded.items():
-            flatpak_command.append("--env=%s=%s" % (envvar, value))
+            for envvar, value in forwarded.items():
+                flatpak_command.append("--env=%s=%s" % (envvar, value))
 
-        flatpak_command += self.finish_args + [self.build_path]
+            flatpak_command += self.finish_args + [self.build_path]
 
-        if args:
-            if cwd:
-                args = ['sh', '-e', 'cd %s && %s' % (cwd, ' '.join(args))]
-            flatpak_command.extend(args)
-        else:
-            os.makedirs(self.state_path, exist_ok=True)
-            with open(os.path.join(self.state_path, 'enter_env.sh'), 'w') as out_file:
-                print('echo "\n-> Entering %s environment\n"\n\nbash' % self.name, file=out_file)
-            flatpak_command.extend(['sh', os.path.join(self.state_path, 'enter_env.sh')])
+            shell_string = ""
+            if args:
+                if cwd:
+                    shell_string = 'cd %s && %s' % (cwd, args)
+                else:
+                    shell_string = '%s' % (cwd, args)
+            else:
+                shell_string = 'echo "\n-> Entering %s environment && bash' % self.name
 
-        if verbose:
-            Console.message("Running in sandbox: " + ' '.join(flatpak_command))
-        try:
-            subprocess.check_call(flatpak_command)
-        except subprocess.CalledProcessError as e:
-            if exit_on_failure:
-                exit(e.returncode)
+            print(shell_string, file=tmpscript.name)
+            Console.message("Running in sandbox: %s %s" %(' '.join(flatpak_command), shell_string))
+
+            flatpak_command.extend(['sh', '/tmpscript'])
+            try:
+                subprocess.check_call(flatpak_command)
+            except subprocess.CalledProcessError as e:
+                if exit_on_failure:
+                    exit(e.returncode)
 
     def run(self):
         if self.clean:
