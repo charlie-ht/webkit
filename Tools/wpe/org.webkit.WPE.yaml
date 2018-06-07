@@ -141,4 +141,4 @@ modules:
     build-commands:
       # - Tools/Scripts/update-webkitwpe-libs
       - Tools/Scripts/build-webkit --wpe --debug --prefix=/app
-      - webkit-install-dir /app/webkit/WebKitBuild/Debug/bin/** /app/webkit/WebKitBuild/Debug/lib/**/**.so*
+      - webkit-install-dir WebKitBuild/Debug/bin/** WebKitBuild/Debug/lib/**/**.so*
