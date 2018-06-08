@@ -661,7 +661,9 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
 
         if not self.branch:
             try:
-                self.branch = ["git", "rev-parse", "--abbrev-ref", "HEAD"]
+                self.branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                    self.app_path)
+
             except FileNotFoundError, CalledProcessError as e:
                 Console.message("%sCould not get git branch name: %s" % (Colors.FAIL,
                     str(e), Colors.ENDC))
