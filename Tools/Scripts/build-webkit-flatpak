@@ -658,6 +658,13 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
             build_export_args.append("--subject=%s" % self.commit_subject)
         if self.commit_body:
             build_export_args.append("--body=%s" % self.commit_body)
+
+        if not self.branch:
+            try:
+                self.branch = ["git", "rev-parse", "--abbrev-ref", "HEAD"]
+            except FileNotFoundError, CalledProcessError as e:
+                Console.message("%sCould not get git branch name: %s" % (Colors.FAIL,
+                    str(e), Colors.ENDC))
         build_export_args.append(self.branch)
 
         Console.message('-> Exporting repo %s %s (--body="%s" --subject="%s")',
