@@ -48,6 +48,8 @@ public:
 
         gst_util_double_to_fraction(frameRate(), &fpsNumerator, &fpsDenominator);
         auto data = imageBuffer->toBGRAData();
+        if (!data.size())
+            return;
         auto size = data.size();
         auto image_size = imageBuffer->internalSize();
         auto gstsample = gst_sample_new(gst_buffer_new_wrapped(static_cast<guint8*>(data.releaseBuffer().get()), size),

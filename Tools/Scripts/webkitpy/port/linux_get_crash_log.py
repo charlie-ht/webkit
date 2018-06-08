@@ -106,7 +106,7 @@ class GDBCrashLogGenerator(object):
         for coredumpctl in [['coredumpctl'], ['flatpak-spawn', '--host', 'coredumpctl'], []]:
             try:
                 if not self._executive.run_command(coredumpctl, return_exit_code=True):
-                   break
+                   break 
             except:
                 continue
 
