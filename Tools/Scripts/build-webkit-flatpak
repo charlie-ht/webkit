@@ -667,6 +667,7 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
             except Exception as e:
                 Console.message("%sCould not get git branch name: %s%s" % (Colors.FAIL,
                     str(e), Colors.ENDC))
+                raise e
         build_export_args.append(self.branch)
 
         Console.message('-> Exporting repo %s %s (--body="%s" --subject="%s")',
