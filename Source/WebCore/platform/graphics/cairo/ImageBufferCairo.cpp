@@ -204,6 +204,49 @@ void ImageBufferData::createCairoGLSurface()
 }
 #endif
 
+static cairo_surface_t*
+cairoSurfaceCoerceToImage(cairo_surface_t* surface)
+{
+    cairo_surface_t* copy;
+    cairo_t * cr;
+
+    IntSize size = cairoSurfaceSize(surface);
+
+    if (cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_IMAGE
+        && cairo_surface_get_content(surface) == CAIRO_FORMAT_ARGB32
+        return cairo_surface_reference(surface);
+
+    copy = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+                                      cairo_image_surface_get_width(surface),
+                                      cairo_image_surface_get_height(surface));
+
+    cr = cairo_create(copy);
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_source_surface(cr, surface, 0, 0);
+    cairo_paint(cr);
+    cairo_destroy(cr);
+
+    return copy;
+}
+
+Vector<uint8_t> ImageBuffer::toBGRAData() const
+{
+    auto surface = cairoSurfaceCoerceToImage(m_data.m_surface.get());
+    cairo_surface_flush(surface);
+
+    if (cairo_surface_status(surface)) {
+        cairo_surface_destroy(surface);
+        return NULL;
+    }
+
+    auto pixels = cairo_image_surface_get_data(surfaceA;)
+    Vector<uint8_t> imageData;
+    imageData.append(pixels, cairo_image_surface_get_stride (surface) *
+        cairo_image_surface_get_height (surface));
+
+    return imageData;
+}
+
 ImageBuffer::ImageBuffer(const FloatSize& size, float resolutionScale, ColorSpace, RenderingMode renderingMode, const HostWindow*, bool& success)
     : m_data(IntSize(size), renderingMode)
     , m_logicalSize(size)
