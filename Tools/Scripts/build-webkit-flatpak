@@ -119,7 +119,7 @@ def load_manifest(manifest_path):
     return manifest
 
 
-def expand_manifest(manifest_path, outfile, app_name, ):
+def expand_manifest(manifest_path, outfile, app_name, app_path):
     """Creates the manifest file."""
     try:
         os.remove(outfile)
