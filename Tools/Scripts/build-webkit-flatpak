@@ -652,8 +652,7 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
         if not os.path.exists(self.repodir):
             os.mkdir(self.repodir)
 
-        build_export_args = ["flatpak", "build-export", self.repodir, self.prefix]
-
+        build_export_args = ["flatpak", "build-export", self.repodir, self.build_path]
         if self.commit_subject:
             build_export_args.append("--subject=%s" % self.commit_subject)
         if self.commit_body:
