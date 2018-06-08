@@ -19,9 +19,11 @@ finish-args:
   - --socket=pulseaudio
   - --system-talk-name=org.freedesktop.GeoClue2
   - --filesystem=host
+  - --filesystem=/tmp
   - --talk-name=ca.desrt.dconf
   - --talk-name=org.freedesktop.secrets
   - --talk-name=org.freedesktop.Notifications
+  - --talk-name=org.freedesktop.Flatpak
 build-options:
   cflags: -O2 -g
   cxxflags: -O2 -g
