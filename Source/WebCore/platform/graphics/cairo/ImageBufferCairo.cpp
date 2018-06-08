@@ -239,7 +239,7 @@ Vector<uint8_t> ImageBuffer::toBGRAData() const
         return NULL;
     }
 
-    auto pixels = cairo_image_surface_get_data(surfaceA;)
+    auto pixels = cairo_image_surface_get_data(surface);
     Vector<uint8_t> imageData;
     imageData.append(pixels, cairo_image_surface_get_stride (surface) *
         cairo_image_surface_get_height (surface));
