@@ -129,6 +129,7 @@ void GStreamerCapturer::setupPipeline()
 
 GstElement* GStreamerCapturer::makeElement(const char* factoryName)
 {
+    GST_ERROR("Making %s", factoryName);
     auto element = gst_element_factory_make(factoryName, nullptr);
     ASSERT(element);
     GUniquePtr<char> capturerName(g_strdup_printf("%s_capturer_%s_%p", name(), GST_OBJECT_NAME(element), this));
