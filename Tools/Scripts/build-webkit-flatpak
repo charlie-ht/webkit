@@ -513,9 +513,9 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
                 "--bind-mount=%s=%s" % (self.webkit_path, self.app_path)]
 
             forwarded = {
-                "WEBKIT_TOP_LEVEL": "/app/",
+                # "WEBKIT_TOP_LEVEL": "/app/",
                 "LD_LIBRARY_PATH": "/app/lib",
-                "TEST_RUNNER_INJECTED_BUNDLE_FILENAME": "/app/lib/libTestRunnerInjectedBundle.so",
+                "TEST_RUNNER_INJECTED_BUNDLE_FILENAME": "/app/webkit/lib/libTestRunnerInjectedBundle.so",
             }
 
             for envvar, value in os.environ.items():
