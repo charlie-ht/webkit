@@ -210,10 +210,8 @@ cairoSurfaceCoerceToImage(cairo_surface_t* surface)
     cairo_surface_t* copy;
     cairo_t * cr;
 
-    IntSize size = cairoSurfaceSize(surface);
-
     if (cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_IMAGE
-        && cairo_surface_get_format(surface) == CAIRO_CONTENT_COLOR_ALPHA
+        && cairo_surface_get_content(surface) == CAIRO_CONTENT_COLOR_ALPHA)
         return cairo_surface_reference(surface);
 
     copy = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
@@ -234,13 +232,13 @@ Vector<uint8_t> ImageBuffer::toBGRAData() const
     auto surface = cairoSurfaceCoerceToImage(m_data.m_surface.get());
     cairo_surface_flush(surface);
 
+    Vector<uint8_t> imageData;
     if (cairo_surface_status(surface)) {
         cairo_surface_destroy(surface);
-        return NULL;
+        return imageData;
     }
 
     auto pixels = cairo_image_surface_get_data(surface);
-    Vector<uint8_t> imageData;
     imageData.append(pixels, cairo_image_surface_get_stride (surface) *
         cairo_image_surface_get_height (surface));
 
