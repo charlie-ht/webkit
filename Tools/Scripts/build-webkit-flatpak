@@ -76,6 +76,30 @@ class Console:  # pylint: disable=too-few-public-methods
         sys.stdout.flush()
 
 
+def remove_extension_points(array):
+    result_args = []
+    for arg in array:
+        if(not arg.startswith('--extension')):
+            result_args.append(arg)
+    return result_args
+
+
+def remove_comments(string):
+    pattern = r"(\".*?\"|\'.*?\')|(/\*.*?\*/|//[^\r\n]*$)"
+    # first group captures quoted strings (double or single)
+    # second group captures comments (//single-line or /* multi-line */)
+    regex = re.compile(pattern, re.MULTILINE | re.DOTALL)
+
+    def _replacer(match):
+        # if the 2nd group (capturing comments) is not None,
+        # it means we have captured a non-quoted (real) comment string.
+        if match.group(2) is not None:
+            return ""  # so we will return empty to remove the comment
+        else:  # otherwise, we will return the 1st group
+            return match.group(1)  # captured quoted-string
+    return regex.sub(_replacer, string)
+
+
 def load_manifest(manifest_path):
     is_yaml = manifest_path.endswith('.yaml')
     if is_yaml and not yaml:
@@ -407,12 +431,13 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
         self.sdk = None
         self.app = None
 
+        self.quiet = False
         self.packs = []
         self.update = False
         self.args = []
-        self.build = False
         self.finish_args = None
 
+        self.run_tests = False
         self.gtk = False
         self.wpe = True
         self.clean = False
@@ -430,6 +455,13 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
         self.state_path = None
         self.app_module = None
         self.flatpak_default_args = []
+
+        # Exporting parameters
+        self.repodir = None
+        self.commit_subject = None
+        self.commit_body = None
+        self.branch = None
+        self.branch = None
 
 
     def __strip_dbus_id(self, manifest_path):
@@ -471,8 +503,11 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
         self.build_name = self.dbus_id + "-generated"
         self.cache_path = os.path.expanduser("~/.cache/flatpak-dev/%s" % self.dbus_id.lower())
         self.prefix = os.path.join(self.app_path, 'WebKitBuild', self.port)
-        self.build_path = os.path.join(self.prefix, "Flatpak%s" % self.name)
+        self.build_path = os.path.join(self.prefix, "FlatpakFiles")
         self.state_path = os.path.join(self.prefix, "Cache")
+
+        if self.repodir:
+            self.build_app = True
 
         Console.quiet = self.quiet
         self.check_flatpak()
@@ -519,7 +554,7 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
             }
 
             for envvar, value in os.environ.items():
-                if envvar in ["WAYLAND_DISPLAY", "DISPLAY", "LANG"]:
+                if envvar in ["WAYLAND_DISPLAY", "DISPLAY", "LANG", "GST_DEBUG"]:
                     forwarded[envvar] = value
 
             for envvar, value in forwarded.items():
@@ -608,8 +643,39 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
         if self.run_tests:
             test_launcher = [os.path.join(self.webkit_path, 'Tools/Scripts/run-webkit-tests'), '--debug', '--' + self.port.lower()] + self.args
             self.run_in_sandbox(*test_launcher, exit_on_failure=True)
+        elif self.repodir:
+            self.update_bundle()
         elif not self.update and not (self.build_app and not self.args):
             self.run_in_sandbox(*self.args, exit_on_failure=True)
+
+    def update_bundle(self):
+        if not os.path.exists(self.repodir):
+            os.mkdir(self.repodir)
+
+        build_export_args = ["flatpak", "build-export", self.repodir, self.prefix]
+
+        if self.commit_subject:
+            build_export_args.append("--subject=%s" % self.commit_subject)
+        if self.commit_body:
+            build_export_args.append("--body=%s" % self.commit_body)
+        build_export_args.append(self.branch)
+
+        Console.message('-> Exporting repo %s %s (--body="%s" --subject="%s")',
+                        self.repodir, self.branch, self.commit_body,
+                        self.commit_subject)
+        try:
+            subprocess.check_call(build_export_args)
+        except subprocess.CalledProcessError:
+            exit(1)
+
+        update_repo_args = ["flatpak", "build-update-repo", "--generate-static-deltas", self.repodir]
+
+        Console.message("Updating repo: '%s'", "' '".join(update_repo_args))
+        try:
+            subprocess.check_call(update_repo_args)
+        except subprocess.CalledProcessError:
+            exit(1)
+
 
     def install_all(self):
         for package in self.packs:
@@ -619,30 +685,6 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
     def update_all(self):
         for m in [self.runtime, self.sdk]:
             m.update()
-
-def remove_extension_points(array):
-    result_args = []
-    for arg in array:
-        if(not arg.startswith('--extension')):
-            result_args.append(arg)
-    return result_args
-
-
-def remove_comments(string):
-    pattern = r"(\".*?\"|\'.*?\')|(/\*.*?\*/|//[^\r\n]*$)"
-    # first group captures quoted strings (double or single)
-    # second group captures comments (//single-line or /* multi-line */)
-    regex = re.compile(pattern, re.MULTILINE | re.DOTALL)
-
-    def _replacer(match):
-        # if the 2nd group (capturing comments) is not None,
-        # it means we have captured a non-quoted (real) comment string.
-        if match.group(2) is not None:
-            return ""  # so we will return empty to remove the comment
-        else:  # otherwise, we will return the 1st group
-            return match.group(1)  # captured quoted-string
-    return regex.sub(_replacer, string)
-
 
 if __name__ == "__main__":
     flatpak_dev = FlatpakDev()
@@ -681,13 +723,30 @@ if __name__ == "__main__":
                          action="store_true",
                          help="Run LayoutTests")
 
-    devel = parser.add_argument_group("Development")
-    devel.add_argument("--branch", dest="branch",
+    general.add_argument("--branch", dest="branch",
                        help="The flatpak branch to use (stable, master...)",
                        default="master")
-    devel.add_argument("-c", "--clean", dest="clean",
+    general.add_argument("-c", "--clean", dest="clean",
                        action="store_true",
                        help="Clean previous builds and restart from scratch")
+
+    bundling = parser.add_argument_group("Building repo for distribution")
+    bundling.add_argument("--export-repo-path", dest="repodir",
+                          help="Finish build and export in repo pointed by that path.")
+    bundling.add_argument(
+        "--repo-commit-subject", dest="commit_subject", default=None,
+        help="The commit subject to be used when updating the ostree repository")
+    bundling.add_argument(
+        "--repo-commit-body", dest="commit_body", default=None,
+        help="The commit body to be used when updating the ostree repository")
+    bundling.add_argument(
+        "--gpg-sign", dest="gpg_key", default=None,
+        help="The GPG key to sign the commit with (work only when --bundle is used)")
+    bundling.add_argument(
+        "--generate-static-deltas", dest="generate_static_deltas",
+        action="store_true",
+        help="Generate static deltas (check 'man flatpak-build-update-repo'"
+        " for more information)")
 
     parser.parse_args(namespace=flatpak_dev)
     flatpak_dev.clean_args()
