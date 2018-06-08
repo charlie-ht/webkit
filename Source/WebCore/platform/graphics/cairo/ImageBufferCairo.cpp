@@ -213,7 +213,7 @@ cairoSurfaceCoerceToImage(cairo_surface_t* surface)
     IntSize size = cairoSurfaceSize(surface);
 
     if (cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_IMAGE
-        && cairo_surface_get_content(surface) == CAIRO_FORMAT_ARGB32
+        && cairo_surface_get_format(surface) == CAIRO_CONTENT_COLOR_ALPHA
         return cairo_surface_reference(surface);
 
     copy = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
