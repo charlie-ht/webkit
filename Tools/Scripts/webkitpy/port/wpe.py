@@ -45,6 +45,9 @@ class WPEPort(Port):
             self._jhbuild_wrapper = [self.path_from_webkit_base('Tools', 'jhbuild', 'jhbuild-wrapper'), '--wpe', 'run']
             self.set_option_default('wrapper', ' '.join(self._jhbuild_wrapper))
 
+    def _should_use_jhbuild(self):
+        return False
+
     def default_timeout_ms(self):
         default_timeout = 15000
         # Starting an application under Valgrind takes a lot longer than normal
