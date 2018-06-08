@@ -119,7 +119,7 @@ def load_manifest(manifest_path):
     return manifest
 
 
-def expand_manifest(manifest_path, outfile, app_name, app_path):
+def expand_manifest(manifest_path, outfile, app_name, ):
     """Creates the manifest file."""
     try:
         os.remove(outfile)
@@ -664,7 +664,7 @@ class FlatpakDev:  # pylint: disable=too-many-instance-attributes
                 self.branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"],
                     self.app_path)
 
-            except FileNotFoundError, CalledProcessError as e:
+            except Exception as e:
                 Console.message("%sCould not get git branch name: %s" % (Colors.FAIL,
                     str(e), Colors.ENDC))
         build_export_args.append(self.branch)
