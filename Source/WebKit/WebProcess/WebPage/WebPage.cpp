@@ -401,7 +401,7 @@ WebPage::WebPage(uint64_t pageID, WebPageCreationParameters&& parameters)
     PageConfiguration pageConfiguration(
         makeUniqueRef<WebEditorClient>(this),
         WebSocketProvider::create(),
-        makeUniqueRef<WebKit::LibWebRTCProvider>(),
+        WebKit::LibWebRTCProvider::create(),
         WebProcess::singleton().cacheStorageProvider()
     );
     pageConfiguration.chromeClient = new WebChromeClient(*this);

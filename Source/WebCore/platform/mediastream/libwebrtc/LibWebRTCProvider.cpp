@@ -47,6 +47,7 @@ namespace WebCore {
 #if !PLATFORM(COCOA) && !PLATFORM(GTK) && !PLATFORM(WPE)
 UniqueRef<LibWebRTCProvider> LibWebRTCProvider::create()
 {
+    GST_ERROR("What am I doing here?");
     return makeUniqueRef<LibWebRTCProvider>();
 }
 #endif

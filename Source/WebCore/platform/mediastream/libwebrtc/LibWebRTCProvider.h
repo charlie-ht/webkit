@@ -115,8 +115,13 @@ protected:
     rtc::scoped_refptr<webrtc::PeerConnectionInterface> createPeerConnection(webrtc::PeerConnectionObserver&, rtc::NetworkManager&, rtc::PacketSocketFactory&, webrtc::PeerConnectionInterface::RTCConfiguration&&);
 
     rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> createPeerConnectionFactory(rtc::Thread* networkThread, rtc::Thread* signalingThread, LibWebRTCAudioModule*);
-    virtual std::unique_ptr<webrtc::VideoDecoderFactory> createDecoderFactory() { return nullptr; }
-    virtual std::unique_ptr<webrtc::VideoEncoderFactory> createEncoderFactory() { return nullptr; }
+
+    virtual std::unique_ptr<webrtc::VideoDecoderFactory> createDecoderFactory() = 0;
+    //     GST_ERROR("WTD");
+    //     return nullptr;
+    // }
+    virtual std::unique_ptr<webrtc::VideoEncoderFactory> createEncoderFactory() = 0;
+    // { return nullptr; }
 
     bool m_enableEnumeratingAllNetworkInterfaces { false };
     // FIXME: Remove m_useNetworkThreadWithSocketServer member variable and make it a global.

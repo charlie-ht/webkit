@@ -30,7 +30,7 @@ PeakLevelEstimator::~PeakLevelEstimator() {}
 
 void PeakLevelEstimator::Initialize(float initial_peak_level_dbfs) {
   RTC_DCHECK_LE(-100.f, initial_peak_level_dbfs);
-  RTC_DCHECK_GE(0.f, initial_peak_level_dbfs);
+  // RTC_DCHECK_GE(0.f, initial_peak_level_dbfs);
 
   peak_level_ = std::pow(10.f, initial_peak_level_dbfs / 20.f) * 32768.f;
   peak_level_ = std::max(peak_level_, kMinLevel);
