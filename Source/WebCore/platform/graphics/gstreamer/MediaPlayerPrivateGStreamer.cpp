@@ -783,15 +783,24 @@ void MediaPlayerPrivateGStreamer::enableTrack(TrackPrivateBaseGStreamer::TrackTy
         GstStream* stream = gst_stream_collection_get_stream(m_streamCollection.get(), index);
         if (stream) {
             String streamId = gst_stream_get_stream_id(stream);
+
+            if (g_list_find_custom (selectedStreams, streamId.utf8().data(), reinterpret_cast<GCompareFunc>(g_strcmp0))) {
+                GST_INFO_OBJECT(pipeline(), "Nothing changed in the stream selection");
+                goto done;
+            }
+
             selectedStreams = g_list_append(selectedStreams, g_strdup(streamId.utf8().data()));
-        } else
+        } else {
             GST_WARNING("%s stream %u not found", trackTypeAsString, index);
+            goto done;
+        }
 
         // TODO: MSE GstStream API support: https://bugs.webkit.org/show_bug.cgi?id=182531
         gst_element_send_event(m_pipeline.get(), gst_event_new_select_streams(selectedStreams));
     }
 #endif
 
+done:
     if (selectedStreams)
         g_list_free_full(selectedStreams, reinterpret_cast<GDestroyNotify>(g_free));
 }
