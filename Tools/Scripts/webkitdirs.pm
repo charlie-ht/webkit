@@ -2059,7 +2059,7 @@ sub runInFlatpakIfAvalaible(@)
         return 0;
     }
 
-    my @command = (File::Spec->catfile(sourceDir(), "Tools", "flatpak", "webkit-flatpak"));
+    my @command = (File::Spec->catfile(sourceDir(), "Tools", "Scripts", "webkit-flatpak"));
     if (system(@command, "--avalaible") != 0) {
         return 0;
     }
