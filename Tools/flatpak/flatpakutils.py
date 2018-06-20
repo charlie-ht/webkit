@@ -406,7 +406,7 @@ class FlatpakPackage(FlatpakObject):
 class FlatpakModule(FlatpakObject):
 
     def __init__(self, flatpak_app, manifest_path, module_name,
-                 debug, *args):
+                 debug):
         self.flatpak_app = flatpak_app
 
         manifest = load_manifest(manifest_path)
@@ -427,14 +427,12 @@ class FlatpakModule(FlatpakObject):
         # Only one command
         self.build_command, = module.get("build-commands", [])
         self.debug = debug
-        self.args = args
 
     def install_file(self, **kwargs):
         return "echo \"install %(src)s %(dest)s\"\ninstall -D %(src)s %(dest)s\npatchelf --remove-rpath %(dest)s 2>&1 |grep -v \"not an ELF\" || true\n" % (kwargs)
 
     def run(self, builddir):
         command = shlex.split(self.build_command)
-        command += self.args
         if self.debug:
             command.append('--debug')
         else:
@@ -750,7 +748,7 @@ class WebkitFlatpak:
                                    self.name, self.sandbox_source_root, self.command):
                 exit(1)
             self.app_module = FlatpakModule(self, self.manifest_generated_path, self.name,
-                self.debug, self.build_webkit_args)
+                self.debug)
             self.app_module.run(self.cache_path)
         else:
             Console.message("Using %s prefix in %s", self.name, self.flatpak_build_path)
